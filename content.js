@@ -25,6 +25,7 @@ function removeDuplicates(log) {
 document.addEventListener('click', function (event) {
     let clickedElement = event.target;
 
+    clickedElement.classList.toggle('click-highlighted');
     // Get the text content of the clicked element
     let elementText = getElementText(clickedElement);
     let url = window.location.href;
@@ -53,7 +54,6 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
 
         // Include the captured dataUrl in the log entry
         newLogEntry.dataUrl = dataUrl;
-        console.log(newLogEntry)
         // Store the log entry with the captured screenshot URL
         chrome.storage.local.get('clickLog', function (result) {
             const updatedClickLog = result.clickLog || [];

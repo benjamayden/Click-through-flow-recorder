@@ -29,6 +29,7 @@ document.getElementById('startRecording').addEventListener('click', function() {
 document.getElementById('stopRecording').addEventListener('click', function() {
     chrome.storage.local.set({ isRecording: false }, function() {
         alert('Recording stopped!');
+        chrome.tabs.create({ url: chrome.runtime.getURL('flowDisplay.html')})
     });
 });
 
