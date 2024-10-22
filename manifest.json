@@ -11,7 +11,7 @@
         "sidePanel"
     ],
     "host_permissions": [
-        "http://iaptus.internal/*"
+        "<all_urls>", "http://iaptus.internal/*"
     ],
     "side_panel": {
         "default_path": "sidePanel.html"
@@ -29,5 +29,9 @@
             ],
             "run_at": "document_start"
         }
-    ]
+    ],
+  "web_accessible_resources": [{
+    "resources": ["flowDisplay.html", "flowDisplay.js"],
+    "matches": ["<all_urls>"]
+  }]
 }

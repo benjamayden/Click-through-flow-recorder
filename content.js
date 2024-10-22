@@ -21,9 +21,8 @@ function removeDuplicates(log) {
         return true; // Add new entry
     });
 }
-
 // Add event listener for clicks on the page
-document.addEventListener('click', function(event) {
+document.addEventListener('click', function (event) {
     let clickedElement = event.target;
 
     // Get the text content of the clicked element
@@ -32,7 +31,7 @@ document.addEventListener('click', function(event) {
     let timestamp = new Date().toISOString();
 
     // Log click only if recording is enabled
-    chrome.storage.local.get(['isRecording', 'clickLog'], function(result) {
+    chrome.storage.local.get(['isRecording', 'clickLog'], function (result) {
         if (result.isRecording) {
             // Clean element text for CSV
             elementText = elementText.replace(/,/g, ''); // Remove commas
@@ -40,7 +39,23 @@ document.addEventListener('click', function(event) {
             // Prepare new log entry
             const newLogEntry = { elementText, url, timestamp };
 
-            // Append to existing log or create a new array if none exists
+            // Capture the screen before storing log entry
+            chrome.runtime.sendMessage({ action: 'captureScreen', newLogEntry });
+        }
+    });
+});
+
+// Listener for completion of screen capture
+chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
+    if (request.action === 'captureComplete') {
+        const dataUrl = request.dataUrl;
+        const newLogEntry = request.newLogEntry; // Retrieve the new log entry passed from the click handler
+
+        // Include the captured dataUrl in the log entry
+        newLogEntry.dataUrl = dataUrl;
+        console.log(newLogEntry)
+        // Store the log entry with the captured screenshot URL
+        chrome.storage.local.get('clickLog', function (result) {
             const updatedClickLog = result.clickLog || [];
             updatedClickLog.push(newLogEntry);
 
@@ -48,10 +63,10 @@ document.addEventListener('click', function(event) {
             const cleanedClickLog = removeDuplicates(updatedClickLog);
 
             // Store updated log
-            chrome.storage.local.set({ clickLog: cleanedClickLog }, function() {
+            chrome.storage.local.set({ clickLog: cleanedClickLog }, function () {
                 // Send message to update side panel
                 chrome.runtime.sendMessage({ action: 'updateLog', logEntry: newLogEntry });
             });
-        }
-    });
+        });
+    }
 });

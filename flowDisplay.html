@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Flow Display</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        .log-entry {
+            margin-bottom: 15px;
+        }
+        img {
+            max-width: 200px; /* Adjust size as necessary */
+            display: block;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Click Log</h1>
+    <div id="log"></div> <!-- Log section -->
+    <script>
+        // Load and display the click log
+        chrome.storage.local.get(['clickLog'], function(result) {
+            const logDiv = document.getElementById('log');
+            const clickLog = result.clickLog || [];
+            logDiv.innerHTML = ''; // Clear previous log
+
+            if (clickLog.length === 0) {
+                logDiv.textContent = 'No logs recorded.';
+                return;
+            }
+
+            clickLog.forEach(entry => {
+                const logEntryDiv = document.createElement('div');
+                logEntryDiv.className = 'log-entry';
+                logEntryDiv.innerHTML = `
+                    <strong>${entry.elementText}</strong><br>
+                    <a href="${entry.url}" target="_blank">${entry.url}</a><br>
+                    <em>Clicked at: ${entry.timestamp}</em>
+                `;
+                
+                // Display the image
+                if (entry.imageUrl) {
+                    const imgElement = document.createElement('img');
+                    imgElement.src = entry.imageUrl; // Use the image URL
+                    logEntryDiv.appendChild(imgElement);
+                }
+
+                logDiv.appendChild(logEntryDiv);
+            });
+        });
+    </script>
+</body>
+</html>

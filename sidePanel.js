@@ -12,7 +12,7 @@ function displayLog(clickLog) {
     const list = document.createElement('ul');
     clickLog.forEach(entry => {
         const listItem = document.createElement('li');
-        listItem.textContent = `${entry.elementText} - ${entry.url} at ${entry.timestamp}`;
+        listItem.textContent = `${entry.elementText} - ${entry.url} at ${entry.timestamp}\n${entry.dataUrl}`;
         list.appendChild(listItem);
     });
     logDiv.appendChild(list);
@@ -49,7 +49,6 @@ function removeDuplicates(log) {
 document.getElementById('copyLog').addEventListener('click', function() {
     chrome.storage.local.get(['clickLog'], function(result) {
         let clickLog = result.clickLog;
-
          // Remove duplicates before storing
          const cleanedClickLog = removeDuplicates(clickLog);
         // Convert the log to CSV format
