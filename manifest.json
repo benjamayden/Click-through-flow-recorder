@@ -1,0 +1,33 @@
+{
+    "manifest_version": 3,
+    "name": "Button Click Logger",
+    "version": "1.0",
+    "permissions": [
+        "storage",
+        "activeTab",
+        "scripting",
+        "clipboardWrite",
+        "tabs",
+        "sidePanel"
+    ],
+    "host_permissions": [
+        "http://iaptus.internal/*"
+    ],
+    "side_panel": {
+        "default_path": "sidePanel.html"
+    },
+    "background": {
+        "service_worker": "background.js"
+    },
+    "content_scripts": [
+        {
+            "matches": [
+                "http://iaptus.internal/*"
+            ],
+            "js": [
+                "content.js"
+            ],
+            "run_at": "document_start"
+        }
+    ]
+}

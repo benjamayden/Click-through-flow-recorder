@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Button Click Logger</title>
+    <style>
+      body {
+        width: 300px;
+        font-family: Arial, sans-serif;
+      }
+      button {
+        width: 100%;
+        padding: 10px;
+        margin-bottom: 10px;
+        cursor: pointer;
+      }
+      #log {
+        max-height: 200px;
+        overflow-y: auto;
+        border: 1px solid #ccc;
+        padding: 5px;
+        margin-top: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <button id="startRecording">Start Recording</button>
+    <button id="stopRecording">Stop Recording</button>
+    <button id="copyLog">Copy Log</button>
+    <button id="copyButtonLabels">Copy Flow</button>
+    <button id="clearLog">clear log</button>
+    <div id="log"></div> <!-- Log section -->
+    <script src="sidePanel.js"></script>
+  </body>
+</html>
