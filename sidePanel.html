@@ -1,37 +1,168 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <title>Button Click Logger</title>
-    <style>
-      body {
-        width: 300px;
-        font-family: Arial, sans-serif;
-      }
-      button {
+
+<head>
+  <title>Button Click Logger</title>
+  <style>
+    html,
+    body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: stretch;
+      font-family: Arial, sans-serif;
+      background-color: #f4f4f4;
+    }
+
+    main {
+      max-width: 720px;
+      width: 100%;
+      padding: 1rem;
+      background-color: white;
+      border: 1px solid #ddd;
+      border-radius: 0.5rem;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      /* Take up the full height of the viewport */
+    }
+
+    .header {
+      position: sticky;
+      top: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 0.125rem;
+      background-color: white;
+      padding-top: 0.75rem;
+      padding-bottom: 0.75rem;
+      z-index: 100;
+      border-bottom: 1px solid #ddd;
+    }
+
+    .content {
+      flex-grow: 1;
+      /* Ensures the content takes up remaining space */
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      overflow-y: auto;
+      gap: 1rem;
+      /* Enable scrolling if content overflows */
+    }
+
+    #log {
+      flex-grow: 1;
+      overflow-y: auto;
+      border: 1px solid #ccc;
+      padding: 5px;
+      margin-top: 10px;
+    }
+
+    /* General button styling */
+    button {
         width: 100%;
-        padding: 10px;
+        padding: 12px;
         margin-bottom: 10px;
         cursor: pointer;
-      }
-      #log {
-        max-height: 200px;
-        overflow-y: auto;
-        border: 1px solid #ccc;
-        padding: 5px;
-        margin-top: 10px;
-      }
-      .isRecording{
-        outline: 2px solid red;
-      }
-    </style>
-  </head>
-  <body>
-    <button id="startRecording">Start Recording</button>
-    <button id="stopRecording">Stop & view</button>
-    <button id="copyLog">Copy Log (CSV)</button>
-    <button id="copyButtonLabels">Copy Flow Labels</button>
-    <button id="clearLog">clear log</button>
-    <div id="log"></div> <!-- Log section -->
-    <script src="sidePanel.js"></script>
-  </body>
+        font-size: 16px;
+        border: none;
+        border-radius: 8px;
+        box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+        transition: background-color 0.3s ease, box-shadow 0.3s ease, transform 0.1s ease;
+    }
+
+    /* Primary button (main actions) */
+    .primary-btn {
+        background-color: #4CAF50;
+        color: white;
+    }
+    .primary-btn:hover {
+        background-color: #245726;
+        box-shadow: 0px 6px 8px rgba(0, 0, 0, 0.15);
+    }
+    .primary-btn:active {
+        transform: scale(0.98);
+        background-color: #3e8e41;
+    }
+
+    /* Secondary button (supporting actions) */
+    .secondary-btn {
+        border: 1px solid #45a049;
+        background-color: white;
+        color: #3e8e41;
+    }
+    .secondary-btn:hover {
+        border: 1px solid #3e8e41;
+        background-color: #245726;
+        color: #fff;
+        box-shadow: 0px 6px 8px rgba(0, 0, 0, 0.15);
+    }
+    .secondary-btn:active {
+        transform: scale(0.98);
+        background-color: #245726;
+    }
+
+    /* Destructive button (for deleting, removing, etc.) */
+    .destructive-btn {
+        background-color: #f44336;
+        color: white;
+    }
+    .destructive-btn:hover {
+        background-color: #ba2d2b;
+        box-shadow: 0px 6px 8px rgba(0, 0, 0, 0.15);
+    }
+    .destructive-btn:active {
+        transform: scale(0.98);
+        background-color: #d32f2f;
+    }
+
+    .footer {
+      position: sticky;
+      bottom: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 0.125rem;
+      background-color: white;
+      padding-top: 0.75rem;
+      padding-bottom: 0.75rem;
+      z-index: 100;
+      border-top: 1px solid #ddd;
+    }
+
+    .isRecording {
+      border: 2px solid rgb(255, 0, 0);
+    }
+  </style>
+
+</head>
+
+<body>
+  <main>
+    <div class="header">
+      <button id="startRecording" class="primary-btn">Record</button>
+      <button id="stopRecording" class="secondary-btn">Stop & view</button>
+    </div>
+
+    <div class="content">
+      <div id="log"></div> <!-- Log section -->
+      <button id="clearLog" class="destructive-btn">Clear log</button>
+    </div>
+
+
+    <div class="footer">
+      <button id="copyLog" class="secondary-btn">Copy Log (CSV)</button>
+      <button id="copyButtonLabels" class="secondary-btn">Copy Flow Labels</button>
+    </div>
+  </main>
+
+  <script src="sidePanel.js"></script>
+</body>
+
 </html>
