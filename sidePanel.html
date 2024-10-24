@@ -113,6 +113,11 @@
     .destructive-btn {
         background-color: #f44336;
         color: white;
+        width: fit-content;
+        padding-left: 0.5rem;
+        padding-right: 0.5rem;
+        padding-top: 0.25rem;
+        padding-bottom: 0.25rem;
     }
     .destructive-btn:hover {
         background-color: #ba2d2b;
@@ -139,6 +144,47 @@
     .isRecording {
       border: 2px solid rgb(255, 0, 0);
     }
+
+    ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        li {
+            background-color: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 12px;
+        }
+
+        .elementName {
+            font-weight: bold;
+            font-size: 1em;
+            margin-bottom: 0.125rem;
+            color: #333;
+        }
+
+        .elementDetails {
+          display: flex;
+          gap:0.25rem;
+            font-size: 0.9em;
+            color: #666;
+        }
+
+        .elementDetails span {
+            margin-right: 8px;
+        }
+
+        .elementLink {
+            color: #007bff;
+            text-decoration: none;
+        }
+
+        .elementLink:hover {
+            text-decoration: underline;
+        }
   </style>
 
 </head>
@@ -157,7 +203,8 @@
 
 
     <div class="footer">
-      <button id="copyLog" class="secondary-btn">Copy Log (CSV)</button>
+      <!-- uncomment if you want to copy the raw data -->
+      <!-- <button id="copyLog" class="secondary-btn">Copy Log (CSV)</button> -->
       <button id="copyButtonLabels" class="secondary-btn">Copy Flow Labels</button>
     </div>
   </main>

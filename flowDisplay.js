@@ -1,3 +1,11 @@
+function getShortenedText(text) {
+    const words = text.split(/\s+/);
+    if (words.length > 3) {
+        return words.slice(0, 3).join(' ') + '...'; // Get the first four words and add "..."
+    }
+    return text; // Return the original text if 4 or fewer words
+}
+
 // Load and display the click log
 chrome.storage.local.get(['clickLog'], function(result) {
     const logDiv = document.getElementById('log');
@@ -19,7 +27,7 @@ chrome.storage.local.get(['clickLog'], function(result) {
             const logEntryDiv = document.createElement('div');
             logEntryDiv.className = 'log-entry';
             logEntryDiv.innerHTML = `
-                <strong class='title'>${index + 1} - ${entry.elementText.split(".")[0]}</strong><br>
+                <strong class='title'>${index + 1} - ${getShortenedText(entry.elementText)}</strong><br>
                 <a class='link-clickable' href="${entry.url}" target="_blank">${entry.url}</a><br>
                 <em>Clicked at: ${entry.timestamp}</em>
             `;

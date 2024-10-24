@@ -1,6 +1,6 @@
 // Initialize click log array
 let clickLog = [];
-
+let id = 0;
 // Function to find text of clicked element, traversing up to parent if needed
 function getElementText(element) {
     while (element && element.textContent.trim() === '') {
@@ -9,18 +9,18 @@ function getElementText(element) {
     return element ? element.textContent.trim() : '';
 }
 
-// Function to remove duplicates from the log
+// Function to remove duplicates from the log based on the id
 function removeDuplicates(log) {
     const seen = new Set();
     return log.filter(entry => {
-        const uniqueKey = `${entry.elementText}-${entry.url}-${entry.timestamp}`;
-        if (seen.has(uniqueKey)) {
+        if (seen.has(entry.id)) {
             return false; // Duplicate found, skip this entry
         }
-        seen.add(uniqueKey);
-        return true; // Add new entry
+        seen.add(entry.id);
+        return true; // Keep the first instance of this entry
     });
 }
+
 // Add event listener for clicks on the page
 document.addEventListener('click', function (event) {
     let clickedElement = event.target;
@@ -32,7 +32,7 @@ document.addEventListener('click', function (event) {
     let elementText = getElementText(clickedElement);
     let url = window.location.href;
     let timestamp = new Date().toISOString();
-
+    id+=1;
     // Log click only if recording is enabled
     chrome.storage.local.get(['isRecording', 'clickLog'], function (result) {
         
@@ -42,7 +42,7 @@ document.addEventListener('click', function (event) {
             elementText = elementText.replace(/,/g, ''); // Remove commas
 
             // Prepare new log entry
-            const newLogEntry = { elementText, url, timestamp };
+            const newLogEntry = { id, elementText, url, timestamp };
 
             // Introduce a slight delay (e.g., 200ms) to allow the highlight to be rendered
             setTimeout(function() {

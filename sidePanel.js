@@ -1,4 +1,25 @@
-// Function to display the log
+function getShortenedText(text) {
+    const words = text.split(/\s+/);
+    if (words.length > 3) {
+        return words.slice(0, 3).join(' ') + '...'; // Get the first four words and add "..."
+    }
+    return text; // Return the original text if 4 or fewer words
+}
+
+// Function to remove duplicates from the log based on the id
+function removeDuplicates(log) {
+    const seen = new Set();
+    return log.filter(entry => {
+        if (seen.has(entry.id)) {
+            return false; // Duplicate found, skip this entry
+        }
+        seen.add(entry.id);
+        return true; // Keep the first instance of this entry
+    });
+}
+
+
+
 function displayLog(clickLog) {
     const logDiv = document.getElementById('log');
     logDiv.innerHTML = ''; // Clear previous log
@@ -8,15 +29,55 @@ function displayLog(clickLog) {
         return;
     }
 
+    // Create a Set to keep track of unique IDs
+    const uniqueIds = new Set();
     // Create a list to display log entries
     const list = document.createElement('ul');
+
     clickLog.forEach(entry => {
+        if (uniqueIds.has(entry.id)) {
+            return; // Skip this entry if the ID has already been processed
+        }
+        uniqueIds.add(entry.id); // Add the ID to the set
+
         const listItem = document.createElement('li');
-        listItem.textContent = `${entry.elementText} - ${entry.url} at ${entry.timestamp}\n${entry.dataUrl}`;
+
+        // Create and append the element name
+        const elementName = document.createElement('div');
+        elementName.classList.add('elementName');
+        elementName.textContent = getShortenedText(entry.elementText);
+
+        // Create and append the details div
+        const details = document.createElement('div');
+        details.classList.add('elementDetails');
+
+        // Create and append the ID
+        const id = document.createElement('span');
+        id.classList.add('elementId');
+        id.textContent = `id: ${entry.id}`;
+
+        // Create and append the link
+        const link = document.createElement('a');
+        link.classList.add('elementLink');
+        link.href = entry.url;
+        link.textContent = "link";
+
+        // Append the id and link to the details div
+        details.appendChild(id);
+        details.appendChild(link);
+
+        // Append the name and details to the list item
+        listItem.appendChild(elementName);
+        listItem.appendChild(details);
+
+        // Append the list item to the list
         list.appendChild(listItem);
     });
+
     logDiv.appendChild(list);
 }
+
+
 
 // Handle start recording
 document.getElementById('startRecording').addEventListener('click', function() {
@@ -33,13 +94,29 @@ document.getElementById('startRecording').addEventListener('click', function() {
 document.getElementById('stopRecording').addEventListener('click', function() {
     chrome.storage.local.set({ isRecording: false }, function() {
         alert('Recording stopped!');
-        chrome.tabs.create({ url: chrome.runtime.getURL('flowDisplay.html')})
-        let list = document.getElementById('log')
-        let recordButton = document.getElementById('startRecording')
-        list.classList.toggle('isRecording')
-        recordButton.classList.toggle('isRecording')
+        chrome.tabs.create({ url: chrome.runtime.getURL('flowDisplay.html') });
+
+        // Final remove duplicates and display log
+        chrome.storage.local.get(['clickLog'], function(result) {
+            let clickLog = result.clickLog || [];
+            
+            // Remove duplicates before displaying the log
+            const cleanedClickLog = removeDuplicates(clickLog);
+
+            // Store the cleaned log back to storage if needed
+            chrome.storage.local.set({ clickLog: cleanedClickLog });
+
+            // Display the cleaned log
+            displayLog(cleanedClickLog);
+        });
+
+        let list = document.getElementById('log');
+        let recordButton = document.getElementById('startRecording');
+        list.classList.toggle('isRecording');
+        recordButton.classList.toggle('isRecording');
     });
 });
+
 
 // Function to remove duplicates from the log
 function removeDuplicates(log) {
