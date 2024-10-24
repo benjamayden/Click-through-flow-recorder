@@ -131,38 +131,46 @@ function removeDuplicates(log) {
     });
 }
 
-// Handle copy log and clear
-document.getElementById('copyLog').addEventListener('click', function() {
-    chrome.storage.local.get(['clickLog'], function(result) {
-        let clickLog = result.clickLog;
-         // Remove duplicates before storing
-         const cleanedClickLog = removeDuplicates(clickLog);
-        // Convert the log to CSV format
-        let csvContent = "Button Label,URL,Timestamp\n";
-        cleanedClickLog.forEach(entry => {
-            let buttonText = entry.elementText.replace(/"/g, '""'); // Escape quotes
-            csvContent += `${buttonText},${entry.url},${entry.timestamp}\n`;
-        });
+// // Handle copy log and clear
+// document.getElementById('copyLog').addEventListener('click', function() {
+//     chrome.storage.local.get(['clickLog'], function(result) {
+//         let clickLog = result.clickLog;
+//          // Remove duplicates before storing
+//          const cleanedClickLog = removeDuplicates(clickLog);
+//         // Convert the log to CSV format
+//         let csvContent = "Button Label,URL,Timestamp\n";
+//         cleanedClickLog.forEach(entry => {
+//             let buttonText = entry.elementText.replace(/"/g, '""'); // Escape quotes
+//             csvContent += `${buttonText},${entry.url},${entry.timestamp}\n`;
+//         });
 
-        // Copy the CSV to the clipboard
-        navigator.clipboard.writeText(csvContent).then(() => {
-            alert('Log copied to clipboard!');
+//         // Copy the CSV to the clipboard
+//         navigator.clipboard.writeText(csvContent).then(() => {
+//             alert('Log copied to clipboard!');
 
-            // Clear the log after copying
-            chrome.storage.local.set({ clickLog: [] });
-            displayLog([]); // Clear the displayed log
-        }).catch(err => {
-            console.error('Failed to copy log: ', err);
-        });
-    });
-});
+//             // Clear the log after copying
+//             chrome.storage.local.set({ clickLog: [] });
+//             displayLog([]); // Clear the displayed log
+//         }).catch(err => {
+//             console.error('Failed to copy log: ', err);
+//         });
+//     });
+// });
 
 //clear log
 
 document.getElementById('clearLog').addEventListener('click', function() {
-            // Clear the log after copying
-            chrome.storage.local.set({ clickLog: [] });
-            displayLog([]); // Clear the displayed log
+    // Display a confirmation alert
+    const confirmDelete = confirm("Are you sure you want to delete the log? This action is irreversible.");
+    
+    if (confirmDelete) {
+        // Clear the log after copying
+        chrome.storage.local.set({ clickLog: [] });
+        displayLog([]); // Clear the displayed log
+    } else {
+        // Action was cancelled, no need to do anything
+        console.log("Log deletion cancelled.");
+    }
 
 })
 
@@ -175,7 +183,7 @@ document.getElementById('copyButtonLabels').addEventListener('click', function()
         clickLog = removeDuplicates(clickLog);
 
         // Concatenate button labels with " > "
-        let buttonLabels = clickLog.map(entry => getShortenedText(entry.elementText)).join(' > ');
+        let buttonLabels = clickLog.map(entry => entry.elementText).join(' > ');
 
         // Copy the concatenated labels to the clipboard
         navigator.clipboard.writeText(buttonLabels).then(() => {
