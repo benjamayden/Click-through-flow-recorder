@@ -22,6 +22,10 @@ function displayLog(clickLog) {
 document.getElementById('startRecording').addEventListener('click', function() {
     chrome.storage.local.set({ isRecording: true }, function() {
         alert('Recording started!');
+        let list = document.getElementById('log')
+        let recordButton = document.getElementById('startRecording')
+        list.classList.toggle('isRecording')
+        recordButton.classList.toggle('isRecording')
     });
 });
 
@@ -30,6 +34,10 @@ document.getElementById('stopRecording').addEventListener('click', function() {
     chrome.storage.local.set({ isRecording: false }, function() {
         alert('Recording stopped!');
         chrome.tabs.create({ url: chrome.runtime.getURL('flowDisplay.html')})
+        let list = document.getElementById('log')
+        let recordButton = document.getElementById('startRecording')
+        list.classList.toggle('isRecording')
+        recordButton.classList.toggle('isRecording')
     });
 });
 

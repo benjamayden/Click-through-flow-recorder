@@ -20,15 +20,17 @@
         padding: 5px;
         margin-top: 10px;
       }
+      .isRecording{
+        outline: 2px solid red;
+      }
     </style>
   </head>
   <body>
     <button id="startRecording">Start Recording</button>
-    <button id="stopRecording">Stop Recording</button>
-    <button id="copyLog">Copy Log</button>
-    <button id="copyButtonLabels">Copy Flow</button>
+    <button id="stopRecording">Stop & view</button>
+    <button id="copyLog">Copy Log (CSV)</button>
+    <button id="copyButtonLabels">Copy Flow Labels</button>
     <button id="clearLog">clear log</button>
-    <button id="viewFlow">View Flow</button> 
     <div id="log"></div> <!-- Log section -->
     <script src="sidePanel.js"></script>
   </body>

@@ -5,21 +5,80 @@
     <style>
         body {
             font-family: Arial, sans-serif;
-            margin: 20px;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: start;
+            height: 100vh;
+            background-color: #f4f4f4;
+        }
+        main {
+            max-width: 720px;
+            width: 100%;
+            padding: 1rem;
+            box-sizing: border-box;
+            background-color: white;
+            border: 1px solid #ddd;
+            border-radius: 0.5rem;
+        }
+        .header {
+            position: sticky;
+            top: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 0.125rem;
+            background-color: white;
+            padding-top: 0.75rem;
+            padding-bottom: 0.75rem;
+            z-index: 100;
+            border-bottom: 1px solid #ddd;
+        }
+        .subinfo{
+            font-size: 12px;
+            color: rgb(52, 52, 52);
+            margin: 0;
+        }
+        h1{
+            margin: 0;
+        }
+        .logList {
+            display: flex;
+            flex-direction: column;
+            padding-top: 1rem;
+            padding-bottom: 1rem;
+            gap: 1rem;
         }
         .log-entry {
-            margin-bottom: 15px;
+            display: flex;
+            width: 100%;
+            flex-direction: column;
+            gap: 0.25rem;
+            padding: 1rem;
+            border-radius: 0.25rem;
+            border: 1px solid black;
+            box-sizing: border-box;
+        }
+        .title{
+            display: flex;
         }
         img {
-            max-width: 200px; /* Adjust size as necessary */
+            max-width: 100%;
+            height: auto;
             display: block;
             margin-top: 5px;
         }
     </style>
 </head>
 <body>
-    <h1>Click Log</h1>
-    <div id="log"></div> <!-- Log section -->
+
+    <main>
+        <div class="header">
+            <h1>Click Log</h1>
+            <p class="subinfo">Save the web page to keep (CMD + S)</p>
+        </div>
+        <div id="log" class="logList"></div> <!-- Log section -->
+    </main>
     <script src="flowDisplay.js"></script>
 </body>
 </html>

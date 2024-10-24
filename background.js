@@ -38,7 +38,7 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
 
   chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.action === 'captureScreen') {
-        chrome.tabs.captureVisibleTab(null, { format: 'png' }, function (dataUrl) {
+        chrome.tabs.captureVisibleTab(null, { format: 'png', quality: 100 }, function (dataUrl) {
             // Send the captured image back to the content script
             console.log(dataUrl)
             chrome.tabs.sendMessage(sender.tab.id, { action: 'captureComplete', dataUrl: dataUrl, newLogEntry: message.newLogEntry});

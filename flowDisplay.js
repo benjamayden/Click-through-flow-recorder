@@ -1,7 +1,7 @@
-  // Load and display the click log
-  chrome.storage.local.get(['clickLog'], function(result) {
+// Load and display the click log
+chrome.storage.local.get(['clickLog'], function(result) {
     const logDiv = document.getElementById('log');
-    const clickLog = result.clickLog || [];
+    let clickLog = result.clickLog || [];
     logDiv.innerHTML = ''; // Clear previous log
 
     if (clickLog.length === 0) {
@@ -9,22 +9,48 @@
         return;
     }
 
-    clickLog.forEach(entry => {
-        const logEntryDiv = document.createElement('div');
-        logEntryDiv.className = 'log-entry';
-        logEntryDiv.innerHTML = `
-            <strong>${entry.elementText}</strong><br>
-            <a href="${entry.url}" target="_blank">${entry.url}</a><br>
-            <em>Clicked at: ${entry.timestamp}</em>
-        `;
-        
-        // Display the image
-        if (entry.dataUrl) {
-            const imgElement = document.createElement('img');
-            imgElement.src = entry.dataUrl; // Use the image URL
-            logEntryDiv.appendChild(imgElement);
+    function renderLog() {
+        logDiv.innerHTML = ''; // Clear log before re-rendering
+        if (clickLog.length === 0) {
+            logDiv.textContent = 'No logs recorded.';
+            return;
         }
+        clickLog.forEach((entry, index) => {
+            const logEntryDiv = document.createElement('div');
+            logEntryDiv.className = 'log-entry';
+            logEntryDiv.innerHTML = `
+                <strong class='title'>${index + 1} - ${entry.elementText.split(".")[0]}</strong><br>
+                <a class='link-clickable' href="${entry.url}" target="_blank">${entry.url}</a><br>
+                <em>Clicked at: ${entry.timestamp}</em>
+            `;
 
-        logDiv.appendChild(logEntryDiv);
-    });
+            // Display the image
+            if (entry.dataUrl) {
+                const imgElement = document.createElement('img');
+                imgElement.src = entry.dataUrl; // Use the image URL
+                logEntryDiv.appendChild(imgElement);
+            }
+
+            // Add "Remove" button
+            const removeButton = document.createElement('button');
+            removeButton.textContent = 'Remove';
+            removeButton.style.marginTop = '10px';
+            removeButton.onclick = function() {
+                logEntryDiv.remove(); // Remove the entry from the DOM
+                renumberEntries(); // Renumber the remaining entries
+            };
+            logEntryDiv.appendChild(removeButton);
+
+            logDiv.appendChild(logEntryDiv);
+        });
+    }
+
+    function renumberEntries() {
+        const logEntries = document.querySelectorAll('.log-entry .title');
+        logEntries.forEach((entry, index) => {
+            entry.textContent = `${index + 1} - ${entry.textContent.split(' - ')[1]}`;
+        });
+    }
+
+    renderLog(); // Initial rendering of the log
 });

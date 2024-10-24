@@ -24,8 +24,10 @@ function removeDuplicates(log) {
 // Add event listener for clicks on the page
 document.addEventListener('click', function (event) {
     let clickedElement = event.target;
-
-    clickedElement.classList.toggle('click-highlighted');
+    const preClickedElement = document.getElementsByClassName('click-highlighted');
+    Array.from(preClickedElement).forEach(element => {
+        element.classList.remove('click-highlighted');
+    })
     // Get the text content of the clicked element
     let elementText = getElementText(clickedElement);
     let url = window.location.href;
@@ -33,15 +35,20 @@ document.addEventListener('click', function (event) {
 
     // Log click only if recording is enabled
     chrome.storage.local.get(['isRecording', 'clickLog'], function (result) {
+        
         if (result.isRecording) {
+            clickedElement.classList.add('click-highlighted');
             // Clean element text for CSV
             elementText = elementText.replace(/,/g, ''); // Remove commas
 
             // Prepare new log entry
             const newLogEntry = { elementText, url, timestamp };
 
-            // Capture the screen before storing log entry
-            chrome.runtime.sendMessage({ action: 'captureScreen', newLogEntry });
+            // Introduce a slight delay (e.g., 200ms) to allow the highlight to be rendered
+            setTimeout(function() {
+                // Capture the screen after a short delay
+                chrome.runtime.sendMessage({ action: 'captureScreen', newLogEntry });
+            }, 200); // 200 milliseconds delay
         }
     });
 });
@@ -66,6 +73,7 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
             chrome.storage.local.set({ clickLog: cleanedClickLog }, function () {
                 // Send message to update side panel
                 chrome.runtime.sendMessage({ action: 'updateLog', logEntry: newLogEntry });
+                                // Add a 2-second delay before toggling the 'click-highlighted' class
             });
         });
     }
