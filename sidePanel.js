@@ -175,7 +175,7 @@ document.getElementById('copyButtonLabels').addEventListener('click', function()
         clickLog = removeDuplicates(clickLog);
 
         // Concatenate button labels with " > "
-        let buttonLabels = clickLog.map(entry => entry.elementText).join(' > ');
+        let buttonLabels = clickLog.map(entry => getShortenedText(entry.elementText)).join(' > ');
 
         // Copy the concatenated labels to the clipboard
         navigator.clipboard.writeText(buttonLabels).then(() => {
