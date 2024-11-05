@@ -79,41 +79,50 @@ function displayLog(clickLog) {
 
 
 
-// Handle start recording
-document.getElementById('startRecording').addEventListener('click', function() {
-    chrome.storage.local.set({ isRecording: true }, function() {
-        alert('Recording started!');
-        let list = document.getElementById('log')
-        let recordButton = document.getElementById('startRecording')
-        list.classList.toggle('isRecording')
-        recordButton.classList.toggle('isRecording')
-    });
-});
+// Function to toggle recording state
+document.getElementById('startRecording').addEventListener('click', function () {
+    const recordButton = document.getElementById('startRecording');
+    const list = document.getElementById('log');
 
-// Handle stop recording
-document.getElementById('stopRecording').addEventListener('click', function() {
-    chrome.storage.local.set({ isRecording: false }, function() {
-        alert('Recording stopped!');
-        chrome.tabs.create({ url: chrome.runtime.getURL('flowDisplay.html') });
+    // Check the current recording state
+    chrome.storage.local.get(['isRecording'], function (result) {
+        const isRecording = result.isRecording || false;
 
-        // Final remove duplicates and display log
-        chrome.storage.local.get(['clickLog'], function(result) {
-            let clickLog = result.clickLog || [];
-            
-            // Remove duplicates before displaying the log
-            const cleanedClickLog = removeDuplicates(clickLog);
+        if (!isRecording) {
+            // Start recording
+            chrome.storage.local.set({ isRecording: true }, function () {
+                alert('Recording started!');
+                list.classList.add('isRecording');
+                recordButton.classList.add('isRecording');
+                recordButton.textContent = 'Stop & View';
+            });
+        } else {
+            // Stop recording
+            chrome.storage.local.set({ isRecording: false }, function () {
+                alert('Recording stopped!');
+                
+                // Open the log display page in a new tab
+                chrome.tabs.create({ url: chrome.runtime.getURL('flowDisplay.html') });
 
-            // Store the cleaned log back to storage if needed
-            chrome.storage.local.set({ clickLog: cleanedClickLog });
+                // Final remove duplicates and display log
+                chrome.storage.local.get(['clickLog'], function (result) {
+                    let clickLog = result.clickLog || [];
 
-            // Display the cleaned log
-            displayLog(cleanedClickLog);
-        });
+                    // Remove duplicates before displaying the log
+                    const cleanedClickLog = removeDuplicates(clickLog);
 
-        let list = document.getElementById('log');
-        let recordButton = document.getElementById('startRecording');
-        list.classList.toggle('isRecording');
-        recordButton.classList.toggle('isRecording');
+                    // Store the cleaned log back to storage if needed
+                    chrome.storage.local.set({ clickLog: cleanedClickLog });
+
+                    // Optional: Display the cleaned log directly in this page if desired
+                    displayLog(cleanedClickLog);
+                });
+
+                list.classList.remove('isRecording');
+                recordButton.classList.remove('isRecording');
+                recordButton.textContent = 'Record';
+            });
+        }
     });
 });
 
@@ -164,9 +173,11 @@ document.getElementById('clearLog').addEventListener('click', function() {
     const confirmDelete = confirm("Are you sure you want to delete the log? This action is irreversible.");
     
     if (confirmDelete) {
-        // Clear the log after copying
-        chrome.storage.local.set({ clickLog: [] });
-        displayLog([]); // Clear the displayed log
+        // Clear the log and flowTitle
+        chrome.storage.local.set({ clickLog: [], flowTitle: '' }, function() {
+            displayLog([]); // Clear the displayed log
+            console.log("Log and flow title cleared.");
+        });
     } else {
         // Action was cancelled, no need to do anything
         console.log("Log deletion cancelled.");

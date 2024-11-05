@@ -23,19 +23,50 @@ function removeDuplicates(log) {
     });
 }
 
-// Add event listener for clicks on the page
-document.addEventListener('click', function (event) {
+document.addEventListener('mouseover', function(event) {
+    chrome.storage.local.get(['isRecording'], function(result) {
+        if (chrome.runtime.lastError) {
+            console.error("Error accessing storage:", chrome.runtime.lastError);
+            return; // Exit if there's an error
+        }
+        if (result.isRecording) {
+            // Add the class only if the target is a valid element (adjust the selector as needed)
+
+                event.target.classList.add('highlight-stroke');
+            
+        }
+    });
+});
+
+document.addEventListener('mouseout', function(event) {
+    chrome.storage.local.get(['isRecording'], function(result) {
+        if (chrome.runtime.lastError) {
+            console.error("Error accessing storage:", chrome.runtime.lastError);
+            return; // Exit if there's an error
+        }
+        if (result.isRecording) {
+
+                event.target.classList.remove('highlight-stroke');
+
+        }
+    });
+});
+
+// Change the event listener from 'click' to 'mousedown'
+document.addEventListener('mousedown', function (event) {
     let clickedElement = event.target;
     console.log(clickedElement)
     const preClickedElement = document.getElementsByClassName('click-highlighted');
     Array.from(preClickedElement).forEach(element => {
         element.classList.remove('click-highlighted');
-    })
+    });
+    
     // Get the text content of the clicked element
     let elementText = getElementText(clickedElement);
     let url = window.location.href;
     let timestamp = new Date().toISOString();
-    id+=1;
+    id += 1;
+
     // Log click only if recording is enabled
     chrome.storage.local.get(['isRecording', 'clickLog'], function (result) {
         if (chrome.runtime.lastError) {
@@ -59,12 +90,13 @@ document.addEventListener('click', function (event) {
     });
 });
 
+
 // Listener for completion of screen capture
 chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
     if (request.action === 'captureComplete') {
         const dataUrl = request.dataUrl;
         const newLogEntry = request.newLogEntry; // Retrieve the new log entry passed from the click handler
-
+        
         // Include the captured dataUrl in the log entry
         newLogEntry.dataUrl = dataUrl;
         // Store the log entry with the captured screenshot URL
