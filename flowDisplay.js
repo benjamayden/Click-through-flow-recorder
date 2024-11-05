@@ -6,6 +6,18 @@ function getShortenedText(text) {
     return text; // Return the original text if 4 or fewer words
 }
 
+
+
+document.getElementById('saveImages').addEventListener('click', function() {
+    const images = document.querySelectorAll('img'); // Select all images
+    images.forEach((img, index) => {
+        const link = document.createElement('a');
+        link.href = img.src; // Set href to the image source
+        link.download = `screenshot_${index + 1}.png`; // Set download attribute
+        link.click(); // Trigger the download
+    });
+});
+
 // Load and display the click log
 chrome.storage.local.get(['clickLog'], function(result) {
     const logDiv = document.getElementById('log');

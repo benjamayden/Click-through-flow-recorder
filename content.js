@@ -1,3 +1,5 @@
+if (!window.hasContentScriptRun) {
+    window.hasContentScriptRun = true;
 // Initialize click log array
 let clickLog = [];
 let id = 0;
@@ -24,6 +26,7 @@ function removeDuplicates(log) {
 // Add event listener for clicks on the page
 document.addEventListener('click', function (event) {
     let clickedElement = event.target;
+    console.log(clickedElement)
     const preClickedElement = document.getElementsByClassName('click-highlighted');
     Array.from(preClickedElement).forEach(element => {
         element.classList.remove('click-highlighted');
@@ -35,7 +38,10 @@ document.addEventListener('click', function (event) {
     id+=1;
     // Log click only if recording is enabled
     chrome.storage.local.get(['isRecording', 'clickLog'], function (result) {
-        
+        if (chrome.runtime.lastError) {
+            console.error("Error accessing storage:", chrome.runtime.lastError);
+            return; // Exit if there's an error
+        }
         if (result.isRecording) {
             clickedElement.classList.add('click-highlighted');
             // Clean element text for CSV
@@ -78,3 +84,5 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
         });
     }
 });
+
+}
