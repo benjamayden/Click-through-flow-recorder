@@ -101,7 +101,7 @@ document.getElementById('pauseRecording').addEventListener('click', function () 
         let recordButton = document.getElementById('startRecording');
         let pauseButton = document.getElementById('pauseRecording'); 
         recordButton.style.display = 'flex';;
-        recordButton.textContent = 'Resume';
+        recordButton.textContent = 'Record';
         pauseButton.style.display = 'none'; // Hide pause button
         
     });
