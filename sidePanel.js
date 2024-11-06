@@ -18,17 +18,27 @@ function removeDuplicates(log) {
     });
 }
 
+function showToastMessage(messageText) {
+    chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+        chrome.tabs.sendMessage(tabs[0].id, {
+            action: "showToast",
+            text: messageText
+        });
+    });
+}
+
 
 
 function displayLog(clickLog) {
     const logDiv = document.getElementById('log');
     logDiv.innerHTML = ''; // Clear previous log
-
+    
     if (clickLog.length === 0) {
         logDiv.textContent = 'No logs recorded.';
+        document.getElementById('clearLog').style.display = 'none';
         return;
     }
-
+    document.getElementById('clearLog').style.display = 'flex';
     // Create a Set to keep track of unique IDs
     const uniqueIds = new Set();
     // Create a list to display log entries
@@ -56,15 +66,8 @@ function displayLog(clickLog) {
         id.classList.add('elementId');
         id.textContent = `id: ${entry.id}`;
 
-        // Create and append the link
-        const link = document.createElement('a');
-        link.classList.add('elementLink');
-        link.href = entry.url;
-        link.textContent = "link";
-
         // Append the id and link to the details div
         details.appendChild(id);
-        details.appendChild(link);
 
         // Append the name and details to the list item
         listItem.appendChild(elementName);
@@ -76,55 +79,6 @@ function displayLog(clickLog) {
 
     logDiv.appendChild(list);
 }
-
-
-
-// Function to toggle recording state
-document.getElementById('startRecording').addEventListener('click', function () {
-    const recordButton = document.getElementById('startRecording');
-    const list = document.getElementById('log');
-
-    // Check the current recording state
-    chrome.storage.local.get(['isRecording'], function (result) {
-        const isRecording = result.isRecording || false;
-
-        if (!isRecording) {
-            // Start recording
-            chrome.storage.local.set({ isRecording: true }, function () {
-                alert('Recording started!');
-                list.classList.add('isRecording');
-                recordButton.classList.add('isRecording');
-                recordButton.textContent = 'Stop & View';
-            });
-        } else {
-            // Stop recording
-            chrome.storage.local.set({ isRecording: false }, function () {
-                alert('Recording stopped!');
-                
-                // Open the log display page in a new tab
-                chrome.tabs.create({ url: chrome.runtime.getURL('flowDisplay.html') });
-
-                // Final remove duplicates and display log
-                chrome.storage.local.get(['clickLog'], function (result) {
-                    let clickLog = result.clickLog || [];
-
-                    // Remove duplicates before displaying the log
-                    const cleanedClickLog = removeDuplicates(clickLog);
-
-                    // Store the cleaned log back to storage if needed
-                    chrome.storage.local.set({ clickLog: cleanedClickLog });
-
-                    // Optional: Display the cleaned log directly in this page if desired
-                    displayLog(cleanedClickLog);
-                });
-
-                list.classList.remove('isRecording');
-                recordButton.classList.remove('isRecording');
-                recordButton.textContent = 'Record';
-            });
-        }
-    });
-});
 
 
 // Function to remove duplicates from the log
@@ -139,6 +93,114 @@ function removeDuplicates(log) {
         return true; // Add new entry
     });
 }
+
+document.getElementById('pauseRecording').addEventListener('click', function () {
+    // Pause recording functionality
+    showToastMessage('Recording paused!');
+    chrome.storage.local.set({ isRecording: false }, function () {
+        let recordButton = document.getElementById('startRecording');
+        let pauseButton = document.getElementById('pauseRecording'); 
+        recordButton.style.display = 'flex';;
+        recordButton.textContent = 'Resume';
+        pauseButton.style.display = 'none'; // Hide pause button
+        
+    });
+});
+
+
+document.getElementById('startRecording').addEventListener('click', function () {
+    const recordButton = document.getElementById('startRecording');
+    const pauseButton = document.getElementById('pauseRecording'); // Your pause button
+
+    chrome.storage.local.get(['isRecording'], function (result) {
+        const isRecording = result.isRecording || false;
+
+        if (!isRecording) {
+            // Start recording
+            chrome.storage.local.set({ isRecording: true }, function () {
+                showToastMessage('Recording started!');  
+                recordButton.style.display = 'none';
+                pauseButton.style.display = 'flex'; // Show the pause button
+            });
+        } 
+        // else {
+        //     // Stop recording
+        //     chrome.storage.local.set({ isRecording: false }, function () {
+        //         showToastMessage('Recording stopped!');
+                
+        //          // Open the log display page in a new tab
+        //          chrome.runtime.sendMessage({ action: 'openFlowDisplay', previousTabId: result.previousTabId });
+
+
+        //         // Clean duplicates and display log
+        //         chrome.storage.local.get(['clickLog'], function (result) {
+        //             let clickLog = result.clickLog || [];
+        //             const cleanedClickLog = removeDuplicates(clickLog);
+        //             chrome.storage.local.set({ clickLog: cleanedClickLog });
+        //             displayLog(cleanedClickLog);
+        //         });
+
+        //         list.classList.remove('isRecording');
+        //         recordButton.classList.remove('isRecording');
+        //         recordButton.textContent = 'Record';
+        //         pauseButton.style.display = 'none'; // Hide the pause button
+
+        //         // Hide "Stop & View" button and show "View Flow" button
+        //         const openFlowButton = document.getElementById('openFlow');
+        //         const backButton = document.getElementById('backButton');
+        //         if (openFlowButton) openFlowButton.style.display = 'flex';
+        //         if (backButton) backButton.style.display = 'none';
+        //     });
+        // }
+    });
+});
+
+
+
+// Event listener for the "View Flow" button
+document.getElementById('openFlow')?.addEventListener('click', async function () {
+    // Get the current active tab
+    const [currentTab] = await chrome.tabs.query({ active: true, currentWindow: true });
+
+    if (currentTab?.url?.includes('flowDisplay.html')) {
+        // If we're already on flowDisplay.html, do nothing here.
+        return;
+    } else {
+        // Set recording state to paused
+        showToastMessage('Recording paused!');
+        chrome.storage.local.set({ isRecording: false });
+
+        // Update recording button state
+        const recordButton = document.getElementById('startRecording');
+        if (recordButton) {
+            recordButton.textContent = 'Resume';
+        }
+
+        // Hide the pause button
+        const pauseRecordingButton = document.getElementById('pauseRecording');
+        if (pauseRecordingButton) pauseRecordingButton.style.display = 'none';
+
+        // Open the flowDisplay page in a new tab and pass current tab ID
+        chrome.runtime.sendMessage({ action: 'openFlowDisplay', previousTabId: currentTab.id });
+
+        // Hide "View Flow" button and show "Back" button
+        const openFlowButton = document.getElementById('openFlow');
+        const backButton = document.getElementById('backButton');
+        if (openFlowButton) openFlowButton.style.display = 'none';
+        if (backButton) backButton.style.display = 'flex';
+    }
+});
+
+// Event listener for the "Back" button (on flowDisplay.html)
+document.getElementById('backButton')?.addEventListener('click', function () {
+    chrome.runtime.sendMessage({ action: 'goBack' });
+
+    // Hide "Back" button and show "View Flow" button
+    const openFlowButton = document.getElementById('openFlow');
+    const backButton = document.getElementById('backButton');
+    if (openFlowButton) openFlowButton.style.display = 'flex';
+    if (backButton) backButton.style.display = 'none';
+});
 
 // // Handle copy log and clear
 // document.getElementById('copyLog').addEventListener('click', function() {
@@ -155,7 +217,7 @@ function removeDuplicates(log) {
 
 //         // Copy the CSV to the clipboard
 //         navigator.clipboard.writeText(csvContent).then(() => {
-//             alert('Log copied to clipboard!');
+//             showToastMessage('Log copied to clipboard!');
 
 //             // Clear the log after copying
 //             chrome.storage.local.set({ clickLog: [] });
@@ -185,25 +247,25 @@ document.getElementById('clearLog').addEventListener('click', function() {
 
 })
 
-// Handle copy of button labels joined by " > "
-document.getElementById('copyButtonLabels').addEventListener('click', function() {
-    chrome.storage.local.get(['clickLog'], function(result) {
-        let clickLog = result.clickLog;
+// // Handle copy of button labels joined by " > "
+// document.getElementById('copyButtonLabels').addEventListener('click', function() {
+//     chrome.storage.local.get(['clickLog'], function(result) {
+//         let clickLog = result.clickLog;
 
-        // Remove duplicates before concatenating button labels
-        clickLog = removeDuplicates(clickLog);
+//         // Remove duplicates before concatenating button labels
+//         clickLog = removeDuplicates(clickLog);
 
-        // Concatenate button labels with " > "
-        let buttonLabels = clickLog.map(entry => entry.elementText).join(' > ');
+//         // Concatenate button labels with " > "
+//         let buttonLabels = clickLog.map(entry => entry.elementText).join(' > ');
 
-        // Copy the concatenated labels to the clipboard
-        navigator.clipboard.writeText(buttonLabels).then(() => {
-            alert('Button labels copied to clipboard!');
-        }).catch(err => {
-            console.error('Failed to copy button labels: ', err);
-        });
-    });
-});
+//         // Copy the concatenated labels to the clipboard
+//         navigator.clipboard.writeText(buttonLabels).then(() => {
+//             alert('Button labels copied to clipboard!');
+//         }).catch(err => {
+//             console.error('Failed to copy button labels: ', err);
+//         });
+//     });
+// });
 
 // Load and display the click log when the side panel opens
 chrome.storage.local.get(['clickLog'], function(result) {

@@ -6,6 +6,22 @@ function initializeFlowTitle() {
     });
 }
 
+function getShortenedText(text) {
+    const words = text.split(/\s+/);
+    if (words.length > 3) {
+        return words.slice(0, 3).join(' ') + '...'; // Get the first four words and add "..."
+    }
+    return text; // Return the original text if 4 or fewer words
+}
+
+
+// Set button text and functionality for returning to the previous tab
+document.getElementById('openFlow')?.addEventListener('click', function () {
+    // Send message to go back to the previous tab
+    chrome.runtime.sendMessage({ action: 'goBack' });
+});
+
+
 // Function to handle title editing
 function enableTitleEditing() {
     const flowTitleElement = document.getElementById('flowTitle');
@@ -60,10 +76,6 @@ function hideButtonsIfLogIsEmpty() {
             // Hide buttons if the log is empty
             buttonArray.forEach(button => button.style.display = 'none');
             footer.style.display = 'none'
-        } else {
-            // Show buttons if the log is not empty
-            buttonArray.forEach(button => button.style.display = 'flex');
-            footer.style.display = 'flex'
         }
     });
 }
@@ -126,7 +138,7 @@ chrome.storage.local.get(['clickLog'], function (result) {
             const titleElement = document.createElement('strong');
             titleElement.className = 'title';
             titleElement.id = `title-${index}`;
-            titleElement.textContent = entry.elementText;
+            titleElement.textContent = getShortenedText(entry.elementText);
 
             headerContainer.appendChild(titleIndex);
             headerContainer.appendChild(titleElement);

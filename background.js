@@ -35,6 +35,35 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
     });
   });
   
+// Listener to handle messages from panel.js
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  if (request.action === 'openFlowDisplay') {
+      // Search for an existing tab with the flowDisplay.html URL
+      chrome.tabs.query({ url: chrome.runtime.getURL('flowDisplay.html') }, function (tabs) {
+          if (tabs.length > 0) {
+              // If the tab already exists, switch to it and refresh it
+              chrome.tabs.update(tabs[0].id, { active: true }, function() {
+                  chrome.tabs.reload(tabs[0].id);  // Refresh the tab
+              });
+          } else {
+              // If no such tab exists, create a new tab
+              chrome.tabs.create({ url: chrome.runtime.getURL('flowDisplay.html') }, function (newTab) {
+                  // Store the previous tab ID for later reference
+                  chrome.storage.local.set({ previousTabId: request.previousTabId });
+              });
+          }
+      });
+  } else if (request.action === 'goBack') {
+      chrome.storage.local.get('previousTabId', function (data) {
+          if (data.previousTabId) {
+              chrome.tabs.update(data.previousTabId, { active: true });
+          }
+      });
+  }
+});
+
+
+
 
   chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.action === 'captureScreen') {
