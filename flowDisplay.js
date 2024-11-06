@@ -1,6 +1,6 @@
 // Function to initialize the flowTitle and display it
 function initializeFlowTitle() {
-    chrome.storage.local.get(['flowTitle'], function(result) {
+    chrome.storage.local.get(['flowTitle'], function (result) {
         const flowTitleElement = document.getElementById('flowTitle');
         flowTitleElement.textContent = result.flowTitle || 'Click Log'; // Default title if not set
     });
@@ -63,15 +63,15 @@ document.getElementById('editTitle').addEventListener('click', enableTitleEditin
 
 // Function to check if log is empty and hide/show buttons accordingly
 function hideButtonsIfLogIsEmpty() {
-    chrome.storage.local.get(['clickLog'], function(result) {
+    chrome.storage.local.get(['clickLog'], function (result) {
         const clickLog = result.clickLog || [];
-        
+
         // Get the buttons you want to hide/show
         const buttons = document.getElementsByTagName('button'); // Get all button elements
         const footer = document.getElementById('footer')
         // Convert HTMLCollection to an array for easy iteration
         const buttonArray = Array.from(buttons);
-        
+
         if (clickLog.length === 0) {
             // Hide buttons if the log is empty
             buttonArray.forEach(button => button.style.display = 'none');
@@ -83,7 +83,7 @@ function hideButtonsIfLogIsEmpty() {
 
 
 
-document.getElementById('hideButtons').addEventListener('click', function() {
+document.getElementById('hideButtons').addEventListener('click', function () {
     let elements = document.getElementsByTagName('button');
     for (let element of elements) {
         element.style.display = "none";
@@ -100,6 +100,9 @@ document.getElementById('saveImages').addEventListener('click', function () {
         link.click(); // Trigger the download
     });
 });
+
+
+
 chrome.storage.local.get(['clickLog'], function (result) {
     const logDiv = document.getElementById('log');
     let clickLog = result.clickLog || [];
@@ -125,7 +128,8 @@ chrome.storage.local.get(['clickLog'], function (result) {
             // Content container for main log content
             const contentContainer = document.createElement('div');
             contentContainer.className = 'content container';
-
+            const editContainer = document.createElement('div');
+            editContainer.className = 'content container';
             // Header container for index and title
             const headerContainer = document.createElement('div');
             headerContainer.className = 'title container';
@@ -143,24 +147,13 @@ chrome.storage.local.get(['clickLog'], function (result) {
             headerContainer.appendChild(titleIndex);
             headerContainer.appendChild(titleElement);
 
-            // URL link
-            const urlLink = document.createElement('a');
-            urlLink.className = 'link-clickable';
-            urlLink.href = entry.url;
-            urlLink.target = "_blank";
-            urlLink.textContent = entry.url;
-
-            // Timestamp
-            const timestamp = document.createElement('em');
-            timestamp.textContent = `Clicked at: ${entry.timestamp}`;
-
             // Description
             const descriptionParagraph = document.createElement('p');
             descriptionParagraph.className = 'description';
             descriptionParagraph.id = `descript-${index}`;
             descriptionParagraph.textContent = entry.description;
-            if(entry.description===''){
-                descriptionParagraph.style.display = 'none'
+            if (entry.description === '') {
+                descriptionParagraph.style.display = 'none';
             }
 
             // Required image
@@ -177,6 +170,13 @@ chrome.storage.local.get(['clickLog'], function (result) {
             editButton.dataset.index = index;
             editButton.textContent = 'Edit';
 
+            // Cancel button
+            const cancelButton = document.createElement('button');
+            cancelButton.className = 'secondary-btn';
+            cancelButton.dataset.index = index;
+            cancelButton.textContent = 'Cancel';
+            cancelButton.style.display = 'none';
+
             // Save button
             const saveButton = document.createElement('button');
             saveButton.className = 'primary-btn';
@@ -186,7 +186,7 @@ chrome.storage.local.get(['clickLog'], function (result) {
 
             // Remove button
             const removeButton = document.createElement('button');
-            removeButton.className = 'destructive-btn'
+            removeButton.className = 'destructive-btn';
             removeButton.textContent = 'Remove';
             removeButton.onclick = function () {
                 clickLog.splice(index, 1); // Remove entry from clickLog array
@@ -194,31 +194,81 @@ chrome.storage.local.get(['clickLog'], function (result) {
                 renderLog(); // Re-render after deletion
             };
 
+            //cancel button event listener
+            cancelButton.addEventListener('click', function () {
+                // Update buttons
+
+                // Remove input fields and labels after saving
+                editContainer.remove();
+
+
+
+                // Show content container and restore button visibility
+                contentContainer.style.display = 'flex';
+                editButton.style.display = 'flex';
+                removeButton.style.display = 'flex'
+                saveButton.style.display = 'none';
+                cancelButton.style.display = 'none'
+
+                // Re-render the log with the new order
+                renderLog();
+
+                // Scroll the window to the log entry's position, with an optional offset (e.g., 200px)
+                window.scrollTo({
+                    top: contentContainer.offsetTop - 100,  // Adjust 200px upwards from the log entry
+                    behavior: 'smooth'  // Smooth scroll
+                });
+            })
             // Edit button event listener
             editButton.addEventListener('click', function () {
                 // Hide content container and show input fields for editing
                 contentContainer.style.display = 'none';
-
+                cancelButton.style.display = 'flex'
+                removeButton.style.display = 'none'
                 // Create and display input fields with labels
+                const titleContainer = document.createElement('div');
+                titleContainer.classList.add('group')
                 const titleLabel = document.createElement('label');
                 titleLabel.textContent = 'Title';
                 const titleInput = document.createElement('input');
                 titleInput.type = 'text';
                 titleInput.value = titleElement.textContent;
 
+                const descriptionContainer = document.createElement('div');
+                descriptionContainer.classList.add('group')
                 const descriptionLabel = document.createElement('label');
                 descriptionLabel.textContent = 'Description';
                 const descriptionTextArea = document.createElement('textarea');
-                descriptionTextArea.placeholder = "add description...";
+                descriptionTextArea.placeholder = "Add description...";
                 descriptionTextArea.value = descriptionParagraph.textContent;
 
+                const indexContainer = document.createElement('div');
+                indexContainer.classList.add('group')
+                const indexLabel = document.createElement('label');
+                indexLabel.textContent = 'Position';
+                const indexInput = document.createElement('input');
+                indexInput.type = 'number';
+                indexInput.min = '1';
+                indexInput.max = `${clickLog.length}`;
+                indexInput.value = (index + 1).toString(); // Display as 1-based index
+
+                titleContainer.appendChild(titleLabel);
+                titleContainer.appendChild(titleInput);
+                descriptionContainer.appendChild(descriptionLabel);
+                descriptionContainer.appendChild(descriptionTextArea);
+                indexContainer.appendChild(indexLabel);
+                indexContainer.appendChild(indexInput);
+
+                editContainer.appendChild(titleContainer);
+                editContainer.appendChild(descriptionContainer);
+                editContainer.appendChild(indexContainer);
                 // Append labels and input fields to logEntryDiv directly
-                logEntryDiv.appendChild(titleLabel);
-                logEntryDiv.appendChild(titleInput);
-                logEntryDiv.appendChild(descriptionLabel);
-                logEntryDiv.appendChild(descriptionTextArea);
-                logEntryDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                window.scrollBy(0, -200); // Adjusts scroll position by 200px upwards
+
+                // Scroll the window to the log entry's position, with an optional offset (e.g., 200px)
+                window.scrollTo({
+                    top: editContainer.offsetTop - 400,  // Adjust 200px upwards from the log entry
+                    behavior: 'smooth'  // Smooth scroll
+                });
 
                 // Toggle buttons
                 editButton.style.display = 'none';
@@ -226,41 +276,57 @@ chrome.storage.local.get(['clickLog'], function (result) {
 
                 // Save button event listener
                 saveButton.addEventListener('click', function () {
-                    // Update title and description with new values
+                    // Update title, description, and position with new values
+                    cancelButton.style.display = 'none'
+                    removeButton.style.display = 'flex'
                     titleElement.textContent = titleInput.value;
                     descriptionParagraph.textContent = descriptionTextArea.value;
-                    descriptionParagraph.style.display = 'flex'
+                    descriptionParagraph.style.display = 'flex';
                     entry.elementText = titleInput.value;
                     entry.description = descriptionTextArea.value;
 
-                    // Update clickLog with edited data
-                    clickLog[index] = entry;
+                    // Adjust position in clickLog based on index input
+                    const newPosition = parseInt(indexInput.value, 10) - 1;
+                    clickLog.splice(index, 1); // Remove the entry from the original position
+                    clickLog.splice(newPosition, 0, entry); // Insert it at the new position
+
                     saveClickLog(); // Save updated clickLog to storage
 
                     // Remove input fields and labels after saving
-                    titleLabel.remove();
-                    titleInput.remove();
-                    descriptionLabel.remove();
-                    descriptionTextArea.remove();
+                    editContainer.remove();
+
+
 
                     // Show content container and restore button visibility
                     contentContainer.style.display = '';
                     editButton.style.display = 'inline';
                     saveButton.style.display = 'none';
+
+                    // Re-render the log with the new order
+                    renderLog();
+
+                    let newEntryElement = document.getElementById(`index-${newPosition}`)
+                    // Scroll the window to the log entry's position, with an optional offset (e.g., 200px)
+                    window.scrollTo({
+                        top: newEntryElement.offsetTop - 100,  // Adjust 200px upwards from the log entry
+                        behavior: 'smooth'  // Smooth scroll
+                    });
                 });
             });
 
             // Append elements to their respective containers
             contentContainer.appendChild(headerContainer);
             contentContainer.appendChild(descriptionParagraph);
-            contentContainer.appendChild(imgElement);
+
 
             actionsContainer.appendChild(removeButton);
             actionsContainer.appendChild(editButton);
+            actionsContainer.appendChild(cancelButton);
             actionsContainer.appendChild(saveButton);
-            
 
             logEntryDiv.appendChild(contentContainer);
+            logEntryDiv.appendChild(imgElement);
+            logEntryDiv.appendChild(editContainer);
             logEntryDiv.appendChild(actionsContainer);
 
             // Append the log entry div to the main log div
@@ -277,6 +343,7 @@ chrome.storage.local.get(['clickLog'], function (result) {
 
     renderLog(); // Initial rendering of the log
 });
+
 
 
 // Initialize flowTitle on page load
