@@ -84,10 +84,7 @@ function hideButtonsIfLogIsEmpty() {
 
 
 document.getElementById('hideButtons').addEventListener('click', function () {
-    let elements = document.getElementsByTagName('button');
-    for (let element of elements) {
-        element.style.display = "none";
-    }
+    window.print();
 });
 
 
@@ -162,7 +159,7 @@ chrome.storage.local.get(['clickLog'], function (result) {
 
             // Actions container for buttons
             const actionsContainer = document.createElement('div');
-            actionsContainer.className = 'action container';
+            actionsContainer.className = 'action container hide-on-print';
 
             // Edit button
             const editButton = document.createElement('button');
