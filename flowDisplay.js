@@ -80,24 +80,121 @@ document.getElementById('hideButtons').addEventListener('click', function () {
 });
 
 
-document.getElementById('saveImages').addEventListener('click', async function () {
-    const images = document.querySelectorAll('img'); // Select all images
-    const flowTitle = document.getElementById('flowTitle') ? document.getElementById('flowTitle').textContent.trim() : 'Flow'; // Get flowTitle, or default if not found
+function captureElement(element) {
+    const canvas = document.createElement('canvas');
+    const context = canvas.getContext('2d');
     
-    for (const [index, img] of images.entries()) {
-        const link = document.createElement('a');
-        const filename = `${flowTitle}_${index + 1}.png`; // Use index + 1 to create a filename
+    // Set canvas size based on the element's bounding box
+    const rect = element.getBoundingClientRect();
+    const scale = window.devicePixelRatio || 1;
+    canvas.width = rect.width * scale;
+    canvas.height = rect.height * scale;
+    context.scale(scale, scale);
 
-        link.href = img.src; // Set href to the image source
-        link.download = filename; // Set download attribute
-        
-        // Wait for the click event to resolve (trigger download)
-        await new Promise(resolve => {
-            link.addEventListener('click', resolve); // Wait for the click event to resolve
-            link.click(); // Trigger the download
+    // Set background color for the canvas
+    context.fillStyle = 'white';
+    context.fillRect(0, 0, rect.width, rect.height);
+
+    // Helper function to load an image
+    function loadImage(src) {
+        return new Promise((resolve) => {
+            const img = new Image();
+            img.src = src;
+            img.onload = () => resolve(img);
+            img.onerror = () => resolve(null); // Resolve with null if image fails to load
         });
     }
+
+    // Function to render child elements (text, images)
+    async function renderChildren() {
+        for (const child of element.childNodes) {
+            console.log(child.tagName)
+            if (child.classList && child.classList.contains('title')) {
+                console.log("making title")
+                // Render title elements
+                context.font = 'bold 14px Arial';
+                context.fillStyle = 'black';
+                context.fillText(child.textContent, 10, 20); // Adjust positioning as needed
+            } else if (child.classList && child.classList.contains('description')) {
+                console.log("making description")
+                // Render description text
+                context.font = '12px Arial';
+                context.fillStyle = 'gray';
+                context.fillText(child.textContent, 10, 40); // Adjust positioning as needed
+            } else if (child.tagName === 'IMG') {
+                // Load and render image elements
+                console.log("making image")
+                const img = await loadImage(child.src);
+                if (img) {
+                    const imgRect = child.getBoundingClientRect();
+                    context.drawImage(
+                        img,
+                        imgRect.left - rect.left,
+                        imgRect.top - rect.top,
+                        imgRect.width,
+                        imgRect.height
+                    );
+                }
+            }
+        }
+    }
+
+    // Wait for all images to load, then render everything
+    return new Promise(async (resolve) => {
+        await renderChildren();
+        resolve(canvas.toDataURL('image/png'));
+    });
+}
+
+document.getElementById('saveImages').addEventListener('click', async function () {
+    const logEntries = document.querySelectorAll('.log-entry'); // Select all log entries
+    for (let entryIndex = 0; entryIndex < logEntries.length; entryIndex++) {
+        const entry = logEntries[entryIndex];
+
+        const flowTitle = document.getElementById('flowTitle') ? document.getElementById('flowTitle').textContent.trim() : 'Flow';
+
+        // Hide any items within log-entry marked with 'hide-on-print' before capture
+        const hideItems = entry.getElementsByClassName('hide-on-print');
+        if (hideItems.length) {
+            Array.from(hideItems).forEach(item => {
+                item.style.display = 'none';
+            });
+        }
+
+        const imageResize = entry.getElementsByTagName('img');
+        if (imageResize.length) {
+            Array.from(imageResize).forEach(item => {
+                item.style.width = '100%';
+            });
+        }
+        // Generate a filename for the saved image
+        const filename = `${flowTitle}_${entryIndex + 1}.png`;
+
+        // Capture the full log entry element
+        const imageData = await captureElement(entry);
+
+        // Create a link element to trigger the image download
+        const link = document.createElement('a');
+        link.href = imageData;
+        link.download = filename;
+        link.click();
+
+        // Restore visibility of hidden items
+        if (hideItems.length) {
+            Array.from(hideItems).forEach(item => {
+                item.style.display = 'flex'; // Restore original display property
+            });
+        }
+        if (imageResize.length) {
+            Array.from(imageResize).forEach(item => {
+                item.style.width = '50%';
+            });
+        }
+    }
 });
+
+
+
 
 
 
@@ -313,8 +410,8 @@ chrome.storage.local.get(['clickLog'], function (result) {
             });
 
             // Append elements to their respective containers
-            contentContainer.appendChild(headerContainer);
-            contentContainer.appendChild(descriptionParagraph);
+            // contentContainer.appendChild(headerContainer);
+            // contentContainer.appendChild(descriptionParagraph);
 
 
             actionsContainer.appendChild(removeButton);
@@ -322,7 +419,8 @@ chrome.storage.local.get(['clickLog'], function (result) {
             actionsContainer.appendChild(cancelButton);
             actionsContainer.appendChild(saveButton);
 
-            logEntryDiv.appendChild(contentContainer);
+            logEntryDiv.appendChild(headerContainer);
+            logEntryDiv.appendChild(descriptionParagraph);
             logEntryDiv.appendChild(imgElement);
             logEntryDiv.appendChild(editContainer);
             logEntryDiv.appendChild(actionsContainer);
