@@ -80,14 +80,23 @@ document.getElementById('hideButtons').addEventListener('click', function () {
 });
 
 
-document.getElementById('saveImages').addEventListener('click', function () {
+document.getElementById('saveImages').addEventListener('click', async function () {
     const images = document.querySelectorAll('img'); // Select all images
-    images.forEach((img, index) => {
+    const flowTitle = document.getElementById('flowTitle') ? document.getElementById('flowTitle').textContent.trim() : 'Flow'; // Get flowTitle, or default if not found
+    
+    for (const [index, img] of images.entries()) {
         const link = document.createElement('a');
+        const filename = `${flowTitle}_${index + 1}.png`; // Use index + 1 to create a filename
+
         link.href = img.src; // Set href to the image source
-        link.download = `screenshot_${index + 1}.png`; // Set download attribute
-        link.click(); // Trigger the download
-    });
+        link.download = filename; // Set download attribute
+        
+        // Wait for the click event to resolve (trigger download)
+        await new Promise(resolve => {
+            link.addEventListener('click', resolve); // Wait for the click event to resolve
+            link.click(); // Trigger the download
+        });
+    }
 });
 
 
