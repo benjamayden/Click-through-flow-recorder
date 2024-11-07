@@ -6,8 +6,6 @@
         "storage",
         "activeTab",
         "scripting",
-        "clipboardWrite",
-        "tabs",
         "sidePanel"
     ],
     "commands": {

@@ -1,3 +1,10 @@
+//sidePanel.js
+// Notify the background script when the panel opens
+chrome.runtime.sendMessage({ action: 'openPanel' });
+
+const port = chrome.runtime.connect({ name: "sidePanel" });
+
+
 function getShortenedText(text) {
     const words = text.split(/\s+/);
     if (words.length > 3) {
@@ -196,7 +203,9 @@ document.getElementById('openFlow')?.addEventListener('click', async function ()
         // Update recording button state
         const recordButton = document.getElementById('startRecording');
         if (recordButton) {
+            
             recordButton.textContent = 'Record';
+            recordButton.style.display = 'flex';
         }
 
         // Hide the pause button
@@ -221,8 +230,14 @@ document.getElementById('backButton')?.addEventListener('click', function () {
     // Hide "Back" button and show "View Flow" button
     const openFlowButton = document.getElementById('openFlow');
     const backButton = document.getElementById('backButton');
+    const recordButton = document.getElementById('startRecording');
     if (openFlowButton) openFlowButton.style.display = 'flex';
     if (backButton) backButton.style.display = 'none';
+    if (recordButton) {
+        recordButton.style.display = 'flex'
+        recordButton.textContent = 'Record';
+    }
+    
 });
 
 // // Handle copy log and clear

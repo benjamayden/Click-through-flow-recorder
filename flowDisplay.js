@@ -6,14 +6,6 @@ function initializeFlowTitle() {
     });
 }
 
-function getShortenedText(text) {
-    const words = text.split(/\s+/);
-    if (words.length > 3) {
-        return words.slice(0, 3).join(' ') + '...'; // Get the first four words and add "..."
-    }
-    return text; // Return the original text if 4 or fewer words
-}
-
 
 // Set button text and functionality for returning to the previous tab
 document.getElementById('openFlow')?.addEventListener('click', function () {
@@ -139,7 +131,7 @@ chrome.storage.local.get(['clickLog'], function (result) {
             const titleElement = document.createElement('strong');
             titleElement.className = 'title';
             titleElement.id = `title-${index}`;
-            titleElement.textContent = getShortenedText(entry.elementText);
+            titleElement.textContent = entry.elementText;
 
             headerContainer.appendChild(titleIndex);
             headerContainer.appendChild(titleElement);
