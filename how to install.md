@@ -18,7 +18,7 @@
 
 1. Open **Terminal** and navigate to your **Documents** directory (or wherever you'd like to store the extension files):
 
-`cd ~/Documents`
+    `cd ~/Documents`
 
 2. Clone the repository
 
@@ -56,11 +56,11 @@ To get the latest updates, you can simply pull the latest changes from the repos
 
 1. **Open Terminal and navigate to the extension folder:**
 
-`cd ~/Documents/ButtonClickLogger`
+    `cd ~/Documents/ButtonClickLogger`
 
 2. **Pull the latest changes:**
 
-`git pull`
+    `git pull`
 
 3. **After updating the code**
 

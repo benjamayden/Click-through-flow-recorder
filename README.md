@@ -3,6 +3,9 @@
 ## Overview
 
 Button Click Logger is a Chrome extension designed to help you capture, document, and share workflows directly within your browser. This tool enables users to record interactions on a webpage, reorganize and edit captured steps, and add detailed descriptions for each action. Once your workflow is complete, you can save it as a PDF or download individual images, providing a comprehensive visual record.
+
+[Read how to install here](./how%20to%20install.md).
+
 ![pause button, clear log button, list of entries, view flow button](images/image_1.png)
 
 ## Key Features
