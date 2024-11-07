@@ -37,6 +37,8 @@ Button Click Logger makes it easy for anyone to capture, review, and share brows
 
 * **Easy Data Management:** Clear your storage with a single click whenever you’re done, giving you full control over your data privacy.
 
+read full [privicy statement here](Privicy Statement.md).
+
 ## Output Formats
 
 * **PDF Export:** Save the entire workflow as a structured PDF, with each step clearly documented.
