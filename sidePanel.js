@@ -52,6 +52,14 @@ function displayLog(clickLog) {
 
         const listItem = document.createElement('li');
 
+        const detailContainer = document.createElement('div');
+        detailContainer.className = 'container';
+
+        const actionContainer = document.createElement('div');
+
+        listItem.appendChild(detailContainer);
+        listItem.appendChild(actionContainer);
+
         // Create and append the element name
         const elementName = document.createElement('div');
         elementName.classList.add('elementName');
@@ -66,12 +74,27 @@ function displayLog(clickLog) {
         id.classList.add('elementId');
         id.textContent = `id: ${entry.id}`;
 
+        const removeButton = document.createElement('button');
+        removeButton.className = 'destructive-btn'
+        removeButton.innerText = "X"
+
+        removeButton.addEventListener('click', function (){
+            const updatedLog = clickLog.filter(logEntry => logEntry.id !== entry.id)
+
+            chrome.storage.local.set({clickLog: updatedLog}, function (){
+                displayLog(updatedLog)
+                
+            })
+        })
+
         // Append the id and link to the details div
         details.appendChild(id);
 
         // Append the name and details to the list item
-        listItem.appendChild(elementName);
-        listItem.appendChild(details);
+        detailContainer.appendChild(elementName);
+        detailContainer.appendChild(details);
+        actionContainer.appendChild(removeButton);
+
 
         // Append the list item to the list
         list.appendChild(listItem);
@@ -173,7 +196,7 @@ document.getElementById('openFlow')?.addEventListener('click', async function ()
         // Update recording button state
         const recordButton = document.getElementById('startRecording');
         if (recordButton) {
-            recordButton.textContent = 'Resume';
+            recordButton.textContent = 'Record';
         }
 
         // Hide the pause button

@@ -57,6 +57,12 @@
       /* Enable scrolling if content overflows */
     }
 
+    .container{
+      display: flex;
+      width: 100%;
+      flex-direction: column;
+    }
+
     .logContainer {
       flex-grow: 1;
       overflow-y: auto;
@@ -123,8 +129,9 @@
 
     /* Destructive button (for deleting, removing, etc.) */
     .destructive-btn {
-      background-color: #f44336;
-      color: white;
+      border: 1px solid #f44336;
+      color: #ba2d2b;
+      background-color: white;
       width: fit-content;
       padding-left: 0.5rem;
       padding-right: 0.5rem;
@@ -134,12 +141,14 @@
 
     .destructive-btn:hover {
       background-color: #ba2d2b;
+      color: white;
       box-shadow: 0px 6px 8px rgba(0, 0, 0, 0.15);
     }
 
     .destructive-btn:active {
       transform: scale(0.98);
       background-color: #d32f2f;
+      color: white;
     }
 
     .footer {
@@ -167,7 +176,7 @@
 
     li {
       display: flex;
-      flex-direction: column;
+      flex-direction: row;
       background-color: white;
       border: 1px solid #ddd;
       border-radius: 0.5rem;
