@@ -268,11 +268,17 @@ document.getElementById('openFlow')?.addEventListener('click', async function ()
         // Set recording state to paused
         
         chrome.storage.local.set({ isRecording: false });
-
+        
+        chrome.storage.local.get(["isRecording"], function(result) {
+            // If recording is paused, show a toast message
+            if (result.isRecording) {
+                showToastMessage('Recording paused!');
+            }
+        });
         // Update recording button state
         const recordButton = document.getElementById('startRecording');
         if (recordButton) {
-            showToastMessage('Recording paused!');
+            
             recordButton.textContent = 'Record';
             recordButton.style.display = 'flex';
         }
