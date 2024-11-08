@@ -56,7 +56,7 @@ To get the latest updates, you can simply pull the latest changes from the repos
 
 1. **Open Terminal and navigate to the extension folder:**
 
-    `cd ~/Documents/ButtonClickLogger`
+    `cd ~/Documents/Click-through-flow-recorder`
 
 2. **Pull the latest changes:**
 
