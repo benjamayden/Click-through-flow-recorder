@@ -1,47 +1,57 @@
 {
-    "manifest_version": 3,
-    "name": "Button Click Logger",
-    "version": "1.0",
-    "permissions": [
-        "storage",
-        "activeTab",
-        "scripting",
-        "sidePanel"
-    ],
-    "commands": {
-        "take_screenshot": {
-          "suggested_key": {
-            "default": "Ctrl+Shift+K",
-            "mac": "Command+Shift+K"
-          },
-          "description": "Take a screenshot of the current tab"
-        }
+  "manifest_version": 3,
+  "name": "Button Click Logger",
+  "version": "1.0",
+  "permissions": [
+    "storage",
+    "activeTab",
+    "scripting",
+    "sidePanel"
+  ],
+  "commands": {
+    "take_screenshot": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+K",
+        "mac": "Command+Shift+K"
       },
-    "host_permissions": [
-        "<all_urls>"
-    ],
-    "side_panel": {
-        "default_path": "sidePanel.html"
-    },
-    "background": {
-        "service_worker": "background.js"
-    },
-    "content_scripts": [
-        {
-            "matches": [
-                "<all_urls>"
-            ],
-            "css": [
-                "content.css"
-            ],
-            "js": [
-                "content.js"
-            ],
-            "run_at": "document_start"
-        }
-    ],
-  "web_accessible_resources": [{
-    "resources": ["flowDisplay.html", "flowDisplay.js"],
-    "matches": ["<all_urls>"]
-  }]
+      "description": "Take a screenshot of the current tab"
+    }
+  },
+  "host_permissions": [
+    "http://iaptus.internal/*",
+    "https://demo.iaptus.co.uk/*"
+  ],
+  "side_panel": {
+    "default_path": "sidePanel.html"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "http://iaptus.internal/*",
+        "https://demo.iaptus.co.uk/*"
+      ],
+      "css": [
+        "content.css"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "run_at": "document_start"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "flowDisplay.html",
+        "flowDisplay.js"
+      ],
+      "matches": [
+        "http://iaptus.internal/*",
+        "https://demo.iaptus.co.uk/*"
+      ]
+    }
+  ]
 }

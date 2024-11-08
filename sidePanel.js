@@ -1,4 +1,73 @@
 //sidePanel.js
+
+async function checkUrl() {
+    // Get the current active tab
+    const [currentTab] = await chrome.tabs.query({ active: true, currentWindow: true });
+
+    // Define allowed URL patterns using regular expressions
+    let allowed = [
+        /^http:\/\/iaptus\.internal\//,  // Matches http://iaptus.internal/*
+        /^https:\/\/demo\.iaptus\.co\.uk\//  // Matches https://demo.iaptus.co.uk/*
+    ];
+
+    const currentUrl = currentTab?.url;
+
+    let allowRecording = false;
+    // If the URL doesn't match allowed patterns, show a toast message and exit
+    if (!currentUrl || !allowed.some(pattern => pattern.test(currentUrl))) {
+        showToastMessage('Url not allowed:\nonly use Internal or Demo');
+        console.log("allowRecording: ", allowRecording)
+        return allowRecording;
+    }
+    allowRecording = true;
+    console.log("allowRecording: ", allowRecording)
+    return allowRecording;
+    // Additional logic for allowed URL, if needed...
+}
+
+// Function to show toast messages
+// Function to show toast messages
+function showToastMessage(message) {
+    let toastContainer = document.getElementById('toast-container');
+    if (!toastContainer) {
+        toastContainer = document.createElement('div');
+        toastContainer.id = 'toast-container';
+        toastContainer.className = 'toast-container';
+        document.body.appendChild(toastContainer);
+    }
+
+    // Create a new toast
+    const toast = document.createElement('div');
+    toast.className = 'toast';
+    toast.textContent = message;
+    toastContainer.appendChild(toast);
+
+    // Show the toast after a brief delay
+    setTimeout(() => {
+        toastContainer.classList.add('show');
+        toast.classList.add('show');
+    }, 100);
+
+    // Remove the toast after 5 seconds (3 seconds + extra 2 seconds)
+    setTimeout(() => {
+        toastContainer.classList.remove('show');
+        toast.classList.remove('show');
+
+        // Remove the toast element from the DOM
+        setTimeout(() => {
+            toast.remove();
+            // If no more toasts remain, remove the container
+            if (toastContainer.children.length === 0) {
+                setTimeout(() => {
+                toastContainer.remove();
+            }, 900); 
+            }
+        }, 500); // Wait for the fade-out animation to finish
+    }, 5000); // Total time for the toast (3 seconds + 2 seconds delay)
+}
+
+
+
 // Notify the background script when the panel opens
 chrome.runtime.sendMessage({ action: 'openPanel' });
 
@@ -25,21 +94,12 @@ function removeDuplicates(log) {
     });
 }
 
-function showToastMessage(messageText) {
-    chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
-        chrome.tabs.sendMessage(tabs[0].id, {
-            action: "showToast",
-            text: messageText
-        });
-    });
-}
-
 
 
 function displayLog(clickLog) {
     const logDiv = document.getElementById('log');
     logDiv.innerHTML = ''; // Clear previous log
-    
+
     if (clickLog.length === 0) {
         logDiv.textContent = 'No logs recorded.';
         document.getElementById('clearLog').style.display = 'none';
@@ -85,12 +145,12 @@ function displayLog(clickLog) {
         removeButton.className = 'destructive-btn'
         removeButton.innerText = "X"
 
-        removeButton.addEventListener('click', function (){
+        removeButton.addEventListener('click', function () {
             const updatedLog = clickLog.filter(logEntry => logEntry.id !== entry.id)
 
-            chrome.storage.local.set({clickLog: updatedLog}, function (){
+            chrome.storage.local.set({ clickLog: updatedLog }, function () {
                 displayLog(updatedLog)
-                
+
             })
         })
 
@@ -129,60 +189,69 @@ document.getElementById('pauseRecording').addEventListener('click', function () 
     showToastMessage('Recording paused!');
     chrome.storage.local.set({ isRecording: false }, function () {
         let recordButton = document.getElementById('startRecording');
-        let pauseButton = document.getElementById('pauseRecording'); 
+        let pauseButton = document.getElementById('pauseRecording');
         recordButton.style.display = 'flex';;
         recordButton.textContent = 'Record';
         pauseButton.style.display = 'none'; // Hide pause button
-        
+
     });
 });
 
 
-document.getElementById('startRecording').addEventListener('click', function () {
-    const recordButton = document.getElementById('startRecording');
-    const pauseButton = document.getElementById('pauseRecording'); // Your pause button
+document.getElementById('startRecording').addEventListener('click', async function () {
+    // Ensure that checkUrl() is called asynchronously
+    const isAllowed = await checkUrl();
 
-    chrome.storage.local.get(['isRecording'], function (result) {
-        const isRecording = result.isRecording || false;
-
-        if (!isRecording) {
-            // Start recording
-            chrome.storage.local.set({ isRecording: true }, function () {
-                showToastMessage('Recording started!');  
-                recordButton.style.display = 'none';
-                pauseButton.style.display = 'flex'; // Show the pause button
-            });
-        } 
-        // else {
-        //     // Stop recording
-        //     chrome.storage.local.set({ isRecording: false }, function () {
-        //         showToastMessage('Recording stopped!');
-                
-        //          // Open the log display page in a new tab
-        //          chrome.runtime.sendMessage({ action: 'openFlowDisplay', previousTabId: result.previousTabId });
+    // Proceed only if the URL is allowed
+    if (isAllowed) {
 
 
-        //         // Clean duplicates and display log
-        //         chrome.storage.local.get(['clickLog'], function (result) {
-        //             let clickLog = result.clickLog || [];
-        //             const cleanedClickLog = removeDuplicates(clickLog);
-        //             chrome.storage.local.set({ clickLog: cleanedClickLog });
-        //             displayLog(cleanedClickLog);
-        //         });
 
-        //         list.classList.remove('isRecording');
-        //         recordButton.classList.remove('isRecording');
-        //         recordButton.textContent = 'Record';
-        //         pauseButton.style.display = 'none'; // Hide the pause button
+        const recordButton = document.getElementById('startRecording');
+        const pauseButton = document.getElementById('pauseRecording'); // Your pause button
 
-        //         // Hide "Stop & View" button and show "View Flow" button
-        //         const openFlowButton = document.getElementById('openFlow');
-        //         const backButton = document.getElementById('backButton');
-        //         if (openFlowButton) openFlowButton.style.display = 'flex';
-        //         if (backButton) backButton.style.display = 'none';
-        //     });
-        // }
-    });
+        chrome.storage.local.get(['isRecording'], function (result) {
+            const isRecording = result.isRecording || false;
+
+            if (!isRecording) {
+                // Start recording
+                chrome.storage.local.set({ isRecording: true }, function () {
+                    showToastMessage('Recording started!');
+                    recordButton.style.display = 'none';
+                    pauseButton.style.display = 'flex'; // Show the pause button
+                });
+            }
+            // else {
+            //     // Stop recording
+            //     chrome.storage.local.set({ isRecording: false }, function () {
+            //         showToastMessage('Recording stopped!');
+
+            //          // Open the log display page in a new tab
+            //          chrome.runtime.sendMessage({ action: 'openFlowDisplay', previousTabId: result.previousTabId });
+
+
+            //         // Clean duplicates and display log
+            //         chrome.storage.local.get(['clickLog'], function (result) {
+            //             let clickLog = result.clickLog || [];
+            //             const cleanedClickLog = removeDuplicates(clickLog);
+            //             chrome.storage.local.set({ clickLog: cleanedClickLog });
+            //             displayLog(cleanedClickLog);
+            //         });
+
+            //         list.classList.remove('isRecording');
+            //         recordButton.classList.remove('isRecording');
+            //         recordButton.textContent = 'Record';
+            //         pauseButton.style.display = 'none'; // Hide the pause button
+
+            //         // Hide "Stop & View" button and show "View Flow" button
+            //         const openFlowButton = document.getElementById('openFlow');
+            //         const backButton = document.getElementById('backButton');
+            //         if (openFlowButton) openFlowButton.style.display = 'flex';
+            //         if (backButton) backButton.style.display = 'none';
+            //     });
+            // }
+        });
+    }
 });
 
 
@@ -197,13 +266,13 @@ document.getElementById('openFlow')?.addEventListener('click', async function ()
         return;
     } else {
         // Set recording state to paused
-        showToastMessage('Recording paused!');
+        
         chrome.storage.local.set({ isRecording: false });
 
         // Update recording button state
         const recordButton = document.getElementById('startRecording');
         if (recordButton) {
-            
+            showToastMessage('Recording paused!');
             recordButton.textContent = 'Record';
             recordButton.style.display = 'flex';
         }
@@ -237,7 +306,7 @@ document.getElementById('backButton')?.addEventListener('click', function () {
         recordButton.style.display = 'flex'
         recordButton.textContent = 'Record';
     }
-    
+
 });
 
 // // Handle copy log and clear
@@ -268,13 +337,13 @@ document.getElementById('backButton')?.addEventListener('click', function () {
 
 //clear log
 
-document.getElementById('clearLog').addEventListener('click', function() {
+document.getElementById('clearLog').addEventListener('click', function () {
     // Display a confirmation alert
     const confirmDelete = confirm("Are you sure you want to delete the log? This action is irreversible.");
-    
+
     if (confirmDelete) {
         // Clear the log and flowTitle
-        chrome.storage.local.set({ clickLog: [], flowTitle: '' }, function() {
+        chrome.storage.local.set({ clickLog: [], flowTitle: '' }, function () {
             displayLog([]); // Clear the displayed log
             console.log("Log and flow title cleared.");
         });
@@ -306,7 +375,7 @@ document.getElementById('clearLog').addEventListener('click', function() {
 // });
 
 // Load and display the click log when the side panel opens
-chrome.storage.local.get(['clickLog'], function(result) {
+chrome.storage.local.get(['clickLog'], function (result) {
     displayLog(result.clickLog || []); // Ensure it's an array
 });
 
@@ -315,11 +384,11 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action === 'updateLog') {
         // Update the log with the new entry received from the content script
         const newLogEntry = request.logEntry;
-        
-        chrome.storage.local.get(['clickLog'], function(result) {
+
+        chrome.storage.local.get(['clickLog'], function (result) {
             const updatedLog = result.clickLog || [];
             updatedLog.push(newLogEntry);
-            chrome.storage.local.set({ clickLog: updatedLog }, function() {
+            chrome.storage.local.set({ clickLog: updatedLog }, function () {
                 displayLog(updatedLog); // Update the display with new log
             });
         });
