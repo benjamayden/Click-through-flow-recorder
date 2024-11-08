@@ -4,7 +4,9 @@
 
 .highlight-stroke {
     outline: 2px solid red !important;
-    outline-offset: -2px;
+    outline-offset: 2px;
+    z-index: 9999;
+    border-radius: 8px;
   }
 
 
