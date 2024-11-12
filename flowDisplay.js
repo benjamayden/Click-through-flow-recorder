@@ -87,13 +87,13 @@ function captureElement(element) {
     // Set canvas size based on the element's bounding box
     const rect = element.getBoundingClientRect();
     const scale = window.devicePixelRatio || 1;
-    canvas.width = rect.width * scale;
+    canvas.width = 1920*scale;
     canvas.height = rect.height * scale;
     context.scale(scale, scale);
 
     // Set background color for the canvas
     context.fillStyle = 'white';
-    context.fillRect(0, 0, rect.width, rect.height);
+    context.fillRect(0, 0, 1920, rect.height);
 
     // Helper function to load an image
     function loadImage(src) {
@@ -109,16 +109,16 @@ function captureElement(element) {
     async function renderChildren() {
         for (const child of element.childNodes) {
             console.log(child.tagName)
-            if (child.classList && child.classList.contains('title')) {
+if (child.classList && child.classList.contains('title')) {
                 console.log("making title")
                 // Render title elements
-                context.font = 'bold 14px Arial';
+                context.font = 'bold 32px Arial';
                 context.fillStyle = 'black';
                 context.fillText(child.textContent, 10, 20); // Adjust positioning as needed
             } else if (child.classList && child.classList.contains('description')) {
                 console.log("making description")
                 // Render description text
-                context.font = '12px Arial';
+                context.font = '16px Arial';
                 context.fillStyle = 'gray';
                 context.fillText(child.textContent, 10, 40); // Adjust positioning as needed
             } else if (child.tagName === 'IMG') {
@@ -129,7 +129,7 @@ function captureElement(element) {
                     const imgRect = child.getBoundingClientRect();
                     context.drawImage(
                         img,
-                        imgRect.left - rect.left,
+                        imgRect.left + rect.left*1.45,
                         imgRect.top - rect.top,
                         imgRect.width,
                         imgRect.height
@@ -164,7 +164,7 @@ document.getElementById('saveImages').addEventListener('click', async function (
         const imageResize = entry.getElementsByTagName('img');
         if (imageResize.length) {
             Array.from(imageResize).forEach(item => {
-                item.style.width = '100%';
+                item.style.width = '1920px';
             });
         }
         // Generate a filename for the saved image
@@ -230,7 +230,7 @@ chrome.storage.local.get(['clickLog'], function (result) {
             headerContainer.className = 'title container';
 
             const titleIndex = document.createElement('strong');
-            titleIndex.className = 'title';
+            titleIndex.className = 'index';
             titleIndex.id = `index-${index}`;
             titleIndex.textContent = index + 1;
 
