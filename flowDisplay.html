@@ -60,29 +60,29 @@
         }
 
         /* Destructive button (for deleting, removing, etc.) */
-    /* Destructive button (for deleting, removing, etc.) */
-    .destructive-btn {
-      border: 1px solid #f44336;
-      color: #ba2d2b;
-      background-color: white;
-      width: fit-content;
-      padding-left: 0.5rem;
-      padding-right: 0.5rem;
-      padding-top: 0.25rem;
-      padding-bottom: 0.25rem;
-    }
+        /* Destructive button (for deleting, removing, etc.) */
+        .destructive-btn {
+            border: 1px solid #f44336;
+            color: #ba2d2b;
+            background-color: white;
+            width: fit-content;
+            padding-left: 0.5rem;
+            padding-right: 0.5rem;
+            padding-top: 0.25rem;
+            padding-bottom: 0.25rem;
+        }
 
-    .destructive-btn:hover {
-      background-color: #ba2d2b;
-      color: white;
-      box-shadow: 0px 6px 8px rgba(0, 0, 0, 0.15);
-    }
+        .destructive-btn:hover {
+            background-color: #ba2d2b;
+            color: white;
+            box-shadow: 0px 6px 8px rgba(0, 0, 0, 0.15);
+        }
 
-    .destructive-btn:active {
-      transform: scale(0.98);
-      background-color: #d32f2f;
-      color: white;
-    }
+        .destructive-btn:active {
+            transform: scale(0.98);
+            background-color: #d32f2f;
+            color: white;
+        }
 
         body {
             font-family: Arial, sans-serif;
@@ -108,8 +108,9 @@
         .header {
             position: sticky;
             top: 0;
+            width:100%;
             display: flex;
-            flex-direction: row;
+            flex-direction: column;
             justify-content: space-between;
             align-items: center;
             gap: 0.125rem;
@@ -134,51 +135,53 @@
         }
 
         /* Print styling */
-    @media print {
-      /* Hide specified elements */
+        @media print {
+            /* Hide specified elements */
 
-      body * {
-        display: none;
-      }
+            body * {
+                display: none;
+            }
 
-      .hide-on-print {
-        display: none;
-      }
+            .hide-on-print {
+                display: none;
+            }
 
-      .entryParent{
-        display: flex;
-      }
+            .entryParent {
+                display: flex;
+            }
 
-      p{
-        display: flex;
-      }
+            p {
+                display: flex;
+            }
 
-      main{
-        display: block;
-      }
-      /* Display header on each printed page */
-      .header {
-        display: flex;
-        position: static;
-        top: 0;
-        left:0;
-      }
+            main {
+                display: block;
+            }
 
-      #flowTitle {
-        display: flex;
-      }
+            /* Display header on each printed page */
+            .header {
+                display: flex;
+                position: static;
+                top: 0;
+                left: 0;
+                width: 100%;
+            }
 
-      img{
-        width: 100% !important;
-      }
+            #flowTitle {
+                display: flex;
+            }
 
-      /* Each section starts on a new page */
-      #log > .log-entry {
-        page-break-after: always;
-        margin: 0;
-        padding: 20px;
-      }
-    }
+            img {
+                width: 100% !important;
+            }
+
+            /* Each section starts on a new page */
+            #log>.log-entry {
+                page-break-after: always;
+                margin: 0;
+                padding: 20px;
+            }
+        }
 
         .subinfo {
             font-size: 12px;
@@ -188,6 +191,12 @@
 
         h1 {
             margin: 0;
+            width: 100%;
+        }
+
+        h2{
+            margin: 0;
+            font-size: 1rem;
         }
 
         .logList {
@@ -196,12 +205,28 @@
             padding-top: 1rem;
             padding-bottom: 1rem;
             gap: 1rem;
+            cursor: grab;
         }
 
-        p{
+        p {
             margin: 0;
+            font-size: 1;
         }
-        
+
+        .block.dragging {
+            opacity: 0.5;
+            background-color: #f0f0f0;
+            cursor: grabbing;
+        }
+        .block {
+    padding: 10px;
+    margin: 10px 0;
+    border: 1px dashed #ccc;
+    cursor: grab;
+    background-color: white;
+    transition: background-color 0.2s ease-in-out;
+}
+
         .log-entry {
             display: flex;
             width: 100%;
@@ -216,6 +241,11 @@
 
         .title {
             display: flex;
+            cursor: text;
+        }
+        .description{
+            display: flex;
+            cursor: text;
         }
 
         img {
@@ -232,7 +262,7 @@
             width: 100%;
         }
 
-        .content{
+        .content {
             font-size: 16px;
         }
 
@@ -280,6 +310,19 @@
             visibility: visible;
             transition: opacity 0.5s;
         }
+        .toolbar{
+            position: sticky;
+            top: 3rem;
+            left: 0;
+            display: flex;
+            flex-direction: row;
+            gap: 0.5rem;
+            margin-top: 0.25rem;
+            width: 100%;
+            background-color: white;
+            padding: 0.25rem;
+            
+        }
     </style>
 </head>
 
@@ -287,16 +330,18 @@
 
     <main>
         <div class="header">
-            <h1 id="flowTitle">Click Log</h1>
-            <button class="secondary-btn hide-on-print" id="editTitle">Edit</button>
+            <h1 contenteditable="true" id="flowTitle">Click Log</h1>
+            <div id="toolbar" class="toolbar hide-on-print">
+                <button id="addH2">H2</button>
+                <button id="addP">P</button>
+                <button id="addLogEntry">New Log Entry</button>
+            </div>
         </div>
+
         <div id="log" class="logList"></div> <!-- Log section -->
         <div id='footer' class="footer hide-on-print">
             <div class="action container ">
-                <div class="help container">
-                    <button class="secondary-btn" id="hideButtons">Save PDF</button>
-                </div>
-
+                <button class="secondary-btn" id="hideButtons">Save PDF</button>
                 <button class="secondary-btn" id="saveImages">Save all images</button>
             </div>
         </div>
