@@ -134,7 +134,7 @@ function captureElement(element) {
                     const imgHeight = imgRect.height * scale;
                     context.drawImage(
                         img,
-                        rect.left-(imgRect.width*0.05),
+                        rect.left-250,
                         currentY,
                         imgRect.width,
                         imgRect.height
