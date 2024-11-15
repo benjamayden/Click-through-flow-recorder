@@ -83,11 +83,11 @@ document.getElementById('hideButtons').addEventListener('click', function () {
 function captureElement(element) {
     const canvas = document.createElement('canvas');
     const context = canvas.getContext('2d');
-    
+
     // Set canvas size based on the element's bounding box
     const rect = element.getBoundingClientRect();
     const scale = window.devicePixelRatio || 1;
-    canvas.width = 1920*scale;
+    canvas.width = 1920 * scale;
     canvas.height = rect.height * scale;
     context.scale(scale, scale);
 
@@ -105,39 +105,46 @@ function captureElement(element) {
         });
     }
 
+    // Current Y-coordinate on the canvas
+    let currentY = 50; // Start with some padding at the top
+
     // Function to render child elements (text, images)
     async function renderChildren() {
         for (const child of element.childNodes) {
-            console.log(child.tagName)
-if (child.classList && child.classList.contains('title')) {
-                console.log("making title")
+            if (child.classList && child.classList.contains('title')) {
+                console.log("Rendering title");
                 // Render title elements
                 context.font = 'bold 32px Arial';
                 context.fillStyle = 'black';
-                context.fillText(child.textContent, 10, 20); // Adjust positioning as needed
+                context.fillText(child.textContent, 30, currentY);
+                currentY += 40; // Increment Y for the next element (line spacing)
             } else if (child.classList && child.classList.contains('description')) {
-                console.log("making description")
+                console.log("Rendering description");
                 // Render description text
                 context.font = '16px Arial';
                 context.fillStyle = 'gray';
-                context.fillText(child.textContent, 10, 40); // Adjust positioning as needed
+                context.fillText(child.textContent, 30, currentY);
+                currentY += 20; // Increment Y for the next element (line spacing)
             } else if (child.tagName === 'IMG') {
+                console.log("Rendering image");
                 // Load and render image elements
-                console.log("making image")
                 const img = await loadImage(child.src);
                 if (img) {
                     const imgRect = child.getBoundingClientRect();
+                    const imgHeight = imgRect.height * scale;
                     context.drawImage(
                         img,
-                        imgRect.left + rect.left*1.45,
-                        imgRect.top - rect.top,
+                        rect.left-(imgRect.width*0.05),
+                        currentY,
                         imgRect.width,
                         imgRect.height
                     );
+                    currentY += imgHeight + 10; // Increment Y by image height and some padding
                 }
             }
         }
     }
+
 
     // Wait for all images to load, then render everything
     return new Promise(async (resolve) => {
