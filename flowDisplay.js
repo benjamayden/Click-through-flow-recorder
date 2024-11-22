@@ -5,13 +5,30 @@ let clickLog = [];
 let archivedLog = [];
 
 // Initialize flow title and entries
-initializeFlowTitle();
+//initializeFlowTitle();
 loadClickLog();
 
 // Toggle edit mode
 document.getElementById('editModeToggle').addEventListener('click', function () {
     isEditMode = !isEditMode;
     toggleEditMode(isEditMode);
+    const saveAll = document.getElementById('saveImages')
+    const savePDF = document.getElementById('printPDF')
+    const addEntry = document.getElementById('addEntry')
+    const reorder = document.getElementById('reoder')
+    if (isEditMode) {
+        saveAll.style.display = 'none';
+        savePDF.style.display = 'none';
+
+        addEntry.style.display = 'flex';
+        reorder.style.display = 'flex';
+    } else {
+        saveAll.style.display = 'flex';
+        savePDF.style.display = 'flex';
+
+        addEntry.style.display = 'none';
+        reorder.style.display = 'none';
+    }
 });
 
 // Add new entry
@@ -19,17 +36,37 @@ document.getElementById('addEntry').addEventListener('click', function () {
     const newEntry = {
         elementText: 'New Title',
         description: 'New Description',
-        dataUrl: '', // Placeholder for image
+        dataUrl: '',
         isArchived: false,
     };
     clickLog.push(newEntry);
     saveClickLog();
     renderLog();
+
+    let archived = document.getElementById('archived');
+
+    // Get the computed height of the 'archived' element
+    let archivedHeight = window.getComputedStyle(archived).height;
+
+    // Parse the height to a numeric value (remove "px" and convert to number)
+    let archivedHeightValue = parseFloat(archivedHeight);
+
+    console.log('Archived element height:', archivedHeightValue);
+
+    window.scrollTo({
+        top: document.body.scrollHeight - (archivedHeightValue * 2), // Adjust scroll position
+        behavior: 'smooth' // Smooth scrolling
+    });
+
+
 });
 
 // Load click log from storage
 function loadClickLog() {
-    chrome.storage.local.get(['clickLog', 'archivedLog'], function (result) {
+    chrome.storage.local.get(['clickLog', 'archivedLog', 'flowTitle'], function (result) {
+        const flowTitleElement = document.getElementById('flowTitle');
+        flowTitleElement.textContent = result.flowTitle || 'Click Log'; // Default title if not set
+
         clickLog = result.clickLog || [];
         archivedLog = result.archivedLog || [];
         renderLog();
@@ -96,11 +133,11 @@ function renderLog() {
         const descriptionParagraph = document.createElement('p');
         descriptionParagraph.className = 'description';
         descriptionParagraph.textContent = entry.description ? entry.description : "placeholder";
+        if (descriptionParagraph.textContent === "placeholder") {
+            descriptionParagraph.classList.add('hide-on-print');
+        }
         descriptionParagraph.contentEditable = isEditMode;
         if (isEditMode) descriptionParagraph.classList.add('editable');
-
-        const imgElement = document.createElement('img');
-        imgElement.src = entry.dataUrl || 'placeholder.png';
 
         // Actions
         const actionsContainer = document.createElement('div');
@@ -111,11 +148,18 @@ function renderLog() {
         removeButton.className = 'destructive-btn';
         removeButton.textContent = 'Remove';
         removeButton.onclick = function () {
-            entry.isArchived = true;
-            saveClickLog();
-            renderLog();
-            renderArchivedLog();
+            // Add the animation class
+            logEntryDiv.classList.add('animate');
+        
+            // Wait for the animation to complete before archiving and re-rendering
+            setTimeout(() => {
+                entry.isArchived = true; // Mark entry as archived
+                saveClickLog();          // Save the updated click log
+                renderLog();             // Re-render active logs
+                renderArchivedLog();     // Re-render archived logs
+            }, 300); // Match the duration of the animation (0.3s)
         };
+        
 
         if (isEditMode) {
             actionsContainer.appendChild(removeButton);
@@ -135,7 +179,12 @@ function renderLog() {
         // Append elements
         logEntryDiv.appendChild(titleElement);
         logEntryDiv.appendChild(descriptionParagraph);
-        logEntryDiv.appendChild(imgElement);
+        if (entry.dataUrl !== '') {
+            const imgElement = document.createElement('img');
+            imgElement.src = entry.dataUrl || 'placeholder.png';
+            logEntryDiv.appendChild(imgElement); // Ensure this line is within the same scope
+        }
+
         logEntryDiv.appendChild(actionsContainer);
 
         logDiv.appendChild(logEntryDiv);
@@ -189,8 +238,13 @@ function dragStart(e) {
     document.querySelectorAll('.log-entry img, .log-entry p, .log-entry button').forEach(el => {
         el.classList.add('hideOnDrag');
     });
-    draggedItem.style.transform = 'translateX(2rem)';
+
     // Hide all screenshots when dragging starts
+    draggedItem.scrollIntoView({
+        behavior: 'smooth', // Smooth scrolling
+        block: 'center', // Vertically center the item in the viewport
+        inline: 'center' // Horizontally center the item in the viewport
+    });
     setTimeout(() => {
 
         this.classList.add('draggable');
@@ -248,13 +302,13 @@ function drop(e) {
     document.querySelectorAll('.log-entry img, .log-entry p, .log-entry button').forEach(el => {
         el.classList.remove('hideOnDrag');
     });
-    
+
     draggedItem.scrollIntoView({
         behavior: 'smooth', // Smooth scrolling
         block: 'center', // Vertically center the item in the viewport
         inline: 'center' // Horizontally center the item in the viewport
     });
-    
+
 
     saveClickLog();
 }
@@ -264,24 +318,6 @@ function moveEntry(fromIndex, toIndex) {
     clickLog.splice(toIndex, 0, entry);
 }
 
-// Initialize flowTitle
-function initializeFlowTitle() {
-    chrome.storage.local.get(['flowTitle'], function (result) {
-        const flowTitleElement = document.getElementById('flowTitle');
-        flowTitleElement.textContent = result.flowTitle || 'Click Log'; // Default title if not set
-    });
-}
-
-
-
-
-// Function to initialize the flowTitle and display it
-function initializeFlowTitle() {
-    chrome.storage.local.get(['flowTitle'], function (result) {
-        const flowTitleElement = document.getElementById('flowTitle');
-        flowTitleElement.textContent = result.flowTitle || 'Click Log'; // Default title if not set
-    });
-}
 
 
 // Set button text and functionality for returning to the previous tab
@@ -291,39 +327,6 @@ document.getElementById('openFlow')?.addEventListener('click', function () {
 });
 
 
-// Function to handle title editing
-function enableTitleEditing() {
-    const flowTitleElement = document.getElementById('flowTitle');
-    const editButton = document.getElementById('editTitle');
-
-    // Create an input field for editing
-    const titleInput = document.createElement('input');
-    titleInput.type = 'text';
-    titleInput.value = flowTitleElement.textContent;
-    titleInput.id = 'flowTitleInput';
-
-    // Replace the current title with the input field
-    flowTitleElement.replaceWith(titleInput);
-    editButton.textContent = 'Save';
-
-    // Event listener to save title when the button is clicked again
-    editButton.onclick = function () {
-        const newTitle = titleInput.value;
-
-        // Update Chrome storage with the new title
-        chrome.storage.local.set({ flowTitle: newTitle }, function () {
-            console.log('Flow title updated in storage');
-
-            // Update the UI to show the new title and remove input
-            titleInput.replaceWith(flowTitleElement);
-            flowTitleElement.textContent = newTitle;
-            editButton.textContent = 'Edit';
-
-            // Reattach the original edit event listener
-            editButton.onclick = enableTitleEditing;
-        });
-    };
-}
 
 
 
@@ -349,7 +352,7 @@ function hideButtonsIfLogIsEmpty() {
 
 
 
-document.getElementById('hideButtons').addEventListener('click', function () {
+document.getElementById('printPDF').addEventListener('click', function () {
     window.print();
 });
 
@@ -428,7 +431,6 @@ function captureElement(element) {
 }
 
 document.getElementById('saveImages').addEventListener('click', async function () {
-    console.log("test")
     const logEntries = document.querySelectorAll('.log-entry'); // Select all log entries
     for (let entryIndex = 0; entryIndex < logEntries.length; entryIndex++) {
         const entry = logEntries[entryIndex];
@@ -475,12 +477,6 @@ document.getElementById('saveImages').addEventListener('click', async function (
     }
 });
 
-
-function saveClickLog() {
-    chrome.storage.local.set({ clickLog }, function () {
-        console.log('Click log updated in storage');
-    });
-}
 
 
 

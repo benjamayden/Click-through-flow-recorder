@@ -193,6 +193,8 @@
         h1 {
             margin: 0;
             padding: 0.25rem;
+            border: 1px solid transparent;
+            border-radius: 0.25rem;
         }
 
         p {
@@ -201,6 +203,9 @@
             font-size: 0.9rem;
             width: 100%;
             margin: 0;
+            border: 1px solid transparent;
+            border-radius: 0.25rem;
+            cursor: default;
         }
 
         .logList {
@@ -223,13 +228,28 @@
             border-radius: 0.25rem;
             border: 1px solid black;
             box-sizing: border-box;
-            transition: all cubic-bezier(0.075, 0.82, 0.165, 1);
-            /* Start with zero height */
-            transition: height 0.3s ease;
-            /* Smooth height transition */
+            transition: all 0.3s ease;
+            /* Animate all size-related changes */
             overflow: hidden;
-            /* Prevent content from overflowing */
-            cursor: grab;
+            /* Ensures content doesn't spill out during animation */
+        }
+
+        @keyframes shrink {
+            from {
+                transform: scaleY(1);
+                opacity: 1;
+            }
+
+            to {
+                transform: scaleY(0);
+                opacity: 0;
+            }
+        }
+
+        .log-entry.animate {
+            animation: shrink 0.3s ease-out;
+            transform-origin: top;
+            /* Animation starts growing from the top */
         }
 
 
@@ -293,6 +313,9 @@
             width: 100%;
             font-size: 1.125rem;
             padding: 0.25rem;
+            border: 1px solid transparent;
+            border-radius: 0.25rem;
+            cursor: default;
         }
 
         .help {
@@ -324,8 +347,10 @@
 
         /* Draggable styling */
         .log-entry.draggable {
-            cursor: move;
+            cursor: grab;
             opacity: 0.5;
+            transform: translateX(32px);
+            width: 96%;
         }
 
         /* Archived section */
@@ -345,6 +370,7 @@
         .editable {
             border: 1px dashed #ccc;
             border-radius: 0.25rem;
+            cursor: text;
         }
     </style>
 </head>
@@ -364,8 +390,9 @@
         </div>
         <div id='footer' class="footer hide-on-print">
             <div class="action container">
-                <button class="secondary-btn" id="hideButtons">Save PDF</button>
-                <button class="secondary-btn" id="addEntry">Add Entry</button>
+                <button class="secondary-btn" id="printPDF">Save PDF</button>
+                <button class="secondary-btn" style="display: none;" id="addEntry">Add Entry</button>
+                <button class="secondary-btn" style="display: none;" id="reoder">Reorder</button>
                 <button class="secondary-btn" id="saveImages">Save all images</button>
 
             </div>
