@@ -3,7 +3,7 @@
 let isEditMode = false;
 let clickLog = [];
 let archivedLog = [];
-
+let reorder = false;
 // Initialize flow title and entries
 //initializeFlowTitle();
 loadClickLog();
@@ -14,52 +14,21 @@ document.getElementById('editModeToggle').addEventListener('click', function () 
     toggleEditMode(isEditMode);
     const saveAll = document.getElementById('saveImages')
     const savePDF = document.getElementById('printPDF')
-    const addEntry = document.getElementById('addEntry')
-    const reorder = document.getElementById('reoder')
+    const reorder = document.getElementById('reorder')
     if (isEditMode) {
         saveAll.style.display = 'none';
         savePDF.style.display = 'none';
 
-        addEntry.style.display = 'flex';
         reorder.style.display = 'flex';
     } else {
         saveAll.style.display = 'flex';
         savePDF.style.display = 'flex';
 
-        addEntry.style.display = 'none';
         reorder.style.display = 'none';
     }
 });
 
-// Add new entry
-document.getElementById('addEntry').addEventListener('click', function () {
-    const newEntry = {
-        elementText: 'New Title',
-        description: 'New Description',
-        dataUrl: '',
-        isArchived: false,
-    };
-    clickLog.push(newEntry);
-    saveClickLog();
-    renderLog();
 
-    let archived = document.getElementById('archived');
-
-    // Get the computed height of the 'archived' element
-    let archivedHeight = window.getComputedStyle(archived).height;
-
-    // Parse the height to a numeric value (remove "px" and convert to number)
-    let archivedHeightValue = parseFloat(archivedHeight);
-
-    console.log('Archived element height:', archivedHeightValue);
-
-    window.scrollTo({
-        top: document.body.scrollHeight - (archivedHeightValue * 2), // Adjust scroll position
-        behavior: 'smooth' // Smooth scrolling
-    });
-
-
-});
 
 // Load click log from storage
 function loadClickLog() {
@@ -113,15 +82,19 @@ function renderLog() {
 
     clickLog.forEach((entry, index) => {
         if (entry.isArchived) return; // Skip archived entries
-
+        const blockContainer= document.createElement('div');
+        blockContainer.className = 'container block';
         const logEntryDiv = document.createElement('div');
         logEntryDiv.className = 'log-entry container';
-        logEntryDiv.draggable = isEditMode;
+        logEntryDiv.draggable = reorder;
 
+        if(reorder){
         // Handle drag events
-        logEntryDiv.addEventListener('dragstart', dragStart);
-        logEntryDiv.addEventListener('dragover', dragOver);
-        logEntryDiv.addEventListener('drop', drop);
+        blockContainer.addEventListener('dragstart', dragStart);
+        blockContainer.addEventListener('dragover', dragOver);
+        blockContainer.addEventListener('drop', drop);
+        }
+
 
         // Content editable when in edit mode
         const titleElement = document.createElement('div');
@@ -149,8 +122,8 @@ function renderLog() {
         removeButton.textContent = 'Remove';
         removeButton.onclick = function () {
             // Add the animation class
-            logEntryDiv.classList.add('animate');
-        
+            blockContainer.classList.add('remove');
+
             // Wait for the animation to complete before archiving and re-rendering
             setTimeout(() => {
                 entry.isArchived = true; // Mark entry as archived
@@ -159,7 +132,7 @@ function renderLog() {
                 renderArchivedLog();     // Re-render archived logs
             }, 300); // Match the duration of the animation (0.3s)
         };
-        
+
 
         if (isEditMode) {
             actionsContainer.appendChild(removeButton);
@@ -187,7 +160,52 @@ function renderLog() {
 
         logEntryDiv.appendChild(actionsContainer);
 
-        logDiv.appendChild(logEntryDiv);
+
+        const addEntryContainer = document.createElement('div');
+        const addEntryButton = document.createElement('button');
+
+
+
+        addEntryContainer.className = 'addEntryContainer log-entry hide-on-print'
+        addEntryButton.id = "addEntry";
+        addEntryButton.className = 'secondary-btn addEntry';
+        addEntryButton.innerText = "Add block";
+        if (isEditMode) addEntryContainer.classList.add('canAdd');
+        addEntryContainer.appendChild(addEntryButton)
+        // Add click event listener to the button
+        addEntryButton.addEventListener('click', function () {
+            const newEntry = {
+                elementText: 'New Title',
+                description: 'New Description',
+                dataUrl: '',
+                isArchived: false,
+            };
+        
+
+                clickLog.splice(index+1, 0, newEntry); // Insert after the parent
+
+        
+            saveClickLog();  // Save the updated log
+            renderLog();     // Re-render to reflect the new entry
+             // New entry is inserted after the current entry
+            // Scroll to the newly added entry
+            setTimeout(() => {
+                const newEntryElement = logDiv.children[index + 1];
+                if (newEntryElement) {
+                    newEntryElement.scrollIntoView({
+                        behavior: 'smooth', // Smooth scrolling animation
+                        block: 'center',    // Center the new entry in the viewport
+                    });
+                }
+
+            }, 100); // Delay to ensure DOM updates after `renderLog`
+            
+        });
+        
+        blockContainer.appendChild(logEntryDiv);
+        blockContainer.appendChild(addEntryContainer);
+        logDiv.appendChild(blockContainer);
+
     });
 }
 
@@ -237,14 +255,15 @@ function dragStart(e) {
     // Add the hideOnDrag class to all elements to be hidden
     document.querySelectorAll('.log-entry img, .log-entry p, .log-entry button').forEach(el => {
         el.classList.add('hideOnDrag');
+        el.classList.add('animate')
     });
 
-    // Hide all screenshots when dragging starts
-    draggedItem.scrollIntoView({
-        behavior: 'smooth', // Smooth scrolling
-        block: 'center', // Vertically center the item in the viewport
-        inline: 'center' // Horizontally center the item in the viewport
-    });
+    // // Hide all screenshots when dragging starts
+    // draggedItem.scrollIntoView({
+    //     behavior: 'smooth', // Smooth scrolling
+    //     block: 'center', // Vertically center the item in the viewport
+    //     inline: 'center' // Horizontally center the item in the viewport
+    // });
     setTimeout(() => {
 
         this.classList.add('draggable');
@@ -254,21 +273,32 @@ function dragStart(e) {
 function dragOver(e) {
     e.preventDefault();
 
-    // Calculate the position for the draggedItem
-    const bounding = this.getBoundingClientRect();
-    const offset = bounding.y + bounding.height / 2;
+    // Ensure `draggedItem` is globally defined
+    if (!draggedItem) return;
 
+    // Get bounding box of the current element
+    const bounding = this.getBoundingClientRect();
+
+    // Calculate the midpoint of the current element
+    const midpoint = bounding.y + bounding.height / 2;
+
+    // Parent container for the log entries
     const parent = this.parentNode;
-    if (e.clientY - offset > 0) {
+
+    // Dragged below the midpoint: place after current element
+    if (e.clientY > midpoint) {
         if (this.nextSibling !== draggedItem) {
             parent.insertBefore(draggedItem, this.nextSibling);
         }
-    } else {
-        if (this.previousSibling !== draggedItem) {
+    }
+    // Dragged above the midpoint: place before current element
+    else {
+        if (this !== draggedItem) {
             parent.insertBefore(draggedItem, this);
         }
     }
 }
+
 
 function drop(e) {
     e.preventDefault();
@@ -287,30 +317,34 @@ function drop(e) {
         moveEntry(draggedIndex, targetIndex);
     }
 
-    setTimeout(() => {
-        let entries = document.querySelectorAll('.log-entry');
-        entries.forEach(entry => {
-            let images = entry.querySelectorAll('img');
-            images.forEach(img => {
-                img.style.height = '100%'
-            })
-        });
-    }, 200);
-    draggedItem.style.transform = 'translateX(0)';
     draggedItem.classList.remove('draggable');
-    // Add the hideOnDrag class to all elements to be hidden
-    document.querySelectorAll('.log-entry img, .log-entry p, .log-entry button').forEach(el => {
-        el.classList.remove('hideOnDrag');
-    });
+    // // Add the hideOnDrag class to all elements to be hidden
+    // document.querySelectorAll('.log-entry img, .log-entry p, .log-entry button').forEach(el => {
+    //     el.classList.remove('hideOnDrag');
+    //     el.classList.remove('animate')
+    // });
 
-    draggedItem.scrollIntoView({
-        behavior: 'smooth', // Smooth scrolling
-        block: 'center', // Vertically center the item in the viewport
-        inline: 'center' // Horizontally center the item in the viewport
-    });
+    // draggedItem.scrollIntoView({
+    //     behavior: 'smooth', // Smooth scrolling
+    //     block: 'center', // Vertically center the item in the viewport
+    //     inline: 'center' // Horizontally center the item in the viewport
+    // });
 
 
     saveClickLog();
+}
+
+function endDrag(){
+    document.querySelectorAll('.draggable').forEach(el => {
+        el.classList.remove('draggable');
+    });;
+
+    // Add the hideOnDrag class to all elements to be hidden
+    document.querySelectorAll('.log-entry img, .log-entry p, .log-entry button').forEach(el => {
+        el.classList.remove('hideOnDrag');
+        el.classList.remove('animate')
+    });
+    saveClickLog()
 }
 
 function moveEntry(fromIndex, toIndex) {
@@ -318,7 +352,11 @@ function moveEntry(fromIndex, toIndex) {
     clickLog.splice(toIndex, 0, entry);
 }
 
-
+document.getElementById('reorder').addEventListener('click', function () {
+    reorder = !reorder;
+    renderLog()
+    if(reorder){dragStart()}else{endDrag()}
+})
 
 // Set button text and functionality for returning to the previous tab
 document.getElementById('openFlow')?.addEventListener('click', function () {

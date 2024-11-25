@@ -213,7 +213,6 @@
             flex-direction: column;
             padding-top: 1rem;
             padding-bottom: 1rem;
-            gap: 1rem;
         }
 
 
@@ -229,28 +228,62 @@
             border: 1px solid black;
             box-sizing: border-box;
             transition: all 0.3s ease;
-            /* Animate all size-related changes */
             overflow: hidden;
-            /* Ensures content doesn't spill out during animation */
+        }
+
+
+        @keyframes grow {
+            from {
+                max-height: 0;
+                /* Collapse to 0 max-height */
+                opacity: 0;
+            }
+
+            to {
+                max-height: 700px;
+                /* Set an arbitrary large max-height for the "open" state */
+                opacity: 1;
+            }
         }
 
         @keyframes shrink {
             from {
-                transform: scaleY(1);
+                max-height: 700px;
+                /* Set an arbitrary large max-height for the "open" state */
                 opacity: 1;
             }
 
             to {
-                transform: scaleY(0);
+                max-height: 0;
+                /* Collapse to 0 max-height */
                 opacity: 0;
             }
         }
 
-        .log-entry.animate {
-            animation: shrink 0.3s ease-out;
+        .block {
+            gap: 0;
+            overflow: hidden;
+            /* Ensure content is hidden while collapsed */
+            max-height: 700px;
+            /* Set a max-height that allows the content to expand fully */
+            transition: max-height 0.3s ease-out, opacity 0.3s ease-out;
+            opacity: 1;
+        }
+
+        /* Triggering the grow animation when an element appears */
+        .block.show {
+            animation: grow 0.5s ease-out forwards;
             transform-origin: top;
             /* Animation starts growing from the top */
         }
+
+        /* Triggering the shrink animation when an element is being removed */
+        .block.remove {
+            animation: shrink 0.3s ease-out forwards;
+            transform-origin: top;
+            /* Shrink from the top */
+        }
+
 
 
         .hideOnDrag {
@@ -346,7 +379,7 @@
         }
 
         /* Draggable styling */
-        .log-entry.draggable {
+        .container.draggable {
             cursor: grab;
             opacity: 0.5;
             transform: translateX(32px);
@@ -372,6 +405,34 @@
             border-radius: 0.25rem;
             cursor: text;
         }
+
+
+
+        .addEntryContainer {
+            width: 100%;
+            padding: 0.5rem;
+            height: 1rem;
+            border: 0;
+            opacity: 0;
+            transform: translateY(00px);
+            transition: height 0.5s ease, opacity 0.5s ease;
+            overflow: hidden;
+            /* Smoothly transition height and padding */
+        }
+
+        .addEntryContainer.canAdd:hover {
+            height: 3rem;
+            /* Expand to fit content */
+            opacity: 1;
+            /* Fully visible */
+            transform: translateY(0);
+            /* Slide into position */
+        }
+
+        .addEntry {
+            padding: 0.5;
+            height: 2rem;
+        }
     </style>
 </head>
 
@@ -380,7 +441,7 @@
     <main>
         <div class="header">
             <h1 id="flowTitle">Click Log</h1>
-            <button class="secondary-btn hide-on-print" id="editModeToggle">Edit</button>
+            <button class="primary-btn hide-on-print" id="editModeToggle">Edit</button>
         </div>
         <div id="log" class="logList"></div> <!-- Log section -->
         <!-- Archived entries section -->
@@ -392,7 +453,7 @@
             <div class="action container">
                 <button class="secondary-btn" id="printPDF">Save PDF</button>
                 <button class="secondary-btn" style="display: none;" id="addEntry">Add Entry</button>
-                <button class="secondary-btn" style="display: none;" id="reoder">Reorder</button>
+                <button class="secondary-btn" style="display: none;" id="reorder">Reorder</button>
                 <button class="secondary-btn" id="saveImages">Save all images</button>
 
             </div>
