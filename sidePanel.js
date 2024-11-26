@@ -115,6 +115,9 @@ function displayLog(clickLog) {
         if (uniqueIds.has(entry.id)) {
             return; // Skip this entry if the ID has already been processed
         }
+        if(entry.isArchived){
+            return;
+        }
         uniqueIds.add(entry.id); // Add the ID to the set
 
         const listItem = document.createElement('li');
@@ -400,3 +403,13 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         });
     }
 });
+
+// Listen for messages from content script to update log dynamically
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+    if (request.action === 'updatePanelFromFlow') {
+        displayLog([]); 
+        chrome.storage.local.get(['clickLog'], function (result) {
+            displayLog(result.clickLog || []); // Ensure it's an array
+        });
+    }
+})

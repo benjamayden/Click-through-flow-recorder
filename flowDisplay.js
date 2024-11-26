@@ -4,7 +4,7 @@ let isEditMode = false;
 let clickLog = [];
 let archivedLog = [];
 let reorder = false;
-let nextId = 0;
+let nextId = 999;
 
 
 loadClickLog();
@@ -42,6 +42,7 @@ function loadClickLog() {
         result.clickLog.forEach(entry => {
             if (entry.id !== id) {
                 nextId++;
+                id = entry.id;
                 renderedLog.push(entry)
             }
         })
@@ -57,6 +58,7 @@ function saveClickLog() {
     chrome.storage.local.set({ clickLog, archivedLog }, function () {
         console.log('Click log updated in storage');
     });
+    chrome.runtime.sendMessage({ action: 'updatePanelFromFlow' });
 }
 
 // Toggle edit mode for entries
@@ -150,7 +152,7 @@ function renderLog() {
 
         // Actions
         const addEntryContainer = document.createElement('div');
-        addEntryContainer.className = 'addEntryContainer log-entry hide-on-print'
+        addEntryContainer.className = 'addEntryContainer hide-on-print'
         addEntryContainer.style.pointerEvents = 'none';
         if (isEditMode) {
             addEntryContainer.classList.add('canAdd')
@@ -177,7 +179,7 @@ function renderLog() {
                 id: nextId,
                 isArchived: false,
             };
-
+            nextId++;
 
             clickLog.splice(index + 1, 0, newEntry); // Insert after the parent
 
@@ -190,19 +192,6 @@ function renderLog() {
                 renderLog();
             }, 250)
 
-            // Re-render to reflect the new entry
-            // New entry is inserted after the current entry
-            // Scroll to the newly added entry
-            setTimeout(() => {
-                const newEntryElement = logDiv.children[index + 1];
-                if (newEntryElement) {
-                    newEntryElement.scrollIntoView({
-                        behavior: 'smooth', // Smooth scrolling animation
-                        block: 'center',    // Center the new entry in the viewport
-                    });
-                }
-
-            }, 100); // Delay to ensure DOM updates after `renderLog`
 
         });
         actionsContainer.appendChild(addEntryButton)
@@ -438,6 +427,7 @@ function captureElement(element) {
     const scale = window.devicePixelRatio || 1;
     canvas.width = 1920 * scale;
     canvas.height = rect.height * scale;
+    console.log(rect.height);
     context.scale(scale, scale);
 
     // Set background color for the canvas
@@ -480,7 +470,7 @@ function captureElement(element) {
                 const img = await loadImage(child.src);
                 if (img) {
                     const imgRect = child.getBoundingClientRect();
-                    const imgHeight = imgRect.height * scale;
+                    const imgHeight = imgRect.height;
                     context.drawImage(
                         img,
                         rect.left,
