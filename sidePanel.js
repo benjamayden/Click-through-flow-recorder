@@ -26,7 +26,6 @@ async function checkUrl() {
 }
 
 // Function to show toast messages
-// Function to show toast messages
 function showToastMessage(message) {
     let toastContainer = document.getElementById('toast-container');
     if (!toastContainer) {
@@ -100,9 +99,15 @@ function displayLog(clickLog) {
     const logDiv = document.getElementById('log');
     logDiv.innerHTML = ''; // Clear previous log
 
+    // Check if there are any non-archived entries
+    const nonArchivedLogs = clickLog.filter(entry => !entry.isArchived);
+
     if (clickLog.length === 0) {
         logDiv.textContent = 'No logs recorded.';
         document.getElementById('clearLog').style.display = 'none';
+        return;
+    }else if(nonArchivedLogs.length === 0){
+        logDiv.textContent = 'Archived logs only';
         return;
     }
     document.getElementById('clearLog').style.display = 'flex';

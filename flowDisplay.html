@@ -1,3 +1,4 @@
+<!--!Font Awesome Free 6.7.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.-->
 <!DOCTYPE html>
 <html>
 
@@ -9,6 +10,7 @@
             display: flex;
             gap: 0.25rem;
             height: 2rem;
+            width: fit-content;
             padding-left: 0.75rem;
             padding-right: 0.75rem;
             align-items: center;
@@ -130,10 +132,6 @@
             border-top: 1px solid #ddd;
         }
 
-        .footer.hide {
-            display: none;
-        }
-
         /* Print styling */
         @media print {
             /* Hide specified elements */
@@ -146,13 +144,13 @@
                 display: none;
             }
 
-            .custom{
+            .custom {
                 justify-content: center;
                 align-items: center;
                 height: 900px;
             }
 
-            .custom h3{
+            .custom h3 {
                 font-size: 4rem !important;
                 text-align: center;
                 width: 100%;
@@ -187,9 +185,11 @@
             img {
                 width: 100% !important;
             }
-            #archived{
+
+            #archived {
                 display: none;
             }
+
             /* Each section starts on a new page */
             #log>.block {
                 page-break-after: always;
@@ -209,16 +209,20 @@
             border: 1px solid transparent;
             border-radius: 0.25rem;
         }
+
         h2 {
-            margin: 0;
-            margin-top: 1rem;
-            font-size: 1.5rem;
-            font-weight: 400;
-        }
-        h3 {
-            display: flex;
-            flex-direction: row;
+            display: block;
+            /* Ensure the title behaves like a block element (default for h2) */
             width: 100%;
+            /* Ensure the title takes up the full width of its container */
+            white-space: normal;
+            /* Allow text to wrap */
+            word-wrap: break-word;
+            /* Break long words to avoid overflow */
+            overflow: hidden;
+            /* Hide overflow if necessary */
+            text-overflow: ellipsis;
+            /* Show ellipsis if overflow happens */
             font-size: 1.125rem;
             padding: 0.25rem;
             border: 1px solid transparent;
@@ -227,6 +231,29 @@
             font-weight: 400;
             margin: 0;
         }
+
+        .archive-entry h2 {
+            display: block;
+            width: 100%;
+            /* or a fixed width like 300px if you want a specific limit */
+            max-width: 300px;
+            /* Optional, limits width to 300px, adjust as needed */
+            white-space: nowrap;
+            /* Prevent text from wrapping */
+            overflow: hidden;
+            /* Hide overflow content */
+            text-overflow: ellipsis;
+            /* Display '...' when content overflows */
+            font-size: 1.125rem;
+            padding: 0.25rem;
+            border: 1px solid transparent;
+            border-radius: 0.25rem;
+            cursor: default;
+            font-weight: 400;
+            margin: 0;
+        }
+
+
         p {
             display: flex;
             padding: 0.25rem;
@@ -264,6 +291,9 @@
 
         .archive-entry {
             margin-bottom: 0.5rem;
+            background-color: rgb(235, 235, 235);
+            color: rgb(96, 96, 96);
+            border: 1px solid rgb(110, 110, 110);
         }
 
 
@@ -397,16 +427,12 @@
             opacity: 0.5;
             transform: translateX(32px);
             width: 96%;
-            
+
         }
 
         /* Archived section */
         #archived {
             margin-top: 2rem;
-        }
-
-        #archived h2 {
-            margin-bottom: 1rem;
         }
 
         .hidden {
@@ -586,7 +612,7 @@
         <div class="header">
             <h1 id="flowTitle">Click Log</h1>
             <div class="row hide-on-print">
-                <p id="isEditingText" class="editing hide-on-print"></p>
+                <span id="isEditingText" class="editing hide-on-print"></span>
                 <button class="secondary-btn" style="display: none;" id="reorder">
                     <span id="reorderSpan">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512">
@@ -596,7 +622,7 @@
                         Reorder
                     </span>
                     <span id="finishedSpan" style="display: none;">
-                        <svg  xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512">
                             <path
                                 d="M438.6 105.4c12.5 12.5 12.5 32.8 0 45.3l-256 256c-12.5 12.5-32.8 12.5-45.3 0l-128-128c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0L160 338.7 393.4 105.4c12.5-12.5 32.8-12.5 45.3 0z" />
                         </svg>
@@ -624,11 +650,9 @@
 
 
         </div>
-        <h2 class="hide-on-print">Entries</h2>
         <div id="log" class="logList dropTarget"></div> <!-- Log section -->
         <!-- Archived entries section -->
-        <div id="archived" class="container hide-on-print">
-            <h2>Archived Entries</h2>
+        <div id="archived" style="display: none;" class="container hide-on-print">
             <div id="archivedEntries" class="logList"></div>
         </div>
         <div id='footer' class="footer hide-on-print">
@@ -646,6 +670,13 @@
                             d="M448 80c8.8 0 16 7.2 16 16l0 319.8-5-6.5-136-176c-4.5-5.9-11.6-9.3-19-9.3s-14.4 3.4-19 9.3L202 340.7l-30.5-42.7C167 291.7 159.8 288 152 288s-15 3.7-19.5 10.1l-80 112L48 416.3l0-.3L48 96c0-8.8 7.2-16 16-16l384 0zM64 32C28.7 32 0 60.7 0 96L0 416c0 35.3 28.7 64 64 64l384 0c35.3 0 64-28.7 64-64l0-320c0-35.3-28.7-64-64-64L64 32zm80 192a48 48 0 1 0 0-96 48 48 0 1 0 0 96z" />
                     </svg>
                     Export PNGs
+                </button>
+                <button class="secondary-btn" id="toClipBoard">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512">
+                        <path
+                            d="M280 64l40 0c35.3 0 64 28.7 64 64l0 320c0 35.3-28.7 64-64 64L64 512c-35.3 0-64-28.7-64-64L0 128C0 92.7 28.7 64 64 64l40 0 9.6 0C121 27.5 153.3 0 192 0s71 27.5 78.4 64l9.6 0zM64 112c-8.8 0-16 7.2-16 16l0 320c0 8.8 7.2 16 16 16l256 0c8.8 0 16-7.2 16-16l0-320c0-8.8-7.2-16-16-16l-16 0 0 24c0 13.3-10.7 24-24 24l-88 0-88 0c-13.3 0-24-10.7-24-24l0-24-16 0zm128-8a24 24 0 1 0 0-48 24 24 0 1 0 0 48z" />
+                    </svg>
+                    Copy to clipboard
                 </button>
             </div>
         </div>
