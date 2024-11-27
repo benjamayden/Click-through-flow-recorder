@@ -1,5 +1,8 @@
 .click-highlighted{
     outline: 2px solid red;
+    outline-offset: 2px;
+    z-index: 9999;
+    border-radius: 8px;
 }
 
 .highlight-stroke {

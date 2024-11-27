@@ -465,17 +465,17 @@ function captureElement(element) {
     // Function to render child elements (text, images)
     async function renderChildren() {
         for (const child of element.childNodes) {
-            if (child.classList && child.classList.contains('title')) {
+            if (child.tagName === 'H3' && child.classList && !child.classList.contains('hide-on-print')) {
                 console.log("Rendering title");
                 // Render title elements
-                context.font = 'bold 32px Arial';
+                context.font = 'bold 48px Arial';
                 context.fillStyle = 'black';
                 context.fillText(child.textContent, 30, currentY);
                 currentY += 40; // Increment Y for the next element (line spacing)
-            } else if (child.classList && child.classList.contains('description')) {
+            } else if (child.tagName === 'P' && child.classList && !child.classList.contains('hide-on-print')) {
                 console.log("Rendering description");
                 // Render description text
-                context.font = '16px Arial';
+                context.font = '24px Arial';
                 context.fillStyle = 'black';
                 context.fillText(child.textContent, 30, currentY);
                 currentY += 20; // Increment Y for the next element (line spacing)
@@ -511,7 +511,10 @@ document.getElementById('saveImages').addEventListener('click', async function (
     const logEntries = document.querySelectorAll('.log-entry'); // Select all log entries
     for (let entryIndex = 0; entryIndex < logEntries.length; entryIndex++) {
         const entry = logEntries[entryIndex];
-
+        // Skip log entries with the class 'custom'
+        if (entry.classList.contains('custom')) {
+            continue;
+        }
         const flowTitle = document.getElementById('flowTitle') ? document.getElementById('flowTitle').textContent.trim() : 'Flow';
 
         // Hide any items within log-entry marked with 'hide-on-print' before capture

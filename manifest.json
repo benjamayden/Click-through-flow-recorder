@@ -6,7 +6,8 @@
     "storage",
     "activeTab",
     "scripting",
-    "sidePanel"
+    "sidePanel",
+    "unlimitedStorage"
   ],
   "commands": {
     "take_screenshot": {
