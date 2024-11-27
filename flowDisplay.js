@@ -116,6 +116,7 @@ function renderLog() {
         blockContainer.id = entry.id;
         const logEntryDiv = document.createElement('div');
         logEntryDiv.className = 'log-entry container';
+        if(entry.class)logEntryDiv.classList.add(entry.class);
         logEntryDiv.draggable = reorder;
 
         if (reorder) {
@@ -127,7 +128,7 @@ function renderLog() {
 
 
         // Content editable when in edit mode
-        const titleElement = document.createElement('div');
+        const titleElement = document.createElement('h3');
         titleElement.className = 'title';
         titleElement.textContent = entry.elementText;
         titleElement.contentEditable = isEditMode;
@@ -170,6 +171,7 @@ function renderLog() {
                 dataUrl: '',
                 id: nextId,
                 isArchived: false,
+                class: 'custom',
             };
             nextId++;
 
@@ -244,7 +246,7 @@ function renderArchivedLog() {
 
     archivedLog.forEach((entry, index) => {
         const logEntryDiv = document.createElement('div');
-        logEntryDiv.className = 'archive-entry';
+        logEntryDiv.className = 'archive-entry hide-on-print';
 
         const titleElement = document.createElement('div');
         titleElement.className = 'title';
