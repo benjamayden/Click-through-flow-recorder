@@ -1,5 +1,9 @@
 //background.js
-
+// Allowed URL patterns
+const allowed = [
+    /^http:\/\/iaptus\.internal\//, // Matches http://iaptus.internal/*
+    /^https:\/\/demo\.iaptus\.co\.uk\// // Matches https://demo.iaptus.co.uk/*
+];
 // Initialize storage on install
 chrome.runtime.onInstalled.addListener(() => {
     chrome.storage.local.set({ clickLog: [], isRecording: false });
@@ -108,7 +112,7 @@ chrome.commands.onCommand.addListener(async (command) => {
     if (command === "take_screenshot") {
         try {
             const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-            if (tab && tab.id) {
+            if (tab && tab.id && isAllowedURL(tab.url)) {
                 console.log('Keyboard shortcut triggered');
 
                 // Capture screenshot
@@ -137,9 +141,6 @@ chrome.commands.onCommand.addListener(async (command) => {
     }
 });
 
-
-
-
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.action === 'captureScreen') {
         chrome.tabs.captureVisibleTab(null, { format: 'png', quality: 100 }, function (dataUrl) {
@@ -148,3 +149,49 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         });
     }
 });
+
+
+
+// Check if a URL is allowed
+function isAllowedURL(url) {
+    return allowed.some((pattern) => pattern.test(url));
+}
+
+// Stop recording if the new tab or URL is not allowed
+function checkAndStopRecording(tabId) {
+    chrome.tabs.get(tabId, (tab) => {
+        if (tab && tab.url) {
+            if (isAllowedURL(tab.url)) {
+                console.log("Tab is allowed:", tab.url);
+            } else {
+                console.log("Tab is not allowed. Stopping recording:", tab.url);
+
+                // Update recording state in storage
+                chrome.storage.local.set({ isRecording: false }, () => {
+                    chrome.runtime.sendMessage({ action: 'tabChanged' });
+                    console.log("Recording stopped.");
+                });
+
+                // Optionally notify the content script to clean up listeners
+                chrome.tabs.sendMessage(tabId, { action: 'stopRecording' }, () => {
+                    if (chrome.runtime.lastError) {
+                        console.log("Content script not active in this tab.");
+                    }
+                });
+            }
+        }
+    });
+}
+
+// Listen for tab activation (switching tabs)
+chrome.tabs.onActivated.addListener((activeInfo) => {
+    checkAndStopRecording(activeInfo.tabId);
+});
+
+// Listen for tab updates (navigating or reloading)
+chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+    if (changeInfo.status === 'complete') {
+        checkAndStopRecording(tabId);
+    }
+});
+

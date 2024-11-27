@@ -136,4 +136,19 @@ if (!window.hasContentScriptRun) {
         isRecording = result.isRecording || false;
         toggleRecording(isRecording);
     });
+
+    // Listener for stopRecording action from background script
+    chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+        if (message.action === 'stopRecording') {
+            console.log("Stopping recording due to tab or URL change.");
+
+            // Stop recording and clean up event listeners
+            chrome.storage.local.set({ isRecording: false }, () => {
+                toggleRecording(false);
+                chrome.runtime.sendMessage({ action: 'tabChanged' });
+                console.log("Event listeners removed.");
+            });
+        }
+    });
+
 }
