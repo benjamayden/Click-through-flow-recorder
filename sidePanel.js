@@ -246,6 +246,7 @@ document.getElementById('startRecording').addEventListener('click', async functi
 
 
 
+
 // Event listener for the "View Flow" button
 document.getElementById('openFlow')?.addEventListener('click', async function () {
     // Get the current active tab
