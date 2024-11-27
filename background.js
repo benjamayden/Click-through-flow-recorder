@@ -104,6 +104,39 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     }
 });
 
+chrome.commands.onCommand.addListener(async (command) => {
+    if (command === "take_screenshot") {
+        try {
+            const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+            if (tab && tab.id) {
+                console.log('Keyboard shortcut triggered');
+
+                // Capture screenshot
+                chrome.tabs.captureVisibleTab(null, { format: 'png', quality: 100 }, function (dataUrl) {
+                    const timestamp = new Date().toISOString();
+                    const url = tab.url;
+                    const title = tab.title;
+                    const newLogEntry = { id: Date.now(), elementText: title, url, timestamp, dataUrl };
+
+                    // Store the log entry in local storage
+                    chrome.storage.local.get('clickLog', function (result) {
+                        const updatedClickLog = result.clickLog || [];
+                        updatedClickLog.push(newLogEntry);
+
+                        chrome.storage.local.set({ clickLog: updatedClickLog }, function () {
+                            chrome.runtime.sendMessage({ action: 'refreshLog' });
+                            console.log("Screenshot log saved");
+                        });
+
+                    });
+                });
+            }
+        } catch (error) {
+            console.error("Error capturing screenshot:", error);
+        }
+    }
+});
+
 
 
 

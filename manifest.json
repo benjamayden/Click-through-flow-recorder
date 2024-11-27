@@ -19,7 +19,7 @@
     }
   },
   "host_permissions": [
-    "<all_urls>"
+       "<all_urls>"
   ],
   "side_panel": {
     "default_path": "sidePanel.html"
