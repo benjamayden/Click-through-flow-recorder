@@ -232,7 +232,9 @@
             overflow: hidden;
         }
 
-        .archive-entry {margin-bottom: 0.5rem;}
+        .archive-entry {
+            margin-bottom: 0.5rem;
+        }
 
 
 
@@ -375,6 +377,7 @@
             opacity: 0.5;
             transform: translateX(32px);
             width: 96%;
+            
         }
 
         /* Archived section */
@@ -426,7 +429,7 @@
             color: inherit;
             /* Inherit the text color of the button */
             fill: currentColor;
-            display: block; 
+            display: block;
         }
 
         .action,
@@ -440,16 +443,119 @@
         }
 
         .row {
+            position: relative;
             display: flex;
             flex-direction: row;
-            gap: 0.25rem;
+            gap: 0.5rem;
         }
-        span{
+
+        span {
             display: flex;
             flex-direction: row;
             align-items: center;
             justify-content: center;
             gap: 0.5rem;
+        }
+
+        /* The switch - the outer container */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 6rem;
+            height: 2rem;
+        }
+
+        /* Hide the default HTML checkbox */
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        /* The slider */
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: 0.4s;
+        }
+
+        /* The circle inside the slider */
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 1.5rem;
+            width: 1.5rem;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: 0.4s;
+            z-index: 2;
+        }
+
+
+        /* When the checkbox is checked, move the slider */
+        input:checked+.slider {
+            background-color: #245726;
+        }
+
+        /* Move the circle when checked */
+        input:checked+.slider:before {
+            transform: translateX(4rem);
+        }
+
+        /* Rounded slider */
+        .slider.round {
+            border-radius: 1rem;
+
+        }
+
+        .slider.round:before {
+            border-radius: 50%;
+        }
+
+        .toggle-label {
+            position: absolute;
+            font-size: 0.8rem;
+            top: 50%;
+            left: 38px;
+            transform: translateY(-50%);
+            z-index: 1;
+            transition: 0.4s;
+        }
+
+
+        .toggle-label.right {
+            left: 16px;
+            color: white;
+        }
+
+        .view-icon,
+        .edit-icon {
+            position: absolute;
+            font-size: 0.8rem;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 3;
+            opacity: 0;
+            width: 0.95rem;
+            height: 0.95rem;
+            transition: 0.4s;
+        }
+
+        input:checked+.slider .edit-icon {
+            opacity: 1;
+            transform: translate(2rem, -0.5rem);
+        }
+
+        input:not(:checked)+.slider .view-icon {
+            opacity: 1;
+            transform: translate(-2rem, -0.45rem);
+
         }
     </style>
 </head>
@@ -461,29 +567,44 @@
             <h1 id="flowTitle">Click Log</h1>
             <div class="row hide-on-print">
                 <p id="isEditingText" class="editing"></p>
-                <button class="secondary-btn" style="display: none;" id="reorder">Reorder</button>
-                <button class="primary-btn edit" id="editModeToggle">
-                    <span id="editIcon">
-                        <svg xmlns="http://www.w3.org/2000/svg"
-                            viewBox="0 0 512 512">
+                <button class="secondary-btn" style="display: none;" id="reorder">
+                    <span id="reorderSpan">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512">
                             <path
-                                d="M441 58.9L453.1 71c9.4 9.4 9.4 24.6 0 33.9L424 134.1 377.9 88 407 58.9c9.4-9.4 24.6-9.4 33.9 0zM209.8 256.2L344 121.9 390.1 168 255.8 302.2c-2.9 2.9-6.5 5-10.4 6.1l-58.5 16.7 16.7-58.5c1.1-3.9 3.2-7.5 6.1-10.4zM373.1 25L175.8 222.2c-8.7 8.7-15 19.4-18.3 31.1l-28.6 100c-2.4 8.4-.1 17.4 6.1 23.6s15.2 8.5 23.6 6.1l100-28.6c11.8-3.4 22.5-9.7 31.1-18.3L487 138.9c28.1-28.1 28.1-73.7 0-101.8L474.9 25C446.8-3.1 401.2-3.1 373.1 25zM88 64C39.4 64 0 103.4 0 152L0 424c0 48.6 39.4 88 88 88l272 0c48.6 0 88-39.4 88-88l0-112c0-13.3-10.7-24-24-24s-24 10.7-24 24l0 112c0 22.1-17.9 40-40 40L88 464c-22.1 0-40-17.9-40-40l0-272c0-22.1 17.9-40 40-40l112 0c13.3 0 24-10.7 24-24s-10.7-24-24-24L88 64z" />
+                                d="M182.6 9.4c-12.5-12.5-32.8-12.5-45.3 0l-96 96c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L128 109.3l0 293.5L86.6 361.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l96 96c12.5 12.5 32.8 12.5 45.3 0l96-96c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L192 402.7l0-293.5 41.4 41.4c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3l-96-96z" />
                         </svg>
-                        Edit
+                        Reorder
                     </span>
-                    <span id="saveIcon" style="display:none" >
-                        <svg xmlns="http://www.w3.org/2000/svg"
-                            viewBox="0 0 448 512">
+                    <span id="finishedSpan" style="display: none;">
+                        <svg  xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512">
                             <path
-                                d="M48 96l0 320c0 8.8 7.2 16 16 16l320 0c8.8 0 16-7.2 16-16l0-245.5c0-4.2-1.7-8.3-4.7-11.3l33.9-33.9c12 12 18.7 28.3 18.7 45.3L448 416c0 35.3-28.7 64-64 64L64 480c-35.3 0-64-28.7-64-64L0 96C0 60.7 28.7 32 64 32l245.5 0c17 0 33.3 6.7 45.3 18.7l74.5 74.5-33.9 33.9L320.8 84.7c-.3-.3-.5-.5-.8-.8L320 184c0 13.3-10.7 24-24 24l-192 0c-13.3 0-24-10.7-24-24L80 80 64 80c-8.8 0-16 7.2-16 16zm80-16l0 80 144 0 0-80L128 80zm32 240a64 64 0 1 1 128 0 64 64 0 1 1 -128 0z" />
+                                d="M438.6 105.4c12.5 12.5 12.5 32.8 0 45.3l-256 256c-12.5 12.5-32.8 12.5-45.3 0l-128-128c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0L160 338.7 393.4 105.4c12.5-12.5 32.8-12.5 45.3 0z" />
                         </svg>
-                        Save
+                        Finished
                     </span>
                 </button>
+                <div>
+                    <label class="switch">
+                        <input type="checkbox" id="toggle" aria-checked="false" aria-labelledby="toggleLabel"
+                            role="switch">
+                        <span class="slider round">
+                            <svg class='view-icon' xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512">
+                                <path
+                                    d="M288 80c-65.2 0-118.8 29.6-159.9 67.7C89.6 183.5 63 226 49.4 256c13.6 30 40.2 72.5 78.6 108.3C169.2 402.4 222.8 432 288 432s118.8-29.6 159.9-67.7C486.4 328.5 513 286 526.6 256c-13.6-30-40.2-72.5-78.6-108.3C406.8 109.6 353.2 80 288 80zM95.4 112.6C142.5 68.8 207.2 32 288 32s145.5 36.8 192.6 80.6c46.8 43.5 78.1 95.4 93 131.1c3.3 7.9 3.3 16.7 0 24.6c-14.9 35.7-46.2 87.7-93 131.1C433.5 443.2 368.8 480 288 480s-145.5-36.8-192.6-80.6C48.6 356 17.3 304 2.5 268.3c-3.3-7.9-3.3-16.7 0-24.6C17.3 208 48.6 156 95.4 112.6zM288 336c44.2 0 80-35.8 80-80s-35.8-80-80-80c-.7 0-1.3 0-2 0c1.3 5.1 2 10.5 2 16c0 35.3-28.7 64-64 64c-5.5 0-10.9-.7-16-2c0 .7 0 1.3 0 2c0 44.2 35.8 80 80 80zm0-208a128 128 0 1 1 0 256 128 128 0 1 1 0-256z" />
+                            </svg>
+                            <svg class='edit-icon' xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+                                <path
+                                    d="M362.7 19.3L314.3 67.7 444.3 197.7l48.4-48.4c25-25 25-65.5 0-90.5L453.3 19.3c-25-25-65.5-25-90.5 0zm-71 71L58.6 323.5c-10.4 10.4-18 23.3-22.2 37.4L1 481.2C-1.5 489.7 .8 498.8 7 505s15.3 8.5 23.7 6.1l120.3-35.4c14.1-4.2 27-11.8 37.4-22.2L421.7 220.3 291.7 90.3z" />
+                            </svg>
+                            <span id="toggleLabel" class="toggle-label">Viewing</span>
+                        </span>
+                    </label>
+                </div>
             </div>
 
+
         </div>
-        <div id="log" class="logList"></div> <!-- Log section -->
+        <div id="log" class="logList dropTarget"></div> <!-- Log section -->
         <!-- Archived entries section -->
         <div id="archived" class="container">
             <h2>Archived Entries</h2>
@@ -492,8 +613,7 @@
         <div id='footer' class="footer hide-on-print">
             <div class="action container">
                 <button class="secondary-btn" id="printPDF">
-                    <svg xmlns="http://www.w3.org/2000/svg"
-                        viewBox="0 0 512 512">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
                         <path
                             d="M64 464l48 0 0 48-48 0c-35.3 0-64-28.7-64-64L0 64C0 28.7 28.7 0 64 0L229.5 0c17 0 33.3 6.7 45.3 18.7l90.5 90.5c12 12 18.7 28.3 18.7 45.3L384 304l-48 0 0-144-80 0c-17.7 0-32-14.3-32-32l0-80L64 48c-8.8 0-16 7.2-16 16l0 384c0 8.8 7.2 16 16 16zM176 352l32 0c30.9 0 56 25.1 56 56s-25.1 56-56 56l-16 0 0 32c0 8.8-7.2 16-16 16s-16-7.2-16-16l0-48 0-80c0-8.8 7.2-16 16-16zm32 80c13.3 0 24-10.7 24-24s-10.7-24-24-24l-16 0 0 48 16 0zm96-80l32 0c26.5 0 48 21.5 48 48l0 64c0 26.5-21.5 48-48 48l-32 0c-8.8 0-16-7.2-16-16l0-128c0-8.8 7.2-16 16-16zm32 128c8.8 0 16-7.2 16-16l0-64c0-8.8-7.2-16-16-16l-16 0 0 96 16 0zm80-112c0-8.8 7.2-16 16-16l48 0c8.8 0 16 7.2 16 16s-7.2 16-16 16l-32 0 0 32 32 0c8.8 0 16 7.2 16 16s-7.2 16-16 16l-32 0 0 48c0 8.8-7.2 16-16 16s-16-7.2-16-16l0-64 0-64z" />
                     </svg>

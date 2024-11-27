@@ -9,28 +9,6 @@ let nextId = 999;
 
 loadClickLog();
 
-// Toggle edit mode
-document.getElementById('editModeToggle').addEventListener('click', function () {
-    isEditMode = !isEditMode;
-    toggleEditMode(isEditMode);
-    const saveAll = document.getElementById('saveImages')
-    const savePDF = document.getElementById('printPDF')
-    const reorder = document.getElementById('reorder')
-    if (isEditMode) {
-        saveAll.style.display = 'none';
-        savePDF.style.display = 'none';
-
-        reorder.style.display = 'flex';
-    } else {
-        saveAll.style.display = 'flex';
-        savePDF.style.display = 'flex';
-
-        reorder.style.display = 'none';
-    }
-});
-
-
-
 
 // Load click log from storage
 function loadClickLog() {
@@ -59,45 +37,58 @@ function saveClickLog() {
         console.log('Click log updated in storage');
     });
     chrome.runtime.sendMessage({ action: 'updatePanelFromFlow' });
+
+    const isEditingText = document.getElementById('isEditingText');
+    // Set the "Saved!" text and fade it in
+    isEditingText.innerText = 'Saved!';
+    isEditingText.classList.remove('remove'); // Ensure the animation reset
+
+    // Wait 3 seconds, then fade out
+    setTimeout(() => {
+        isEditingText.classList.add('remove'); // Trigger the "shrink" animation
+    }, 1700);
+
+    // Optionally clear the text after the animation completes (e.g., after 0.3s)
+    setTimeout(() => {
+        isEditingText.innerText = ''; // Clear the text after fade-out
+    }, 2000); // Match the animation duration (0.3s in the CSS)
 }
+
+// Reference to the toggle input
+const toggle = document.getElementById('toggle');
+const toggleLabel = document.getElementById('toggleLabel');
+
+// Event listener for change event
+toggle.addEventListener('change', function () {
+    this.setAttribute('aria-checked', this.checked ? 'true' : 'false');
+    const reorder = document.getElementById('reorder')
+    if (this.checked) {
+        toggleLabel.classList.add('right');
+        toggleLabel.textContent = 'Editing'; // Update label dynamically
+        reorder.style.display = 'flex';
+    } else {
+        toggleLabel.classList.remove('right');
+        toggleLabel.textContent = 'Viewing'; // Update label dynamically
+        reorder.style.display = 'none';
+    }
+    isEditMode = this.checked;
+    toggleEditMode(isEditMode);
+});
 
 // Toggle edit mode for entries
 function toggleEditMode(enable) {
-    const editButton = document.getElementById('editModeToggle');
-    const editIcon = document.getElementById('editIcon');
-    const saveIcon = document.getElementById('saveIcon');
-
     const flowTitleElement = document.getElementById('flowTitle');
     const footerElement = document.getElementById('footer');
-    const isEditingText = document.getElementById('isEditingText');
+
     if (enable) {
-        editButton.classList.add('secondary-btn');
         flowTitleElement.contentEditable = true;
         flowTitleElement.classList.add('editable');
         footerElement.classList.add('hide');
-        isEditingText.innerText = 'Editing'
-        editIcon.style.display = 'none';
-        saveIcon.style.display = 'flex';
+
     } else {
-        editButton.classList.remove('secondary-btn');
         flowTitleElement.contentEditable = false;
         flowTitleElement.classList.remove('editable');
         footerElement.classList.remove('hide');
-        saveIcon.style.display = 'none';
-        editIcon.style.display = 'flex';
-        // Set the "Saved!" text and fade it in
-        isEditingText.innerText = 'Saved!';
-        isEditingText.classList.remove('remove'); // Ensure the animation reset
-
-        // Wait 3 seconds, then fade out
-        setTimeout(() => {
-            isEditingText.classList.add('remove'); // Trigger the "shrink" animation
-        }, 1700);
-
-        // Optionally clear the text after the animation completes (e.g., after 0.3s)
-        setTimeout(() => {
-            isEditingText.innerText = ''; // Clear the text after fade-out
-        }, 2000); // Match the animation duration (0.3s in the CSS)
 
         // Save the updated title
         chrome.storage.local.set({ flowTitle: flowTitleElement.textContent });
@@ -130,7 +121,7 @@ function renderLog() {
             // Handle drag events
             blockContainer.addEventListener('dragstart', dragStart);
             blockContainer.addEventListener('dragover', dragOver);
-            blockContainer.addEventListener('drop', drop);
+            blockContainer.addEventListener('dragend', drop);
         }
 
 
@@ -280,7 +271,6 @@ let draggedItem = null;
 
 function dragStart(e) {
     draggedItem = this;
-
     // Add the hideOnDrag class to all elements to be hidden
     document.querySelectorAll('.log-entry img, .log-entry p, .log-entry button').forEach(el => {
         el.classList.add('hideOnDrag');
@@ -291,10 +281,7 @@ function dragStart(e) {
         el.style.pointerEvents = 'none'; // Disable interaction
     });
 
-
-
     setTimeout(() => {
-
         this.classList.add('draggable');
     }, 0);
 }
@@ -317,6 +304,7 @@ function dragOver(e) {
     // Dragged below the midpoint: place after current element
     if (e.clientY > midpoint) {
         if (this.nextSibling !== draggedItem) {
+
             parent.insertBefore(draggedItem, this.nextSibling);
         }
     }
@@ -326,33 +314,34 @@ function dragOver(e) {
             parent.insertBefore(draggedItem, this);
         }
     }
+
 }
 
 
 function drop(e) {
     e.preventDefault();
-    this.style['border-bottom'] = '';
-    this.style['border-top'] = '';
-    const parent = this.parentNode;
-    const siblings = Array.from(parent.children);
-    const draggedIndex = siblings.indexOf(draggedItem);
-    const targetIndex = siblings.indexOf(this);
 
-    if (draggedIndex < targetIndex) {
-        parent.insertBefore(draggedItem, this.nextSibling);
-        moveEntry(draggedIndex, targetIndex);
-    } else {
-        parent.insertBefore(draggedItem, this);
-        moveEntry(draggedIndex, targetIndex);
-    }
-    const reorderedIds = Array.from(parent.querySelectorAll(".container.block")).map(
-        (block) => parseInt(block.dataset.id)
-    );
-    clickLog = reorderedIds.map((id) => clickLog.find((entry) => entry.id === id));
-    console.log(reorderedIds, clickLog)
-    draggedItem.classList.remove('draggable');
-    saveClickLog();
+        const parent = this.parentNode;
+        const siblings = Array.from(parent.children);
+        const draggedIndex = siblings.indexOf(draggedItem);
+        const targetIndex = siblings.indexOf(this);
+
+        if (draggedIndex < targetIndex) {
+            parent.insertBefore(draggedItem, this.nextSibling);
+            moveEntry(draggedIndex, targetIndex);
+        } else {
+            parent.insertBefore(draggedItem, this);
+            moveEntry(draggedIndex, targetIndex);
+        }
+        const reorderedIds = Array.from(parent.querySelectorAll(".container.block")).map(
+            (block) => parseInt(block.dataset.id)
+        );
+        clickLog = reorderedIds.map((id) => clickLog.find((entry) => entry.id === id));
+        draggedItem.classList.remove('draggable');
+        saveClickLog();
+
 }
+
 
 function endDrag() {
     console.log(clickLog)
@@ -377,8 +366,22 @@ function moveEntry(fromIndex, toIndex) {
 
 document.getElementById('reorder').addEventListener('click', function () {
     reorder = !reorder;
+    const reorderSpan = document.getElementById('reorderSpan');
+    const finishSpan = document.getElementById('finishedSpan');
     renderLog()
-    if (reorder) { dragStart() } else { endDrag() }
+    if (reorder) {
+        dragStart()
+        finishSpan.style.display = 'flex';
+        reorderSpan.style.display = 'none';
+
+
+    } else {
+        endDrag()
+        finishSpan.style.display = 'none';
+        reorderSpan.style.display = 'flex';
+
+
+    }
 })
 
 // Set button text and functionality for returning to the previous tab
