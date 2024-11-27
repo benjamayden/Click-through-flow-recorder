@@ -158,7 +158,9 @@
             }
 
             main {
-                display: block;
+                display: flex;
+                flex-direction: column;
+                border: none;
             }
 
             /* Display header on each printed page */
@@ -178,10 +180,9 @@
             }
 
             /* Each section starts on a new page */
-            #log>.log-entry {
+            #log>.block {
                 page-break-after: always;
                 margin: 0;
-                padding: 20px;
             }
         }
 
@@ -566,7 +567,7 @@
         <div class="header">
             <h1 id="flowTitle">Click Log</h1>
             <div class="row hide-on-print">
-                <p id="isEditingText" class="editing"></p>
+                <p id="isEditingText" class="editing hide-on-print"></p>
                 <button class="secondary-btn" style="display: none;" id="reorder">
                     <span id="reorderSpan">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512">
@@ -606,7 +607,7 @@
         </div>
         <div id="log" class="logList dropTarget"></div> <!-- Log section -->
         <!-- Archived entries section -->
-        <div id="archived" class="container">
+        <div id="archived" class="container hide-on-print">
             <h2>Archived Entries</h2>
             <div id="archivedEntries" class="logList"></div>
         </div>
