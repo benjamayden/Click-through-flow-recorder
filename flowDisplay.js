@@ -113,6 +113,7 @@ function renderLog() {
         const blockContainer = document.createElement('div');
         blockContainer.className = 'container block';
         blockContainer.dataset.id = entry.id;
+        blockContainer.id = entry.id;
         const logEntryDiv = document.createElement('div');
         logEntryDiv.className = 'log-entry container';
         logEntryDiv.draggable = reorder;
@@ -253,10 +254,19 @@ function renderArchivedLog() {
         restoreButton.className = 'secondary-btn';
         restoreButton.textContent = 'Restore';
         restoreButton.onclick = function () {
+            let thisId = entry.id;
             entry.isArchived = false;
+
             saveClickLog();
             renderLog();
             renderArchivedLog();
+            // Assuming you have a way to select the restored entry, for example:
+            const restoredEntryElement = document.getElementById(thisId);
+
+            // Scroll it into view
+            if (restoredEntryElement) {
+                restoredEntryElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
         };
 
         logEntryDiv.appendChild(titleElement);
@@ -321,24 +331,24 @@ function dragOver(e) {
 function drop(e) {
     e.preventDefault();
 
-        const parent = this.parentNode;
-        const siblings = Array.from(parent.children);
-        const draggedIndex = siblings.indexOf(draggedItem);
-        const targetIndex = siblings.indexOf(this);
+    const parent = this.parentNode;
+    const siblings = Array.from(parent.children);
+    const draggedIndex = siblings.indexOf(draggedItem);
+    const targetIndex = siblings.indexOf(this);
 
-        if (draggedIndex < targetIndex) {
-            parent.insertBefore(draggedItem, this.nextSibling);
-            moveEntry(draggedIndex, targetIndex);
-        } else {
-            parent.insertBefore(draggedItem, this);
-            moveEntry(draggedIndex, targetIndex);
-        }
-        const reorderedIds = Array.from(parent.querySelectorAll(".container.block")).map(
-            (block) => parseInt(block.dataset.id)
-        );
-        clickLog = reorderedIds.map((id) => clickLog.find((entry) => entry.id === id));
-        draggedItem.classList.remove('draggable');
-        saveClickLog();
+    if (draggedIndex < targetIndex) {
+        parent.insertBefore(draggedItem, this.nextSibling);
+        moveEntry(draggedIndex, targetIndex);
+    } else {
+        parent.insertBefore(draggedItem, this);
+        moveEntry(draggedIndex, targetIndex);
+    }
+    const reorderedIds = Array.from(parent.querySelectorAll(".container.block")).map(
+        (block) => parseInt(block.dataset.id)
+    );
+    clickLog = reorderedIds.map((id) => clickLog.find((entry) => entry.id === id));
+    draggedItem.classList.remove('draggable');
+    saveClickLog();
 
 }
 
