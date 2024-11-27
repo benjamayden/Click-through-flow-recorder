@@ -1,11 +1,398 @@
-// Function to initialize the flowTitle and display it
-function initializeFlowTitle() {
-    chrome.storage.local.get(['flowTitle'], function (result) {
+
+// Initialize variables
+let isEditMode = false;
+let clickLog = [];
+let archivedLog = [];
+let reorder = false;
+let nextId = 999;
+
+
+loadClickLog();
+
+
+// Load click log from storage
+function loadClickLog() {
+    chrome.storage.local.get(['clickLog', 'archivedLog', 'flowTitle'], function (result) {
         const flowTitleElement = document.getElementById('flowTitle');
         flowTitleElement.textContent = result.flowTitle || 'Click Log'; // Default title if not set
+        let renderedLog = [];
+        let id = -1;
+        result.clickLog.forEach(entry => {
+            if (entry.id !== id) {
+                nextId++;
+                id = entry.id;
+                renderedLog.push(entry)
+            }
+        })
+        clickLog = renderedLog || [];
+        archivedLog = result.archivedLog || [];
+        renderLog();
+        renderArchivedLog();
     });
 }
 
+// Save click log to storage
+function saveClickLog() {
+    chrome.storage.local.set({ clickLog, archivedLog }, function () {
+        console.log('Click log updated in storage');
+    });
+    chrome.runtime.sendMessage({ action: 'updatePanelFromFlow' });
+
+    const isEditingText = document.getElementById('isEditingText');
+    // Set the "Saved!" text and fade it in
+    isEditingText.innerText = 'Saved!';
+    isEditingText.classList.remove('remove'); // Ensure the animation reset
+
+    // Wait 3 seconds, then fade out
+    setTimeout(() => {
+        isEditingText.classList.add('remove'); // Trigger the "shrink" animation
+    }, 1700);
+
+    // Optionally clear the text after the animation completes (e.g., after 0.3s)
+    setTimeout(() => {
+        isEditingText.innerText = ''; // Clear the text after fade-out
+    }, 2000); // Match the animation duration (0.3s in the CSS)
+}
+
+// Reference to the toggle input
+const toggle = document.getElementById('toggle');
+const toggleLabel = document.getElementById('toggleLabel');
+
+// Event listener for change event
+toggle.addEventListener('change', function () {
+    this.setAttribute('aria-checked', this.checked ? 'true' : 'false');
+    const reorder = document.getElementById('reorder')
+    if (this.checked) {
+        toggleLabel.classList.add('right');
+        toggleLabel.textContent = 'Editing'; // Update label dynamically
+        reorder.style.display = 'flex';
+    } else {
+        toggleLabel.classList.remove('right');
+        toggleLabel.textContent = 'Viewing'; // Update label dynamically
+        reorder.style.display = 'none';
+    }
+    isEditMode = this.checked;
+    toggleEditMode(isEditMode);
+});
+
+// Toggle edit mode for entries
+function toggleEditMode(enable) {
+    const flowTitleElement = document.getElementById('flowTitle');
+    const footerElement = document.getElementById('footer');
+
+    if (enable) {
+        flowTitleElement.contentEditable = true;
+        flowTitleElement.classList.add('editable');
+        footerElement.classList.add('hide');
+
+    } else {
+        flowTitleElement.contentEditable = false;
+        flowTitleElement.classList.remove('editable');
+        footerElement.classList.remove('hide');
+
+        // Save the updated title
+        chrome.storage.local.set({ flowTitle: flowTitleElement.textContent });
+        // Save entries
+        saveClickLog();
+    }
+    renderLog();
+}
+
+// Render the click log
+function renderLog() {
+    const logDiv = document.getElementById('log');
+    logDiv.innerHTML = '';
+
+    if (clickLog.length === 0) {
+        logDiv.textContent = 'No logs recorded.';
+        return;
+    }
+
+    clickLog.forEach((entry, index) => {
+        if (entry.isArchived) return; // Skip archived entries
+        const blockContainer = document.createElement('div');
+        blockContainer.className = 'container block';
+        blockContainer.dataset.id = entry.id;
+        blockContainer.id = entry.id;
+        const logEntryDiv = document.createElement('div');
+        logEntryDiv.className = 'log-entry container';
+        logEntryDiv.draggable = reorder;
+
+        if (reorder) {
+            // Handle drag events
+            blockContainer.addEventListener('dragstart', dragStart);
+            blockContainer.addEventListener('dragover', dragOver);
+            blockContainer.addEventListener('dragend', drop);
+        }
+
+
+        // Content editable when in edit mode
+        const titleElement = document.createElement('div');
+        titleElement.className = 'title';
+        titleElement.textContent = entry.elementText;
+        titleElement.contentEditable = isEditMode;
+        if (isEditMode) titleElement.classList.add('editable');
+
+        const descriptionParagraph = document.createElement('p');
+        descriptionParagraph.className = 'description';
+        descriptionParagraph.textContent = entry.description ? entry.description : "Enter description";
+        if (descriptionParagraph.textContent === "Enter description") {
+            descriptionParagraph.classList.add('hide-on-print');
+        }
+        descriptionParagraph.contentEditable = isEditMode;
+        if (isEditMode) descriptionParagraph.classList.add('editable');
+
+        // Actions
+        const addEntryContainer = document.createElement('div');
+        addEntryContainer.className = 'addEntryContainer hide-on-print'
+        addEntryContainer.style.pointerEvents = 'none';
+        if (isEditMode) {
+            addEntryContainer.classList.add('canAdd')
+            addEntryContainer.style.pointerEvents = 'auto';
+        };
+
+        const actionsContainer = document.createElement('div');
+        actionsContainer.className = 'action addEntry hide-on-print';
+        addEntryContainer.appendChild(actionsContainer)
+
+        const addEntryButton = document.createElement('button');
+        addEntryButton.id = "addEntry";
+        addEntryButton.className = 'secondary-btn';
+        addEntryButton.innerText = "Add";
+
+        // Add click event listener to the button
+        addEntryButton.addEventListener('click', function () {
+
+
+            const newEntry = {
+                elementText: 'Enter title',
+                description: 'Enter description',
+                dataUrl: '',
+                id: nextId,
+                isArchived: false,
+            };
+            nextId++;
+
+            clickLog.splice(index + 1, 0, newEntry); // Insert after the parent
+
+
+
+            addEntryContainer.classList.add('growNewEntry');
+            setTimeout(() => {
+                saveClickLog();  // Save the updated log
+                addEntryContainer.classList.remove('growNewEntry');
+                renderLog();
+            }, 250)
+
+
+        });
+        actionsContainer.appendChild(addEntryButton)
+
+        // Remove button
+        const removeButton = document.createElement('button');
+        removeButton.className = 'destructive-btn';
+        removeButton.textContent = 'Remove';
+        removeButton.onclick = function () {
+            // Add the animation class
+            blockContainer.classList.add('remove');
+
+            // Wait for the animation to complete before archiving and re-rendering
+            setTimeout(() => {
+                entry.isArchived = true; // Mark entry as archived
+                saveClickLog();          // Save the updated click log
+                renderLog();             // Re-render active logs
+                renderArchivedLog();     // Re-render archived logs
+            }, 300); // Match the duration of the animation (0.3s)
+        };
+
+        actionsContainer.appendChild(removeButton)
+
+
+        // Update entry data on blur
+        titleElement.addEventListener('blur', function () {
+            entry.elementText = titleElement.textContent;
+            saveClickLog();
+        });
+
+        descriptionParagraph.addEventListener('blur', function () {
+            entry.description = descriptionParagraph.textContent;
+            saveClickLog();
+        });
+
+        // Append elements
+        logEntryDiv.appendChild(titleElement);
+        logEntryDiv.appendChild(descriptionParagraph);
+        if (entry.dataUrl !== '') {
+            const imgElement = document.createElement('img');
+            imgElement.src = entry.dataUrl || 'placeholder.png';
+            logEntryDiv.appendChild(imgElement); // Ensure this line is within the same scope
+        }
+
+        blockContainer.appendChild(logEntryDiv);
+        blockContainer.appendChild(addEntryContainer);
+        logDiv.appendChild(blockContainer);
+
+    });
+}
+
+// Render archived entries
+function renderArchivedLog() {
+    const archivedDiv = document.getElementById('archivedEntries');
+    archivedDiv.innerHTML = '';
+
+    archivedLog = clickLog.filter(entry => entry.isArchived);
+
+    archivedLog.forEach((entry, index) => {
+        const logEntryDiv = document.createElement('div');
+        logEntryDiv.className = 'archive-entry';
+
+        const titleElement = document.createElement('div');
+        titleElement.className = 'title';
+        titleElement.textContent = entry.elementText;
+
+        const restoreButton = document.createElement('button');
+        restoreButton.className = 'secondary-btn';
+        restoreButton.textContent = 'Restore';
+        restoreButton.onclick = function () {
+            let thisId = entry.id;
+            entry.isArchived = false;
+
+            saveClickLog();
+            renderLog();
+            renderArchivedLog();
+            // Assuming you have a way to select the restored entry, for example:
+            const restoredEntryElement = document.getElementById(thisId);
+
+            // Scroll it into view
+            if (restoredEntryElement) {
+                restoredEntryElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        };
+
+        logEntryDiv.appendChild(titleElement);
+        logEntryDiv.appendChild(restoreButton);
+
+        archivedDiv.appendChild(logEntryDiv);
+    });
+}
+
+// Drag and Drop functions
+let draggedItem = null;
+
+function dragStart(e) {
+    draggedItem = this;
+    // Add the hideOnDrag class to all elements to be hidden
+    document.querySelectorAll('.log-entry img, .log-entry p, .log-entry button').forEach(el => {
+        el.classList.add('hideOnDrag');
+        el.classList.add('animate')
+    });
+
+    document.querySelectorAll('.addEntryContainer').forEach(el => {
+        el.style.pointerEvents = 'none'; // Disable interaction
+    });
+
+    setTimeout(() => {
+        this.classList.add('draggable');
+    }, 0);
+}
+
+function dragOver(e) {
+    e.preventDefault();
+
+    // Ensure `draggedItem` is globally defined
+    if (!draggedItem) return;
+
+    // Get bounding box of the current element
+    const bounding = this.getBoundingClientRect();
+
+    // Calculate the midpoint of the current element
+    const midpoint = bounding.y + bounding.height / 2;
+
+    // Parent container for the log entries
+    const parent = this.parentNode;
+
+    // Dragged below the midpoint: place after current element
+    if (e.clientY > midpoint) {
+        if (this.nextSibling !== draggedItem) {
+
+            parent.insertBefore(draggedItem, this.nextSibling);
+        }
+    }
+    // Dragged above the midpoint: place before current element
+    else {
+        if (this !== draggedItem) {
+            parent.insertBefore(draggedItem, this);
+        }
+    }
+
+}
+
+
+function drop(e) {
+    e.preventDefault();
+
+    const parent = this.parentNode;
+    const siblings = Array.from(parent.children);
+    const draggedIndex = siblings.indexOf(draggedItem);
+    const targetIndex = siblings.indexOf(this);
+
+    if (draggedIndex < targetIndex) {
+        parent.insertBefore(draggedItem, this.nextSibling);
+        moveEntry(draggedIndex, targetIndex);
+    } else {
+        parent.insertBefore(draggedItem, this);
+        moveEntry(draggedIndex, targetIndex);
+    }
+    const reorderedIds = Array.from(parent.querySelectorAll(".container.block")).map(
+        (block) => parseInt(block.dataset.id)
+    );
+    clickLog = reorderedIds.map((id) => clickLog.find((entry) => entry.id === id));
+    draggedItem.classList.remove('draggable');
+    saveClickLog();
+
+}
+
+
+function endDrag() {
+    console.log(clickLog)
+    // Restore visibility of elements
+    document
+        .querySelectorAll(".log-entry img, .log-entry p, .log-entry button")
+        .forEach((el) => {
+            el.classList.remove("hideOnDrag");
+            el.classList.remove("animate");
+        });
+    document.querySelectorAll('.addEntryContainer').forEach(el => {
+        el.style.pointerEvents = 'auto'; // Disable interaction
+    });
+
+}
+
+
+function moveEntry(fromIndex, toIndex) {
+    const entry = clickLog.splice(fromIndex, 1)[0];
+    clickLog.splice(toIndex, 0, entry);
+}
+
+document.getElementById('reorder').addEventListener('click', function () {
+    reorder = !reorder;
+    const reorderSpan = document.getElementById('reorderSpan');
+    const finishSpan = document.getElementById('finishedSpan');
+    renderLog()
+    if (reorder) {
+        dragStart()
+        finishSpan.style.display = 'flex';
+        reorderSpan.style.display = 'none';
+
+
+    } else {
+        endDrag()
+        finishSpan.style.display = 'none';
+        reorderSpan.style.display = 'flex';
+
+
+    }
+})
 
 // Set button text and functionality for returning to the previous tab
 document.getElementById('openFlow')?.addEventListener('click', function () {
@@ -14,42 +401,6 @@ document.getElementById('openFlow')?.addEventListener('click', function () {
 });
 
 
-// Function to handle title editing
-function enableTitleEditing() {
-    const flowTitleElement = document.getElementById('flowTitle');
-    const editButton = document.getElementById('editTitle');
-
-    // Create an input field for editing
-    const titleInput = document.createElement('input');
-    titleInput.type = 'text';
-    titleInput.value = flowTitleElement.textContent;
-    titleInput.id = 'flowTitleInput';
-
-    // Replace the current title with the input field
-    flowTitleElement.replaceWith(titleInput);
-    editButton.textContent = 'Save';
-
-    // Event listener to save title when the button is clicked again
-    editButton.onclick = function () {
-        const newTitle = titleInput.value;
-
-        // Update Chrome storage with the new title
-        chrome.storage.local.set({ flowTitle: newTitle }, function () {
-            console.log('Flow title updated in storage');
-
-            // Update the UI to show the new title and remove input
-            titleInput.replaceWith(flowTitleElement);
-            flowTitleElement.textContent = newTitle;
-            editButton.textContent = 'Edit';
-
-            // Reattach the original edit event listener
-            editButton.onclick = enableTitleEditing;
-        });
-    };
-}
-
-// Add event listener to "Edit" button
-document.getElementById('editTitle').addEventListener('click', enableTitleEditing);
 
 
 
@@ -75,7 +426,7 @@ function hideButtonsIfLogIsEmpty() {
 
 
 
-document.getElementById('hideButtons').addEventListener('click', function () {
+document.getElementById('printPDF').addEventListener('click', function () {
     window.print();
 });
 
@@ -89,6 +440,7 @@ function captureElement(element) {
     const scale = window.devicePixelRatio || 1;
     canvas.width = 1920 * scale;
     canvas.height = rect.height * scale;
+    console.log(rect.height);
     context.scale(scale, scale);
 
     // Set background color for the canvas
@@ -122,7 +474,7 @@ function captureElement(element) {
                 console.log("Rendering description");
                 // Render description text
                 context.font = '16px Arial';
-                context.fillStyle = 'gray';
+                context.fillStyle = 'black';
                 context.fillText(child.textContent, 30, currentY);
                 currentY += 20; // Increment Y for the next element (line spacing)
             } else if (child.tagName === 'IMG') {
@@ -131,13 +483,13 @@ function captureElement(element) {
                 const img = await loadImage(child.src);
                 if (img) {
                     const imgRect = child.getBoundingClientRect();
-                    const imgHeight = imgRect.height * scale;
+                    const imgHeight = imgRect.height;
                     context.drawImage(
                         img,
-                        rect.left-250,
+                        rect.left,
                         currentY,
-                        imgRect.width,
-                        imgRect.height
+                        imgRect.width - 32,
+                        imgRect.height - 32
                     );
                     currentY += imgHeight + 10; // Increment Y by image height and some padding
                 }
@@ -194,14 +546,11 @@ document.getElementById('saveImages').addEventListener('click', async function (
         }
         if (imageResize.length) {
             Array.from(imageResize).forEach(item => {
-                item.style.width = '50%';
+                item.style.width = '100%';
             });
         }
     }
 });
-
-
-
 
 
 
@@ -215,241 +564,9 @@ chrome.storage.local.get(['clickLog'], function (result) {
         return;
     }
 
-    function renderLog() {
-        logDiv.innerHTML = ''; // Clear log before re-rendering
-
-        if (clickLog.length === 0) {
-            logDiv.textContent = 'No logs recorded.';
-            return;
-        }
-
-        clickLog.forEach((entry, index) => {
-            const logEntryDiv = document.createElement('div');
-            logEntryDiv.className = 'log-entry container';
-
-            // Content container for main log content
-            const contentContainer = document.createElement('div');
-            contentContainer.className = 'content container';
-            const editContainer = document.createElement('div');
-            editContainer.className = 'content container';
-            // Header container for index and title
-            const headerContainer = document.createElement('div');
-            headerContainer.className = 'title container';
-
-            const titleIndex = document.createElement('strong');
-            titleIndex.className = 'index';
-            titleIndex.id = `index-${index}`;
-            titleIndex.textContent = index + 1;
-
-            const titleElement = document.createElement('strong');
-            titleElement.className = 'title';
-            titleElement.id = `title-${index}`;
-            titleElement.textContent = entry.elementText;
-
-            headerContainer.appendChild(titleIndex);
-            headerContainer.appendChild(titleElement);
-
-            // Description
-            const descriptionParagraph = document.createElement('p');
-            descriptionParagraph.className = 'description';
-            descriptionParagraph.id = `descript-${index}`;
-            descriptionParagraph.textContent = entry.description;
-            if (entry.description === '') {
-                descriptionParagraph.style.display = 'none';
-            }
-
-            // Required image
-            const imgElement = document.createElement('img');
-            imgElement.src = entry.dataUrl;
-
-            // Actions container for buttons
-            const actionsContainer = document.createElement('div');
-            actionsContainer.className = 'action container hide-on-print';
-
-            // Edit button
-            const editButton = document.createElement('button');
-            editButton.className = 'secondary-btn';
-            editButton.dataset.index = index;
-            editButton.textContent = 'Edit';
-
-            // Cancel button
-            const cancelButton = document.createElement('button');
-            cancelButton.className = 'secondary-btn';
-            cancelButton.dataset.index = index;
-            cancelButton.textContent = 'Cancel';
-            cancelButton.style.display = 'none';
-
-            // Save button
-            const saveButton = document.createElement('button');
-            saveButton.className = 'primary-btn';
-            saveButton.dataset.index = index;
-            saveButton.textContent = 'Save';
-            saveButton.style.display = 'none';
-
-            // Remove button
-            const removeButton = document.createElement('button');
-            removeButton.className = 'destructive-btn';
-            removeButton.textContent = 'Remove';
-            removeButton.onclick = function () {
-                clickLog.splice(index, 1); // Remove entry from clickLog array
-                saveClickLog(); // Update storage
-                renderLog(); // Re-render after deletion
-            };
-
-            //cancel button event listener
-            cancelButton.addEventListener('click', function () {
-                // Update buttons
-
-                // Remove input fields and labels after saving
-                editContainer.remove();
-
-
-
-                // Show content container and restore button visibility
-                contentContainer.style.display = 'flex';
-                editButton.style.display = 'flex';
-                removeButton.style.display = 'flex'
-                saveButton.style.display = 'none';
-                cancelButton.style.display = 'none'
-
-                // Re-render the log with the new order
-                renderLog();
-
-                // Scroll the window to the log entry's position, with an optional offset (e.g., 200px)
-                window.scrollTo({
-                    top: contentContainer.offsetTop - 100,  // Adjust 200px upwards from the log entry
-                    behavior: 'smooth'  // Smooth scroll
-                });
-            })
-            // Edit button event listener
-            editButton.addEventListener('click', function () {
-                // Hide content container and show input fields for editing
-                contentContainer.style.display = 'none';
-                cancelButton.style.display = 'flex'
-                removeButton.style.display = 'none'
-                // Create and display input fields with labels
-                const titleContainer = document.createElement('div');
-                titleContainer.classList.add('group')
-                const titleLabel = document.createElement('label');
-                titleLabel.textContent = 'Title';
-                const titleInput = document.createElement('input');
-                titleInput.type = 'text';
-                titleInput.value = titleElement.textContent;
-
-                const descriptionContainer = document.createElement('div');
-                descriptionContainer.classList.add('group')
-                const descriptionLabel = document.createElement('label');
-                descriptionLabel.textContent = 'Description';
-                const descriptionTextArea = document.createElement('textarea');
-                descriptionTextArea.placeholder = "Add description...";
-                descriptionTextArea.value = descriptionParagraph.textContent;
-
-                const indexContainer = document.createElement('div');
-                indexContainer.classList.add('group')
-                const indexLabel = document.createElement('label');
-                indexLabel.textContent = 'Position';
-                const indexInput = document.createElement('input');
-                indexInput.type = 'number';
-                indexInput.min = '1';
-                indexInput.max = `${clickLog.length}`;
-                indexInput.value = (index + 1).toString(); // Display as 1-based index
-
-                titleContainer.appendChild(titleLabel);
-                titleContainer.appendChild(titleInput);
-                descriptionContainer.appendChild(descriptionLabel);
-                descriptionContainer.appendChild(descriptionTextArea);
-                indexContainer.appendChild(indexLabel);
-                indexContainer.appendChild(indexInput);
-
-                editContainer.appendChild(titleContainer);
-                editContainer.appendChild(descriptionContainer);
-                editContainer.appendChild(indexContainer);
-                // Append labels and input fields to logEntryDiv directly
-
-                // Scroll the window to the log entry's position, with an optional offset (e.g., 200px)
-                window.scrollTo({
-                    top: editContainer.offsetTop - 400,  // Adjust 200px upwards from the log entry
-                    behavior: 'smooth'  // Smooth scroll
-                });
-
-                // Toggle buttons
-                editButton.style.display = 'none';
-                saveButton.style.display = 'inline';
-
-                // Save button event listener
-                saveButton.addEventListener('click', function () {
-                    // Update title, description, and position with new values
-                    cancelButton.style.display = 'none'
-                    removeButton.style.display = 'flex'
-                    titleElement.textContent = titleInput.value;
-                    descriptionParagraph.textContent = descriptionTextArea.value;
-                    descriptionParagraph.style.display = 'flex';
-                    entry.elementText = titleInput.value;
-                    entry.description = descriptionTextArea.value;
-
-                    // Adjust position in clickLog based on index input
-                    const newPosition = parseInt(indexInput.value, 10) - 1;
-                    clickLog.splice(index, 1); // Remove the entry from the original position
-                    clickLog.splice(newPosition, 0, entry); // Insert it at the new position
-
-                    saveClickLog(); // Save updated clickLog to storage
-
-                    // Remove input fields and labels after saving
-                    editContainer.remove();
-
-
-
-                    // Show content container and restore button visibility
-                    contentContainer.style.display = '';
-                    editButton.style.display = 'inline';
-                    saveButton.style.display = 'none';
-
-                    // Re-render the log with the new order
-                    renderLog();
-
-                    let newEntryElement = document.getElementById(`index-${newPosition}`)
-                    // Scroll the window to the log entry's position, with an optional offset (e.g., 200px)
-                    window.scrollTo({
-                        top: newEntryElement.offsetTop - 100,  // Adjust 200px upwards from the log entry
-                        behavior: 'smooth'  // Smooth scroll
-                    });
-                });
-            });
-
-            // Append elements to their respective containers
-            // contentContainer.appendChild(headerContainer);
-            // contentContainer.appendChild(descriptionParagraph);
-
-
-            actionsContainer.appendChild(removeButton);
-            actionsContainer.appendChild(editButton);
-            actionsContainer.appendChild(cancelButton);
-            actionsContainer.appendChild(saveButton);
-
-            logEntryDiv.appendChild(headerContainer);
-            logEntryDiv.appendChild(descriptionParagraph);
-            logEntryDiv.appendChild(imgElement);
-            logEntryDiv.appendChild(editContainer);
-            logEntryDiv.appendChild(actionsContainer);
-
-            // Append the log entry div to the main log div
-            logDiv.appendChild(logEntryDiv);
-        });
-    }
-
     // Function to save clickLog to Chrome storage
-    function saveClickLog() {
-        chrome.storage.local.set({ clickLog }, function () {
-            console.log('Click log updated in storage');
-        });
-    }
+
 
     renderLog(); // Initial rendering of the log
 });
 
-
-
-// Initialize flowTitle on page load
-initializeFlowTitle();
-// Initial check to hide buttons if the log is empty on page load
-hideButtonsIfLogIsEmpty();
