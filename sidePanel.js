@@ -105,12 +105,14 @@ function displayLog(clickLog) {
     if (clickLog.length === 0) {
         logDiv.textContent = 'No logs recorded.';
         document.getElementById('clearLog').style.display = 'none';
+        document.getElementById('footer').style.display='none';
         return;
     }else if(nonArchivedLogs.length === 0){
         logDiv.textContent = 'Archived logs only';
         return;
     }
     document.getElementById('clearLog').style.display = 'flex';
+    document.getElementById('footer').style.display='flex';
     // Create a Set to keep track of unique IDs
     const uniqueIds = new Set();
     // Create a list to display log entries
@@ -349,5 +351,18 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         chrome.storage.local.get(['clickLog'], function (result) {
             displayLog(result.clickLog || []); // Ensure it's an array
         });
+        
+    }else if (request.action === 'changeToFlow'){
+        console.log('change to view flow button')
+        const openFlowButton = document.getElementById('openFlow');
+        const backButton = document.getElementById('backButton');
+        if (openFlowButton) openFlowButton.style.display = 'flex';
+        if (backButton) backButton.style.display = 'none';
+    }else if (request.action === 'changeToBack'){
+        console.log('change to back button')
+        const openFlowButton = document.getElementById('openFlow');
+        const backButton = document.getElementById('backButton');
+        if (openFlowButton) openFlowButton.style.display = 'none';
+        if (backButton) backButton.style.display = 'flex';
     }
 })

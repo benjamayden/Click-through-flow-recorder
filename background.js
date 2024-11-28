@@ -198,10 +198,16 @@ function checkAndStopRecording(tabId) {
                         console.log("Content script not active in this tab.");
                     }
                 });
-                if (currentTab?.url?.includes('flowDisplay.html')) {
-                    chrome.runtime.sendMessage({ action: 'changeToBack' });
-                }
+                chrome.runtime.sendMessage({ action: 'changeToFlow' });
             }
+        }else{
+            chrome.storage.local.get('flowDisplayTabId', function (data) {
+                if (data.flowDisplayTabId) {
+                    if (tab.id===data.flowDisplayTabId) {
+                        chrome.runtime.sendMessage({ action: 'changeToBack' });
+                    }
+                }
+            });
         }
     });
 }
