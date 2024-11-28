@@ -26,7 +26,6 @@ async function checkUrl() {
 }
 
 // Function to show toast messages
-// Function to show toast messages
 function showToastMessage(message) {
     let toastContainer = document.getElementById('toast-container');
     if (!toastContainer) {
@@ -59,8 +58,8 @@ function showToastMessage(message) {
             // If no more toasts remain, remove the container
             if (toastContainer.children.length === 0) {
                 setTimeout(() => {
-                toastContainer.remove();
-            }, 900); 
+                    toastContainer.remove();
+                }, 900);
             }
         }, 500); // Wait for the fade-out animation to finish
     }, 5000); // Total time for the toast (3 seconds + 2 seconds delay)
@@ -100,12 +99,20 @@ function displayLog(clickLog) {
     const logDiv = document.getElementById('log');
     logDiv.innerHTML = ''; // Clear previous log
 
+    // Check if there are any non-archived entries
+    const nonArchivedLogs = clickLog.filter(entry => !entry.isArchived);
+
     if (clickLog.length === 0) {
         logDiv.textContent = 'No logs recorded.';
         document.getElementById('clearLog').style.display = 'none';
+        document.getElementById('footer').style.display='none';
+        return;
+    }else if(nonArchivedLogs.length === 0){
+        logDiv.textContent = 'Archived logs only';
         return;
     }
     document.getElementById('clearLog').style.display = 'flex';
+    document.getElementById('footer').style.display='flex';
     // Create a Set to keep track of unique IDs
     const uniqueIds = new Set();
     // Create a list to display log entries
@@ -115,7 +122,7 @@ function displayLog(clickLog) {
         if (uniqueIds.has(entry.id)) {
             return; // Skip this entry if the ID has already been processed
         }
-        if(entry.isArchived){
+        if (entry.isArchived) {
             return;
         }
         uniqueIds.add(entry.id); // Add the ID to the set
@@ -196,9 +203,20 @@ document.getElementById('pauseRecording').addEventListener('click', function () 
         recordButton.style.display = 'flex';;
         recordButton.textContent = 'Record';
         pauseButton.style.display = 'none'; // Hide pause button
-
     });
 });
+
+
+// Listen for messages from content script to update log dynamically
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+    if (request.action === 'tabChanged') {
+        let recordButton = document.getElementById('startRecording');
+        let pauseButton = document.getElementById('pauseRecording');
+        recordButton.style.display = 'flex';;
+        recordButton.textContent = 'Record';
+        pauseButton.style.display = 'none'; // Hide pause button
+    }
+})
 
 
 document.getElementById('startRecording').addEventListener('click', async function () {
@@ -224,38 +242,10 @@ document.getElementById('startRecording').addEventListener('click', async functi
                     pauseButton.style.display = 'flex'; // Show the pause button
                 });
             }
-            // else {
-            //     // Stop recording
-            //     chrome.storage.local.set({ isRecording: false }, function () {
-            //         showToastMessage('Recording stopped!');
-
-            //          // Open the log display page in a new tab
-            //          chrome.runtime.sendMessage({ action: 'openFlowDisplay', previousTabId: result.previousTabId });
-
-
-            //         // Clean duplicates and display log
-            //         chrome.storage.local.get(['clickLog'], function (result) {
-            //             let clickLog = result.clickLog || [];
-            //             const cleanedClickLog = removeDuplicates(clickLog);
-            //             chrome.storage.local.set({ clickLog: cleanedClickLog });
-            //             displayLog(cleanedClickLog);
-            //         });
-
-            //         list.classList.remove('isRecording');
-            //         recordButton.classList.remove('isRecording');
-            //         recordButton.textContent = 'Record';
-            //         pauseButton.style.display = 'none'; // Hide the pause button
-
-            //         // Hide "Stop & View" button and show "View Flow" button
-            //         const openFlowButton = document.getElementById('openFlow');
-            //         const backButton = document.getElementById('backButton');
-            //         if (openFlowButton) openFlowButton.style.display = 'flex';
-            //         if (backButton) backButton.style.display = 'none';
-            //     });
-            // }
         });
     }
 });
+
 
 
 
@@ -269,10 +259,10 @@ document.getElementById('openFlow')?.addEventListener('click', async function ()
         return;
     } else {
         // Set recording state to paused
-        
+
         chrome.storage.local.set({ isRecording: false });
-        
-        chrome.storage.local.get(["isRecording"], function(result) {
+
+        chrome.storage.local.get(["isRecording"], function (result) {
             // If recording is paused, show a toast message
             if (result.isRecording) {
                 showToastMessage('Recording paused!');
@@ -281,7 +271,7 @@ document.getElementById('openFlow')?.addEventListener('click', async function ()
         // Update recording button state
         const recordButton = document.getElementById('startRecording');
         if (recordButton) {
-            
+
             recordButton.textContent = 'Record';
             recordButton.style.display = 'flex';
         }
@@ -318,36 +308,9 @@ document.getElementById('backButton')?.addEventListener('click', function () {
 
 });
 
-// // Handle copy log and clear
-// document.getElementById('copyLog').addEventListener('click', function() {
-//     chrome.storage.local.get(['clickLog'], function(result) {
-//         let clickLog = result.clickLog;
-//          // Remove duplicates before storing
-//          const cleanedClickLog = removeDuplicates(clickLog);
-//         // Convert the log to CSV format
-//         let csvContent = "Button Label,URL,Timestamp\n";
-//         cleanedClickLog.forEach(entry => {
-//             let buttonText = entry.elementText.replace(/"/g, '""'); // Escape quotes
-//             csvContent += `${buttonText},${entry.url},${entry.timestamp}\n`;
-//         });
-
-//         // Copy the CSV to the clipboard
-//         navigator.clipboard.writeText(csvContent).then(() => {
-//             showToastMessage('Log copied to clipboard!');
-
-//             // Clear the log after copying
-//             chrome.storage.local.set({ clickLog: [] });
-//             displayLog([]); // Clear the displayed log
-//         }).catch(err => {
-//             console.error('Failed to copy log: ', err);
-//         });
-//     });
-// });
-
-//clear log
 
 document.getElementById('clearLog').addEventListener('click', function () {
-    // Display a confirmation alert
+
     const confirmDelete = confirm("Are you sure you want to delete the log? This action is irreversible.");
 
     if (confirmDelete) {
@@ -363,53 +326,43 @@ document.getElementById('clearLog').addEventListener('click', function () {
 
 })
 
-// // Handle copy of button labels joined by " > "
-// document.getElementById('copyButtonLabels').addEventListener('click', function() {
-//     chrome.storage.local.get(['clickLog'], function(result) {
-//         let clickLog = result.clickLog;
-
-//         // Remove duplicates before concatenating button labels
-//         clickLog = removeDuplicates(clickLog);
-
-//         // Concatenate button labels with " > "
-//         let buttonLabels = clickLog.map(entry => entry.elementText).join(' > ');
-
-//         // Copy the concatenated labels to the clipboard
-//         navigator.clipboard.writeText(buttonLabels).then(() => {
-//             alert('Button labels copied to clipboard!');
-//         }).catch(err => {
-//             console.error('Failed to copy button labels: ', err);
-//         });
-//     });
-// });
 
 // Load and display the click log when the side panel opens
 chrome.storage.local.get(['clickLog'], function (result) {
     displayLog(result.clickLog || []); // Ensure it's an array
 });
 
-// Listen for messages from content script to update log dynamically
+// Listen for messages from content.js to refresh the log display
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-    if (request.action === 'updateLog') {
-        // Update the log with the new entry received from the content script
-        const newLogEntry = request.logEntry;
-
+    if (request.action === 'refreshLog') {
+        // Retrieve the updated log from storage and display it
         chrome.storage.local.get(['clickLog'], function (result) {
             const updatedLog = result.clickLog || [];
-            updatedLog.push(newLogEntry);
-            chrome.storage.local.set({ clickLog: updatedLog }, function () {
-                displayLog(updatedLog); // Update the display with new log
-            });
+            displayLog(updatedLog); // Update the display with the latest log
         });
     }
 });
 
+
 // Listen for messages from content script to update log dynamically
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action === 'updatePanelFromFlow') {
-        displayLog([]); 
+        displayLog([]);
         chrome.storage.local.get(['clickLog'], function (result) {
             displayLog(result.clickLog || []); // Ensure it's an array
         });
+        
+    }else if (request.action === 'changeToFlow'){
+        console.log('change to view flow button')
+        const openFlowButton = document.getElementById('openFlow');
+        const backButton = document.getElementById('backButton');
+        if (openFlowButton) openFlowButton.style.display = 'flex';
+        if (backButton) backButton.style.display = 'none';
+    }else if (request.action === 'changeToBack'){
+        console.log('change to back button')
+        const openFlowButton = document.getElementById('openFlow');
+        const backButton = document.getElementById('backButton');
+        if (openFlowButton) openFlowButton.style.display = 'none';
+        if (backButton) backButton.style.display = 'flex';
     }
 })

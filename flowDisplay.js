@@ -79,16 +79,18 @@ toggle.addEventListener('change', function () {
 function toggleEditMode(enable) {
     const flowTitleElement = document.getElementById('flowTitle');
     const footerElement = document.getElementById('footer');
+    const archivedElement = document.getElementById('archived');
 
     if (enable) {
         flowTitleElement.contentEditable = true;
         flowTitleElement.classList.add('editable');
-        footerElement.classList.add('hide');
-
+        footerElement.style.display = 'none';
+        archivedElement.style.display = 'flex';
     } else {
         flowTitleElement.contentEditable = false;
         flowTitleElement.classList.remove('editable');
-        footerElement.classList.remove('hide');
+        footerElement.style.display = 'flex';
+        archivedElement.style.display = 'none';
 
         // Save the updated title
         chrome.storage.local.set({ flowTitle: flowTitleElement.textContent });
@@ -116,7 +118,7 @@ function renderLog() {
         blockContainer.id = entry.id;
         const logEntryDiv = document.createElement('div');
         logEntryDiv.className = 'log-entry container';
-        if(entry.class)logEntryDiv.classList.add(entry.class);
+        if (entry.class) logEntryDiv.classList.add(entry.class);
         logEntryDiv.draggable = reorder;
 
         if (reorder) {
@@ -128,7 +130,7 @@ function renderLog() {
 
 
         // Content editable when in edit mode
-        const titleElement = document.createElement('h3');
+        const titleElement = document.createElement('h2');
         titleElement.className = 'title';
         titleElement.textContent = entry.elementText;
         titleElement.contentEditable = isEditMode;
@@ -248,9 +250,11 @@ function renderArchivedLog() {
         const logEntryDiv = document.createElement('div');
         logEntryDiv.className = 'archive-entry hide-on-print';
 
-        const titleElement = document.createElement('div');
+        const titleElement = document.createElement('h2');
         titleElement.className = 'title';
         titleElement.textContent = entry.elementText;
+
+        
 
         const restoreButton = document.createElement('button');
         restoreButton.className = 'secondary-btn';
@@ -271,9 +275,24 @@ function renderArchivedLog() {
             }
         };
 
+        // Create Remove Button
+        const removeButton = document.createElement('button');
+        removeButton.className = 'destructive-btn danger';  // Add a danger class for styling
+        removeButton.textContent = 'Remove';
+        removeButton.onclick = function () {
+            // Remove the entry completely from clickLog
+            clickLog = clickLog.filter(block => block.id !== entry.id);
+
+            // Save the updated log and re-render the archived log
+            saveClickLog();
+            renderArchivedLog();
+            chrome.runtime.sendMessage({ action: 'updatePanelFromFlow' });
+        };
+        //add a remove button that removes it entriely from storage
+
         logEntryDiv.appendChild(titleElement);
         logEntryDiv.appendChild(restoreButton);
-
+        logEntryDiv.appendChild(removeButton);
         archivedDiv.appendChild(logEntryDiv);
     });
 }
@@ -465,7 +484,7 @@ function captureElement(element) {
     // Function to render child elements (text, images)
     async function renderChildren() {
         for (const child of element.childNodes) {
-            if (child.tagName === 'H3' && child.classList && !child.classList.contains('hide-on-print')) {
+            if (child.tagName === 'H2' && child.classList && !child.classList.contains('hide-on-print')) {
                 console.log("Rendering title");
                 // Render title elements
                 context.font = 'bold 48px Arial';
@@ -554,6 +573,38 @@ document.getElementById('saveImages').addEventListener('click', async function (
                 item.style.width = '100%';
             });
         }
+    }
+});
+
+document.getElementById('toClipBoard').addEventListener('click', async () => {
+    try {
+        // Gather all <h2>, <p>, and <img> elements in document order
+        const elements = document.querySelectorAll('h1, h2, p, img');
+        let htmlContent = '';
+
+        elements.forEach(element => {
+            if (element.tagName === 'H1') {
+                htmlContent += `<h1>${element.textContent}</h1>`;
+            } else if (element.tagName === 'H2') {
+                htmlContent += `<h2>${element.textContent}</h2>`;
+            } else if (element.tagName === 'P') {
+                htmlContent += `<p>${element.textContent}</p>`;
+            } else if (element.tagName === 'IMG') {
+                htmlContent += `<img src="${element.src}" alt="${element.alt || ''}" />`;
+                htmlContent += `<p>&nbsp;&nbsp;&nbsp;</p>`;
+            }
+
+        });
+
+        // Create a ClipboardItem with the HTML content
+        const blob = new Blob([htmlContent], { type: 'text/html' });
+        const clipboardItem = new ClipboardItem({ 'text/html': blob });
+        await navigator.clipboard.write([clipboardItem]);
+
+        alert('Content copied to clipboard! You can now paste it into Google Docs.');
+    } catch (error) {
+        console.error('Error copying to clipboard:', error);
+        alert('Failed to copy content to clipboard.');
     }
 });
 

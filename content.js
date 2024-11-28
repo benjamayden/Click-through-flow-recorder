@@ -69,14 +69,15 @@ if (!window.hasContentScriptRun) {
         }
         return text; // Return the original text if 4 or fewer words
     }
-    
+
+
 
     function handleMouseDown(event) {
         if (isRecording) {
             let clickedElement = event.target;
-            const preClickedElement = document.getElementsByClassName('click-highlighted');
+            const preClickedElement = document.getElementsByClassName('highlight-stroke');
             Array.from(preClickedElement).forEach(element => {
-                element.classList.remove('click-highlighted');
+                element.classList.remove('highlight-stroke');
             });
 
             let elementText = getShortenedText(getElementText(clickedElement));
@@ -90,12 +91,12 @@ if (!window.hasContentScriptRun) {
                     console.error("Error accessing storage:", chrome.runtime.lastError);
                     return;
                 }
-                clickedElement.classList.add('click-highlighted');
+                clickedElement.classList.add('highlight-stroke');
                 elementText = elementText.replace(/,/g, '');
 
                 const newLogEntry = { id, elementText, url, timestamp };
 
-                setTimeout(function() {
+                setTimeout(function () {
                     chrome.runtime.sendMessage({ action: 'captureScreen', newLogEntry });
                 }, 200);
             });
@@ -116,16 +117,38 @@ if (!window.hasContentScriptRun) {
 
                 const cleanedClickLog = removeDuplicates(updatedClickLog);
 
+                // Save the cleaned log to storage
                 chrome.storage.local.set({ clickLog: cleanedClickLog }, function () {
-                    chrome.runtime.sendMessage({ action: 'updateLog', logEntry: newLogEntry });
+                    // Notify the panel to refresh its display without re-saving
+                    chrome.runtime.sendMessage({ action: 'refreshLog' });
                 });
             });
+            const toRemove = document.querySelectorAll('highlight-stroke');
+            toRemove.forEach(element => {
+                element.classList.remove('highlight-stroke');
+            })
         }
     });
+
 
     // Initial check for `isRecording` and setup event listeners accordingly
     chrome.storage.local.get(['isRecording'], function (result) {
         isRecording = result.isRecording || false;
         toggleRecording(isRecording);
     });
+
+    // Listener for stopRecording action from background script
+    chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+        if (message.action === 'stopRecording') {
+            console.log("Stopping recording due to tab or URL change.");
+
+            // Stop recording and clean up event listeners
+            chrome.storage.local.set({ isRecording: false }, () => {
+                toggleRecording(false);
+                chrome.runtime.sendMessage({ action: 'tabChanged' });
+                console.log("Event listeners removed.");
+            });
+        }
+    });
+
 }
