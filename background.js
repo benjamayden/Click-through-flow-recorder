@@ -176,7 +176,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
 // Check if a URL is allowed
 function isAllowedURL(url) {
-    return allowed.some((pattern) => pattern.test(url));
+    if(allowed.length!==0){
+        return allowed.some((pattern) => pattern.test(url));
+    }
+    else{return true}
 }
 
 // Stop recording if the new tab or URL is not allowed

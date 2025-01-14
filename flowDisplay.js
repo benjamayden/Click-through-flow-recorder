@@ -230,6 +230,28 @@ function renderLog() {
             const imgElement = document.createElement('img');
             imgElement.src = entry.dataUrl || 'placeholder.png';
             logEntryDiv.appendChild(imgElement); // Ensure this line is within the same scope
+
+            const makeRow = document.createElement('input'); // Use 'input' for a checkbox
+            makeRow.type = 'checkbox'; // Set type to 'checkbox'
+            makeRow.id = `checkbox_${entry.id}`;
+            logEntryDiv.appendChild(makeRow);
+
+            // Create a label for the checkbox
+            const label = document.createElement('label');
+            label.htmlFor = makeRow.id; // Associate the label with the checkbox
+            label.textContent = 'WordPress Row'; // Set the label text
+            logEntryDiv.appendChild(label);
+
+            // Use the 'display' style property to show or hide the checkbox
+            if (isEditMode) {
+                makeRow.style.display = 'inline'; // Hide the checkbox in edit mode
+                label.style.display = 'inline'; // Hide the label as well
+            } else {
+                makeRow.style.display = 'none'; // Ensure the checkbox is visible
+                label.style.display = 'none'; // Ensure the label is visible
+            }
+
+
         }
 
         blockContainer.appendChild(logEntryDiv);
@@ -254,7 +276,7 @@ function renderArchivedLog() {
         titleElement.className = 'title';
         titleElement.textContent = entry.elementText;
 
-        
+
 
         const restoreButton = document.createElement('button');
         restoreButton.className = 'secondary-btn';
@@ -526,55 +548,56 @@ function captureElement(element) {
     });
 }
 
-document.getElementById('saveImages').addEventListener('click', async function () {
-    const logEntries = document.querySelectorAll('.log-entry'); // Select all log entries
-    for (let entryIndex = 0; entryIndex < logEntries.length; entryIndex++) {
-        const entry = logEntries[entryIndex];
-        // Skip log entries with the class 'custom'
-        if (entry.classList.contains('custom')) {
-            continue;
-        }
-        const flowTitle = document.getElementById('flowTitle') ? document.getElementById('flowTitle').textContent.trim() : 'Flow';
+// document.getElementById('saveImages').addEventListener('click', async function () {
+//     const logEntries = document.querySelectorAll('.log-entry'); // Select all log entries
+//     for (let entryIndex = 0; entryIndex < logEntries.length; entryIndex++) {
+//         const entry = logEntries[entryIndex];
+//         // Skip log entries with the class 'custom'
+//         if (entry.classList.contains('custom')) {
+//             continue;
+//         }
+//         const flowTitle = document.getElementById('flowTitle') ? document.getElementById('flowTitle').textContent.trim() : 'Flow';
 
-        // Hide any items within log-entry marked with 'hide-on-print' before capture
-        const hideItems = entry.getElementsByClassName('hide-on-print');
-        if (hideItems.length) {
-            Array.from(hideItems).forEach(item => {
-                item.style.display = 'none';
-            });
-        }
+//         // Hide any items within log-entry marked with 'hide-on-print' before capture
+//         const hideItems = entry.getElementsByClassName('hide-on-print');
+//         if (hideItems.length) {
+//             Array.from(hideItems).forEach(item => {
+//                 item.style.display = 'none';
+//             });
+//         }
 
-        const imageResize = entry.getElementsByTagName('img');
-        if (imageResize.length) {
-            Array.from(imageResize).forEach(item => {
-                item.style.width = '1920px';
-            });
-        }
-        // Generate a filename for the saved image
-        const filename = `${flowTitle}_${entryIndex + 1}.png`;
+//         const imageResize = entry.getElementsByTagName('img');
+//         if (imageResize.length) {
+//             Array.from(imageResize).forEach(item => {
+//                 item.style.width = '1920px';
+//             });
+//         }
+//         // Generate a filename for the saved image
+//         const filename = `${flowTitle}_${entryIndex + 1}.png`;
 
-        // Capture the full log entry element
-        const imageData = await captureElement(entry);
+//         // Capture the full log entry element
+//         const imageData = await captureElement(entry);
 
-        // Create a link element to trigger the image download
-        const link = document.createElement('a');
-        link.href = imageData;
-        link.download = filename;
-        link.click();
+//         // Create a link element to trigger the image download
+//         const link = document.createElement('a');
+//         link.href = imageData;
+//         link.download = filename;
+//         link.click();
 
-        // Restore visibility of hidden items
-        if (hideItems.length) {
-            Array.from(hideItems).forEach(item => {
-                item.style.display = 'flex'; // Restore original display property
-            });
-        }
-        if (imageResize.length) {
-            Array.from(imageResize).forEach(item => {
-                item.style.width = '100%';
-            });
-        }
-    }
-});
+//         // Restore visibility of hidden items
+//         if (hideItems.length) {
+//             Array.from(hideItems).forEach(item => {
+//                 item.style.display = 'flex'; // Restore original display property
+//             });
+//         }
+//         if (imageResize.length) {
+//             Array.from(imageResize).forEach(item => {
+//                 item.style.width = '100%';
+//             });
+//         }
+//     }
+// });
+
 
 document.getElementById('toClipBoard').addEventListener('click', async () => {
     try {
@@ -586,8 +609,8 @@ document.getElementById('toClipBoard').addEventListener('click', async () => {
             if (element.tagName === 'H1') {
                 htmlContent += `<h1>${element.textContent}</h1>`;
             } else if (element.tagName === 'H2') {
-                htmlContent += `<h2>${element.textContent}</h2>`;
-            } else if (element.tagName === 'P') {
+                htmlContent += `<h3>${element.textContent}</h3>`;
+            } else if (element.tagName === 'P' && element.textContent !== 'Enter description') {
                 htmlContent += `<p>${element.textContent}</p>`;
             } else if (element.tagName === 'IMG') {
                 htmlContent += `<img src="${element.src}" alt="${element.alt || ''}" />`;

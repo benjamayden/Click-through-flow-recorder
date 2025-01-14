@@ -14,10 +14,12 @@ async function checkUrl() {
 
     let allowRecording = false;
     // If the URL doesn't match allowed patterns, show a toast message and exit
-    if (!currentUrl || !allowed.some(pattern => pattern.test(currentUrl))) {
-        showToastMessage('Url not allowed:\nonly use Internal or Demo');
-        console.log("allowRecording: ", allowRecording)
-        return allowRecording;
+    if (allowed.length !== 0) {
+        if (!currentUrl || !allowed.some(pattern => pattern.test(currentUrl))) {
+            showToastMessage('Url not allowed:\nonly use Internal or Demo');
+            console.log("allowRecording: ", allowRecording)
+            return allowRecording;
+        }
     }
     allowRecording = true;
     console.log("allowRecording: ", allowRecording)
@@ -105,14 +107,14 @@ function displayLog(clickLog) {
     if (clickLog.length === 0) {
         logDiv.textContent = 'No logs recorded.';
         document.getElementById('clearLog').style.display = 'none';
-        document.getElementById('footer').style.display='none';
+        document.getElementById('footer').style.display = 'none';
         return;
-    }else if(nonArchivedLogs.length === 0){
+    } else if (nonArchivedLogs.length === 0) {
         logDiv.textContent = 'Archived logs only';
         return;
     }
     document.getElementById('clearLog').style.display = 'flex';
-    document.getElementById('footer').style.display='flex';
+    document.getElementById('footer').style.display = 'flex';
     // Create a Set to keep track of unique IDs
     const uniqueIds = new Set();
     // Create a list to display log entries
@@ -351,14 +353,14 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         chrome.storage.local.get(['clickLog'], function (result) {
             displayLog(result.clickLog || []); // Ensure it's an array
         });
-        
-    }else if (request.action === 'changeToFlow'){
+
+    } else if (request.action === 'changeToFlow') {
         console.log('change to view flow button')
         const openFlowButton = document.getElementById('openFlow');
         const backButton = document.getElementById('backButton');
         if (openFlowButton) openFlowButton.style.display = 'flex';
         if (backButton) backButton.style.display = 'none';
-    }else if (request.action === 'changeToBack'){
+    } else if (request.action === 'changeToBack') {
         console.log('change to back button')
         const openFlowButton = document.getElementById('openFlow');
         const backButton = document.getElementById('backButton');

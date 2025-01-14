@@ -39,13 +39,13 @@ if (!window.hasContentScriptRun) {
         if (enable) {
             // Add event listeners
             document.addEventListener('mouseover', handleMouseOver);
-            document.addEventListener('mouseout', handleMouseOut);
-            document.addEventListener('mousedown', handleMouseDown);
+            // document.addEventListener('mouseout', handleMouseOut);
+            // document.addEventListener('mousedown', handleMouseDown);
         } else {
             // Remove event listeners
             document.removeEventListener('mouseover', handleMouseOver);
-            document.removeEventListener('mouseout', handleMouseOut);
-            document.removeEventListener('mousedown', handleMouseDown);
+            // document.removeEventListener('mouseout', handleMouseOut);
+            // document.removeEventListener('mousedown', handleMouseDown);
         }
     }
 
