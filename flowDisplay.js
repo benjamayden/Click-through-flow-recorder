@@ -626,3 +626,29 @@ chrome.storage.local.get(['clickLog'], function (result) {
     renderLog(); // Initial rendering of the log
 });
 
+const getLinks = document.getElementById('getLinks');
+
+getLinks.addEventListener('click', async () => {
+    let links = "";
+    chrome.storage.local.get(['clickLog'], async function (result) {
+        if (result.clickLog) {
+            result.clickLog.forEach(entry => {
+                if (entry.url) {
+                    links += `${entry.url},${entry.elementText}\n`;
+                }
+            });
+
+            try {
+                // Create a ClipboardItem with the text content
+                const blob = new Blob([links], { type: 'text/plain' });
+                const clipboardItem = new ClipboardItem({ 'text/plain': blob });
+                await navigator.clipboard.write([clipboardItem]);
+                console.log('Links copied to clipboard successfully!');
+            } catch (error) {
+                console.error('Failed to copy links to clipboard:', error);
+            }
+        } else {
+            console.warn('No clickLog found in storage.');
+        }
+    });
+});

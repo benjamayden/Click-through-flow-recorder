@@ -152,3 +152,16 @@ if (!window.hasContentScriptRun) {
     });
 
 }
+
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    if (message.action === 'getHighlightedText') {
+        const highlightedElement = document.getElementsByClassName('highlight-stroke');
+        let elementText = "";
+
+        if (highlightedElement.length > 0) {
+            elementText = highlightedElement[0].innerText || highlightedElement[0].textContent || '';
+        }
+
+        sendResponse({ elementText });
+    }
+});

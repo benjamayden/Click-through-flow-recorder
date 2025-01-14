@@ -134,23 +134,26 @@ chrome.commands.onCommand.addListener(async (command) => {
             if (tab && tab.id && isAllowedURL(tab.url)) {
                 console.log('Keyboard shortcut triggered');
 
-                // Capture screenshot
-                chrome.tabs.captureVisibleTab(null, { format: 'png', quality: 100 }, function (dataUrl) {
-                    const timestamp = new Date().toISOString();
-                    const url = tab.url;
-                    const title = tab.title;
-                    const newLogEntry = { id: Date.now(), elementText: title, url, timestamp, dataUrl };
+                // Send a message to the content script to get the highlighted text
+                chrome.tabs.sendMessage(tab.id, { action: 'getHighlightedText' }, async (response) => {
+                    const elementText = response?.elementText || tab.title; // Fallback to tab title if no response
 
-                    // Store the log entry in local storage
-                    chrome.storage.local.get('clickLog', function (result) {
-                        const updatedClickLog = result.clickLog || [];
-                        updatedClickLog.push(newLogEntry);
+                    // Capture screenshot
+                    chrome.tabs.captureVisibleTab(null, { format: 'png', quality: 100 }, function (dataUrl) {
+                        const timestamp = new Date().toISOString();
+                        const url = tab.url;
+                        const newLogEntry = { id: Date.now(), elementText, url, timestamp, dataUrl };
 
-                        chrome.storage.local.set({ clickLog: updatedClickLog }, function () {
-                            chrome.runtime.sendMessage({ action: 'refreshLog' });
-                            console.log("Screenshot log saved");
+                        // Store the log entry in local storage
+                        chrome.storage.local.get('clickLog', function (result) {
+                            const updatedClickLog = result.clickLog || [];
+                            updatedClickLog.push(newLogEntry);
+
+                            chrome.storage.local.set({ clickLog: updatedClickLog }, function () {
+                                chrome.runtime.sendMessage({ action: 'refreshLog' });
+                                console.log("Screenshot log saved");
+                            });
                         });
-
                     });
                 });
             }
