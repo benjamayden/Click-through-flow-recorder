@@ -548,55 +548,55 @@ function captureElement(element) {
     });
 }
 
-// document.getElementById('saveImages').addEventListener('click', async function () {
-//     const logEntries = document.querySelectorAll('.log-entry'); // Select all log entries
-//     for (let entryIndex = 0; entryIndex < logEntries.length; entryIndex++) {
-//         const entry = logEntries[entryIndex];
-//         // Skip log entries with the class 'custom'
-//         if (entry.classList.contains('custom')) {
-//             continue;
-//         }
-//         const flowTitle = document.getElementById('flowTitle') ? document.getElementById('flowTitle').textContent.trim() : 'Flow';
+document.getElementById('saveImages').addEventListener('click', async function () {
+    const logEntries = document.querySelectorAll('.log-entry'); // Select all log entries
+    for (let entryIndex = 0; entryIndex < logEntries.length; entryIndex++) {
+        const entry = logEntries[entryIndex];
+        // Skip log entries with the class 'custom'
+        if (entry.classList.contains('custom')) {
+            continue;
+        }
+        const flowTitle = document.getElementById('flowTitle') ? document.getElementById('flowTitle').textContent.trim() : 'Flow';
 
-//         // Hide any items within log-entry marked with 'hide-on-print' before capture
-//         const hideItems = entry.getElementsByClassName('hide-on-print');
-//         if (hideItems.length) {
-//             Array.from(hideItems).forEach(item => {
-//                 item.style.display = 'none';
-//             });
-//         }
+        // Hide any items within log-entry marked with 'hide-on-print' before capture
+        const hideItems = entry.getElementsByClassName('hide-on-print');
+        if (hideItems.length) {
+            Array.from(hideItems).forEach(item => {
+                item.style.display = 'none';
+            });
+        }
 
-//         const imageResize = entry.getElementsByTagName('img');
-//         if (imageResize.length) {
-//             Array.from(imageResize).forEach(item => {
-//                 item.style.width = '1920px';
-//             });
-//         }
-//         // Generate a filename for the saved image
-//         const filename = `${flowTitle}_${entryIndex + 1}.png`;
+        const imageResize = entry.getElementsByTagName('img');
+        if (imageResize.length) {
+            Array.from(imageResize).forEach(item => {
+                item.style.width = '1920px';
+            });
+        }
+        // Generate a filename for the saved image
+        const filename = `${flowTitle}_${entryIndex + 1}.png`;
 
-//         // Capture the full log entry element
-//         const imageData = await captureElement(entry);
+        // Capture the full log entry element
+        const imageData = await captureElement(entry);
 
-//         // Create a link element to trigger the image download
-//         const link = document.createElement('a');
-//         link.href = imageData;
-//         link.download = filename;
-//         link.click();
+        // Create a link element to trigger the image download
+        const link = document.createElement('a');
+        link.href = imageData;
+        link.download = filename;
+        link.click();
 
-//         // Restore visibility of hidden items
-//         if (hideItems.length) {
-//             Array.from(hideItems).forEach(item => {
-//                 item.style.display = 'flex'; // Restore original display property
-//             });
-//         }
-//         if (imageResize.length) {
-//             Array.from(imageResize).forEach(item => {
-//                 item.style.width = '100%';
-//             });
-//         }
-//     }
-// });
+        // Restore visibility of hidden items
+        if (hideItems.length) {
+            Array.from(hideItems).forEach(item => {
+                item.style.display = 'flex'; // Restore original display property
+            });
+        }
+        if (imageResize.length) {
+            Array.from(imageResize).forEach(item => {
+                item.style.width = '100%';
+            });
+        }
+    }
+});
 
 
 document.getElementById('toClipBoard').addEventListener('click', async () => {
