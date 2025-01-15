@@ -1,9 +1,5 @@
 //background.js
-// Allowed URL patterns
-const allowed = [
-    /^http:\/\/iaptus\.internal\//, // Matches http://iaptus.internal/*
-    /^https:\/\/demo\.iaptus\.co\.uk\// // Matches https://demo.iaptus.co.uk/*
-];
+
 // Initialize storage on install
 chrome.runtime.onInstalled.addListener(() => {
     chrome.storage.local.set({ clickLog: [], isRecording: false });
@@ -53,85 +49,87 @@ chrome.runtime.onConnect.addListener((port) => {
     }
 });
 
+async function checkUrl() {
+    // Get the current active tab
+    const [currentTab] = await chrome.tabs.query({ active: true, currentWindow: true });
 
-// Listen for tab updates (new page loads, navigations)
-chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-    if (changeInfo.status === 'complete') {
-        // Check if recording is active, then inject the content script
-        chrome.storage.local.get('isRecording', function (data) {
-            if (data.isRecording) {
-                chrome.scripting.executeScript({
-                    target: { tabId: tabId },
-                    files: ['content.js']
-                });
-            }
-        });
-    }
-});
+    // Define allowed URL patterns using regular expressions
+    let allowed = [
+        /^http:\/\/iaptus\.internal\//,  // Matches http://iaptus.internal/*
+        /^https:\/\/demo\.iaptus\.co\.uk\//  // Matches https://demo.iaptus.co.uk/*
+    ];
 
-// Listen for tab activation (when user switches to a new tab)
-chrome.tabs.onActivated.addListener((activeInfo) => {
-    chrome.storage.local.get('isRecording', function (data) {
-        if (data.isRecording) {
-            chrome.scripting.executeScript({
-                target: { tabId: activeInfo.tabId },
-                files: ['content.js']
-            });
+    const currentUrl = currentTab?.url;
+
+    let allowRecording = false;
+    // If the URL doesn't match allowed patterns, show a toast message and exit
+    if (allowed.length !== 0) {
+        if (!currentUrl || !allowed.some(pattern => pattern.test(currentUrl))) {
+            return allowRecording;
         }
-    });
-});
-
-
-function createNewTab() {
-    chrome.tabs.create({ url: chrome.runtime.getURL('flowDisplay.html') }, function (newTab) {
-        // Store the newly created tab ID for future use
-        chrome.storage.local.set({ flowDisplayTabId: newTab.id });
-
-        // Optionally, store the previous tab ID if recording is active
-        chrome.storage.local.get('isRecording', function (recordingData) {
-            if (recordingData.isRecording) {
-                chrome.storage.local.set({ previousTabId: request.previousTabId });
-            }
-        });
-    });
+    }
+    allowRecording = true;
+    return allowRecording;
 }
 
-// Listener to handle messages from panel.js
+const isAllowed = checkUrl();
+
+if(isAllowed){
+
+// Listener to handle messages from pannel.js
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action === 'openFlowDisplay') {
-        // Search for an existing tab with the flowDisplay.html URL
-        chrome.storage.local.get('flowDisplayTabId', function (data) {
-            if (data.flowDisplayTabId) {
-                // Try to update and refresh the existing tab
-                chrome.tabs.update(data.flowDisplayTabId, { active: true }, function (updatedTab) {
-                    if (chrome.runtime.lastError) {
-                        // If there was an error (e.g., the tab is no longer valid), create a new tab
-                        console.error("Error updating tab:", chrome.runtime.lastError.message);
-                        createNewTab();
-                    } else {
-                        chrome.tabs.reload(data.flowDisplayTabId); // Refresh the tab if update was successful
-                    }
-                });
-            } else {
-                // If no such tab exists, create a new tab
-                createNewTab();
-            }
-        });
-
+        // Handle the request to open or switch to the flow display tab
+        handleFlowTab(request.previousTabId);
     } else if (request.action === 'goBack') {
+        // Handle the request to go back to the previously recorded tab
         chrome.storage.local.get('previousTabId', function (data) {
             if (data.previousTabId) {
+                // Activate the previously recorded tab
                 chrome.tabs.update(data.previousTabId, { active: true });
             }
         });
     }
 });
 
+// Function to handle the flow display tab logic
+function handleFlowTab(previousTabId) {
+    // Retrieve the ID of the flow display tab from local storage
+    chrome.storage.local.get('flowDisplayTabId', function (data) {
+        const existingTabId = data.flowDisplayTabId;
+
+        if (existingTabId) {
+            // Check if the flow display tab is still valid
+            chrome.tabs.get(existingTabId, function (tab) {
+                if (chrome.runtime.lastError || !tab) {
+                    // If the tab is no longer valid, create a new flow display tab
+                    createFlowTab(previousTabId);
+                } else {
+                    // Activate the existing flow display tab
+                    chrome.tabs.update(existingTabId, { active: true });
+                }
+            });
+        } else {
+            // If no flow display tab exists, create a new one
+            createFlowTab(previousTabId);
+        }
+    });
+}
+
+// Function to create a new flow display tab
+function createFlowTab(previousTabId) {
+    // Open a new tab with the URL for the flow display page
+    chrome.tabs.create({ url: chrome.runtime.getURL('flowDisplay.html') }, function (newTab) {
+        // Save the new tab's ID as the flow display tab ID and store the previous tab ID
+        chrome.storage.local.set({ flowDisplayTabId: newTab.id, previousTabId });
+    });
+}
+
 chrome.commands.onCommand.addListener(async (command) => {
     if (command === "take_screenshot") {
         try {
             const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-            if (tab && tab.id && isAllowedURL(tab.url)) {
+            if (tab && tab.id && isAllowed) {
                 console.log('Keyboard shortcut triggered');
 
                 // Send a message to the content script to get the highlighted text
@@ -172,61 +170,31 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     }
 });
 
-
-
-// Check if a URL is allowed
-function isAllowedURL(url) {
-    if(allowed.length!==0){
-        return allowed.some((pattern) => pattern.test(url));
-    }
-    else{return true}
-}
-
-// Stop recording if the new tab or URL is not allowed
-function checkAndStopRecording(tabId) {
-    chrome.tabs.get(tabId, (tab) => {
-        if (tab && tab.url) {
-            if (isAllowedURL(tab.url)) {
-                console.log("Tab is allowed:", tab.url);
-                chrome.runtime.sendMessage({ action: 'changeToFlow' });
-            } else {
-                console.log("Tab is not allowed. Stopping recording:", tab.url);
-
-                // Update recording state in storage
-                chrome.storage.local.set({ isRecording: false }, () => {
-                    chrome.runtime.sendMessage({ action: 'tabChanged' });
-                    console.log("Recording stopped.");
-                });
-
-                // Optionally notify the content script to clean up listeners
-                chrome.tabs.sendMessage(tabId, { action: 'stopRecording' }, () => {
-                    if (chrome.runtime.lastError) {
-                        console.log("Content script not active in this tab.");
-                    }
-                });
-                chrome.runtime.sendMessage({ action: 'changeToFlow' });
-            }
-        }else{
-            chrome.storage.local.get('flowDisplayTabId', function (data) {
-                if (data.flowDisplayTabId) {
-                    if (tab.id===data.flowDisplayTabId) {
-                        chrome.runtime.sendMessage({ action: 'changeToBack' });
-                    }
-                }
-            });
-        }
-    });
-}
-
 // Listen for tab activation (switching tabs)
 chrome.tabs.onActivated.addListener((activeInfo) => {
-    checkAndStopRecording(activeInfo.tabId);
+    // Stop recording when the tab is changed
+    chrome.storage.local.set({ isRecording: false }, () => {
+        console.log("Recording stopped due to tab activation.");
+    });
 });
 
 // Listen for tab updates (navigating or reloading)
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
     if (changeInfo.status === 'complete') {
-        checkAndStopRecording(tabId);
+        // Check if the URL passes the allowed URL check before stopping recording
+        chrome.storage.local.get('isRecording', (data) => {
+            if (data.isRecording && tab.url) {
+                // If recording is active and URL check fails, stop recording
+                if (!isAllowed) {
+                    chrome.storage.local.set({ isRecording: false }, () => {
+                        console.log("Recording stopped due to tab update (URL check failed).");
+                    });
+                } else {
+                    console.log("Recording continues because the URL is allowed.");
+                }
+            }
+        });
     }
 });
 
+}
