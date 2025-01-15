@@ -195,25 +195,28 @@ function removeDuplicates(log) {
 document.getElementById('pauseRecording').addEventListener('click', function () {
     // Pause recording functionality
     chrome.storage.local.set({ isRecording: false }, function () {
-        updateRecordingButtons({ recording: false }); // Shows "Record" and hides "Pause"
-        showToastMessage('Recording paused!');
+
     });
 });
 
 
-// Listen for messages from content script to update log dynamically
-chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-    if (request.action === 'tabChanged') {
-        updateRecordingButtons({ recording: false }); // Shows "Record" and hides "Pause"
-        chrome.storage.local.get(['isRecording'], async function (result) {
-            const isRecording = result.isRecording || false;
-            if (!isRecording) {
-                showToastMessage('Recording paused!');
-            }
-        })
+    // Listen for changes in local storage
+    chrome.storage.onChanged.addListener((changes, area) => {
+        if (area === 'local' && changes.hasOwnProperty('isRecording')) {
+            const newValue = changes.isRecording.newValue;
 
-    }
-})
+            // If isRecording changes to false, stop recording
+            if (newValue === false) {
+                updateRecordingButtons({ recording: false }); // Shows "Record" and hides "Pause"
+                showToastMessage('Recording paused!');
+            }else{
+                updateRecordingButtons({ recording: true }); // Shows "Pause" and hides "Record"
+                // Show a toast message to indicate recording has started
+                showToastMessage('Recording started!');
+
+            }
+        }
+    });
 
 
 // Add an event listener to the "Start Recording" button
@@ -232,11 +235,6 @@ document.getElementById('startRecording').addEventListener('click', async functi
                 chrome.storage.local.set({
                     isRecording: true,
                     previousTabId: currentTab.id // Save the current tab as the starting point
-                }, function () {
-                    updateRecordingButtons({ recording: true }); // Shows "Pause" and hides "Record"
-                    // Show a toast message to indicate recording has started
-                    showToastMessage('Recording started!');
-
                 });
             }
         });
@@ -314,7 +312,6 @@ document.getElementById('openFlow')?.addEventListener('click', async function ()
             // Update button states to reflect the "Flow Display" view
             updateFlowButtons({ showFlow: false }); // Hides "View Flow" and shows "Back"
             updateRecordingButtons({ recording: false }); // Shows "Record" and hides "Pause"
-            showToastMessage('Recording paused!');
         });
     }
 });
