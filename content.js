@@ -71,97 +71,72 @@ if (!window.hasContentScriptRun) {
     }
 
 
-
-    // function handleMouseDown(event) {
-    //     if (isRecording) {
-    //         let clickedElement = event.target;
-    //         const preClickedElement = document.getElementsByClassName('highlight-stroke');
-    //         Array.from(preClickedElement).forEach(element => {
-    //             element.classList.remove('highlight-stroke');
-    //         });
-
-    //         let elementText = getShortenedText(getElementText(clickedElement));
-    //         let url = window.location.href;
-    //         let timestamp = new Date().toISOString();
-    //         id += 1;
-
-    //         // Log click only if recording is enabled
-    //         chrome.storage.local.get(['clickLog'], function (result) {
-    //             if (chrome.runtime.lastError) {
-    //                 console.error("Error accessing storage:", chrome.runtime.lastError);
-    //                 return;
-    //             }
-    //             clickedElement.classList.add('highlight-stroke');
-    //             elementText = elementText.replace(/,/g, '');
-
-    //             const newLogEntry = { id, elementText, url, timestamp };
-
-    //             setTimeout(function () {
-    //                 chrome.runtime.sendMessage({ action: 'captureScreen', newLogEntry });
-    //             }, 200);
-    //         });
-    //     }
-    // }
-
-
-    // Listener for screen capture completion
-    chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
-        if (request.action === 'captureComplete') {
-            const dataUrl = request.dataUrl;
-            const newLogEntry = request.newLogEntry;
-
-            newLogEntry.dataUrl = dataUrl;
-            chrome.storage.local.get('clickLog', function (result) {
-                const updatedClickLog = result.clickLog || [];
-                updatedClickLog.push(newLogEntry);
-
-                const cleanedClickLog = removeDuplicates(updatedClickLog);
-
-                // Save the cleaned log to storage
-                chrome.storage.local.set({ clickLog: cleanedClickLog }, function () {
-                    // Notify the panel to refresh its display without re-saving
-                    chrome.runtime.sendMessage({ action: 'refreshLog' });
-                });
-            });
-            const toRemove = document.querySelectorAll('highlight-stroke');
-            toRemove.forEach(element => {
-                element.classList.remove('highlight-stroke');
-            })
-        }
-    });
-
-
     // Initial check for `isRecording` and setup event listeners accordingly
     chrome.storage.local.get(['isRecording'], function (result) {
         isRecording = result.isRecording || false;
         toggleRecording(isRecording);
     });
 
-    // Listener for stopRecording action from background script
-    chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-        if (message.action === 'stopRecording') {
-            console.log("Stopping recording due to tab or URL change.");
 
-            // Stop recording and clean up event listeners
-            chrome.storage.local.set({ isRecording: false }, () => {
-                toggleRecording(false);
-                chrome.runtime.sendMessage({ action: 'tabChanged' });
-                console.log("Event listeners removed.");
+    chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+        switch (message.action) {
+            case 'captureComplete':
+                handleCaptureComplete(message);
+                break;
+            case 'getHighlightedText':
+                handleGetHighlightedText(sendResponse);
+                break;
+            default:
+                console.warn('Unhandled message action:', message.action);
+        }
+        return true; // Ensure async sendResponse works
+    });
+
+    // Handlers for each action
+    function handleCaptureComplete(request) {
+        const { dataUrl, newLogEntry } = request;
+
+        newLogEntry.dataUrl = dataUrl;
+        chrome.storage.local.get('clickLog', function (result) {
+            const updatedClickLog = result.clickLog || [];
+            updatedClickLog.push(newLogEntry);
+
+            const cleanedClickLog = removeDuplicates(updatedClickLog);
+
+            // Save the cleaned log to storage
+            chrome.storage.local.set({ clickLog: cleanedClickLog }, function () {
+                try {
+                    chrome.runtime.sendMessage({ action: 'refreshLog' });
+                } catch (error) {
+                    console.warn("No active recipient for refreshLog:", error);
+                }
             });
+        });
+
+        const toRemove = document.querySelectorAll('.highlight-stroke');
+        toRemove.forEach(element => element.classList.remove('highlight-stroke'));
+    }
+
+    // Listen for changes in local storage
+    chrome.storage.onChanged.addListener((changes, area) => {
+        if (area === 'local' && changes.hasOwnProperty('isRecording')) {
+            const newValue = changes.isRecording.newValue;
+
+            // If isRecording changes to false, stop recording
+            if (newValue === false) {
+                toggleRecording(false);
+            }
         }
     });
 
-}
-
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-    if (message.action === 'getHighlightedText') {
+    function handleGetHighlightedText(sendResponse) {
         const highlightedElement = document.getElementsByClassName('highlight-stroke');
-        let elementText = "";
-
-        if (highlightedElement.length > 0) {
-            elementText = highlightedElement[0].innerText || highlightedElement[0].textContent || '';
-        }
-
+        const elementText = highlightedElement.length > 0
+            ? highlightedElement[0].innerText || highlightedElement[0].textContent || ''
+            : '';
         sendResponse({ elementText });
     }
-});
+
+}
+
+
