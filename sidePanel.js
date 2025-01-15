@@ -202,6 +202,8 @@ document.getElementById('pauseRecording').addEventListener('click', function () 
     chrome.storage.local.set({ isRecording: false }, function () {
         let recordButton = document.getElementById('startRecording');
         let pauseButton = document.getElementById('pauseRecording');
+        let instructions = document.getElementById('instructions');
+        instructions.style.display = 'none';
         recordButton.style.display = 'flex';;
         recordButton.textContent = 'Record';
         pauseButton.style.display = 'none'; // Hide pause button
@@ -232,22 +234,29 @@ document.getElementById('startRecording').addEventListener('click', async functi
 
         const recordButton = document.getElementById('startRecording');
         const pauseButton = document.getElementById('pauseRecording'); // Your pause button
-
+        const instructions = document.getElementById('instructions');
         chrome.storage.local.get(['isRecording'], function (result) {
             const isRecording = result.isRecording || false;
-
+            let text = "Ctrl+Shift+E";
+            chrome.runtime.getPlatformInfo(function(info) {
+                if (info.os === "mac") {
+                  text = "Command+Shift+E"
+                }
+              });     
             if (!isRecording) {
                 // Start recording
                 chrome.storage.local.set({ isRecording: true }, function () {
                     showToastMessage('Recording started!');
+                    instructions.getElementsByTagName('STRONG')[0].innerText = text;
+                    instructions.style.display = 'block';
                     recordButton.style.display = 'none';
                     pauseButton.style.display = 'flex'; // Show the pause button
+                    
                 });
             }
         });
     }
 });
-
 
 
 

@@ -39,12 +39,12 @@ if (!window.hasContentScriptRun) {
         if (enable) {
             // Add event listeners
             document.addEventListener('mouseover', handleMouseOver);
-            // document.addEventListener('mouseout', handleMouseOut);
+            document.addEventListener('mouseout', handleMouseOut);
             // document.addEventListener('mousedown', handleMouseDown);
         } else {
             // Remove event listeners
             document.removeEventListener('mouseover', handleMouseOver);
-            // document.removeEventListener('mouseout', handleMouseOut);
+            document.removeEventListener('mouseout', handleMouseOut);
             // document.removeEventListener('mousedown', handleMouseDown);
         }
     }
@@ -72,36 +72,36 @@ if (!window.hasContentScriptRun) {
 
 
 
-    function handleMouseDown(event) {
-        if (isRecording) {
-            let clickedElement = event.target;
-            const preClickedElement = document.getElementsByClassName('highlight-stroke');
-            Array.from(preClickedElement).forEach(element => {
-                element.classList.remove('highlight-stroke');
-            });
+    // function handleMouseDown(event) {
+    //     if (isRecording) {
+    //         let clickedElement = event.target;
+    //         const preClickedElement = document.getElementsByClassName('highlight-stroke');
+    //         Array.from(preClickedElement).forEach(element => {
+    //             element.classList.remove('highlight-stroke');
+    //         });
 
-            let elementText = getShortenedText(getElementText(clickedElement));
-            let url = window.location.href;
-            let timestamp = new Date().toISOString();
-            id += 1;
+    //         let elementText = getShortenedText(getElementText(clickedElement));
+    //         let url = window.location.href;
+    //         let timestamp = new Date().toISOString();
+    //         id += 1;
 
-            // Log click only if recording is enabled
-            chrome.storage.local.get(['clickLog'], function (result) {
-                if (chrome.runtime.lastError) {
-                    console.error("Error accessing storage:", chrome.runtime.lastError);
-                    return;
-                }
-                clickedElement.classList.add('highlight-stroke');
-                elementText = elementText.replace(/,/g, '');
+    //         // Log click only if recording is enabled
+    //         chrome.storage.local.get(['clickLog'], function (result) {
+    //             if (chrome.runtime.lastError) {
+    //                 console.error("Error accessing storage:", chrome.runtime.lastError);
+    //                 return;
+    //             }
+    //             clickedElement.classList.add('highlight-stroke');
+    //             elementText = elementText.replace(/,/g, '');
 
-                const newLogEntry = { id, elementText, url, timestamp };
+    //             const newLogEntry = { id, elementText, url, timestamp };
 
-                setTimeout(function () {
-                    chrome.runtime.sendMessage({ action: 'captureScreen', newLogEntry });
-                }, 200);
-            });
-        }
-    }
+    //             setTimeout(function () {
+    //                 chrome.runtime.sendMessage({ action: 'captureScreen', newLogEntry });
+    //             }, 200);
+    //         });
+    //     }
+    // }
 
 
     // Listener for screen capture completion

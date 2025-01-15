@@ -71,7 +71,7 @@
       top: 0;
       display: flex;
       flex-direction: column;
-      gap: 0.125rem;
+      gap: 0.5rem;
       background-color: white;
       padding-top: 0.75rem;
       padding-bottom: 0.75rem;
@@ -252,6 +252,11 @@
     .back {
       display: none;
     }
+
+    #instructions{
+      display: none;
+      margin:0;
+    }
   </style>
 
 </head>
@@ -261,6 +266,9 @@
     <div class="header">
       <button id="pauseRecording" class="secondary-btn pause">Pause</button>
       <button id="startRecording" class="primary-btn">Record</button>
+      <p id="instructions">
+       To capture press: <strong id="shortcutButtons">Ctrl+Shift+E</strong> 
+      </p>
     </div>
 
     <div class="content">
