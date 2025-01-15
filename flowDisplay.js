@@ -230,28 +230,6 @@ function renderLog() {
             const imgElement = document.createElement('img');
             imgElement.src = entry.dataUrl || 'placeholder.png';
             logEntryDiv.appendChild(imgElement); // Ensure this line is within the same scope
-
-            const makeRow = document.createElement('input'); // Use 'input' for a checkbox
-            makeRow.type = 'checkbox'; // Set type to 'checkbox'
-            makeRow.id = `checkbox_${entry.id}`;
-            logEntryDiv.appendChild(makeRow);
-
-            // Create a label for the checkbox
-            const label = document.createElement('label');
-            label.htmlFor = makeRow.id; // Associate the label with the checkbox
-            label.textContent = 'WordPress Row'; // Set the label text
-            logEntryDiv.appendChild(label);
-
-            // Use the 'display' style property to show or hide the checkbox
-            if (isEditMode) {
-                makeRow.style.display = 'inline'; // Hide the checkbox in edit mode
-                label.style.display = 'inline'; // Hide the label as well
-            } else {
-                makeRow.style.display = 'none'; // Ensure the checkbox is visible
-                label.style.display = 'none'; // Ensure the label is visible
-            }
-
-
         }
 
         blockContainer.appendChild(logEntryDiv);
