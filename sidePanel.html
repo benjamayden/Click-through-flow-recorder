@@ -202,10 +202,9 @@
       padding: 0;
       margin: 0;
       display: flex;
-      flex-direction: column;
+      flex-direction: column-reverse;
       gap: 0.25rem;
       flex-grow: 1;
-
     }
 
     li {
@@ -253,9 +252,17 @@
       display: none;
     }
 
+    .instructions{
+      margin:0;
+    }
+
     #instructions{
       display: none;
-      margin:0;
+    }
+    .instructions-container{
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
     }
   </style>
 
@@ -266,9 +273,15 @@
     <div class="header">
       <button id="pauseRecording" class="secondary-btn pause">Pause</button>
       <button id="startRecording" class="primary-btn">Record</button>
-      <p id="instructions">
-       To capture press: <strong id="shortcutButtons">Ctrl+Shift+E</strong> 
-      </p>
+      <div class="instructions-container">
+        <p id="record-instructions" class="instructions">
+          Toggle record: <strong><span class="shortcutButtons">Ctrl</span>+Shift+S</strong> 
+          </p>
+          <p id="instructions" class="instructions">
+          Take screenshot: <strong><span class="shortcutButtons">Ctrl</span>+Shift+E</strong> 
+          </p>
+      </div>
+
     </div>
 
     <div class="content">

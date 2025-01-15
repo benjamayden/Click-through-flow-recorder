@@ -192,55 +192,60 @@ function removeDuplicates(log) {
     });
 }
 
-document.getElementById('pauseRecording').addEventListener('click', function () {
-    // Pause recording functionality
-    chrome.storage.local.set({ isRecording: false }, function () {
-
+// Centralized function to update storage and UI
+function updateRecordingState(isRecording) {
+    chrome.storage.local.set({ isRecording }, function () {
+        if (isRecording) {
+            updateRecordingButtons({ recording: true }); // Show "Pause", hide "Record"
+            showToastMessage('Recording started!');
+        } else {
+            updateRecordingButtons({ recording: false }); // Show "Record", hide "Pause"
+            showToastMessage('Recording paused!');
+        }
     });
+}
+
+// Add event listener for "Pause Recording"
+document.getElementById('pauseRecording').addEventListener('click', () => {
+    updateRecordingState(false); // Pause recording
 });
 
+// Add event listener for "Start Recording"
+document.getElementById('startRecording').addEventListener('click', () => {
+    startRecording();
+});
 
-    // Listen for changes in local storage
-    chrome.storage.onChanged.addListener((changes, area) => {
-        if (area === 'local' && changes.hasOwnProperty('isRecording')) {
-            const newValue = changes.isRecording.newValue;
+// Listen for 'toggle_recording' message from background
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    if (message.action === 'keyboard_record') {
+                startRecording();
+    }else if(message.action === 'keyboard_pause'){
+        updateRecordingState(false); // Pause recording
+    }
+});
 
-            // If isRecording changes to false, stop recording
-            if (newValue === false) {
-                updateRecordingButtons({ recording: false }); // Shows "Record" and hides "Pause"
-                showToastMessage('Recording paused!');
-            }else{
-                updateRecordingButtons({ recording: true }); // Shows "Pause" and hides "Record"
-                // Show a toast message to indicate recording has started
-                showToastMessage('Recording started!');
+// Start recording function (with URL check)
+async function startRecording() {
+    const isAllowed = await checkUrl();
+    if (!isAllowed) {
+        showToastMessage('Url not allowed: Only use Internal or Demo');
+        return false; // Abort if URL is not allowed
+    }
 
-            }
+    // Get current recording state and active tab info
+    chrome.storage.local.get(['isRecording'], async (result) => {
+        const isRecording = result.isRecording || false;
+        if (!isRecording) {
+            const [currentTab] = await chrome.tabs.query({ active: true, currentWindow: true });
+            chrome.storage.local.set({
+                previousTabId: currentTab.id // Save the tab as the starting point
+            });
+            updateRecordingState(true);
         }
     });
 
-
-// Add an event listener to the "Start Recording" button
-document.getElementById('startRecording').addEventListener('click', async function () {
-    // Call `checkUrl()` to ensure the current URL is allowed for recording
-    const isAllowed = await checkUrl();
-    // Proceed only if the URL is allowed
-    if (isAllowed) {
-        // Access the current recording state from local storage
-        chrome.storage.local.get(['isRecording'], async function (result) {
-            const isRecording = result.isRecording || false;
-            if (!isRecording) {
-                // Get the current active tab
-                const [currentTab] = await chrome.tabs.query({ active: true, currentWindow: true });
-                // Start recording and store the current tab's ID as `previousTabId`
-                chrome.storage.local.set({
-                    isRecording: true,
-                    previousTabId: currentTab.id // Save the current tab as the starting point
-                });
-            }
-        });
-    } else { showToastMessage('Url not allowed:\nonly use Internal or Demo'); }
-});
-
+    return true; // Recording is allowed
+}
 
 
 // Utility function to update the visibility of "View Flow" and "Back" buttons
@@ -262,16 +267,19 @@ function updateRecordingButtons({ recording = true }) {
     const instructions = document.getElementById('instructions');   // Instructions for shortcut
 
     // Set the correct keyboard shortcut based on the OS
-    let text = "Ctrl+Shift+E";
+    let text = "Ctrl";
     chrome.runtime.getPlatformInfo(function (info) {
         if (info.os === "mac") {
-            text = "Command+Shift+E";
+            text = "Command";
         }
     });
-
+    const shortCutButtons = Array.from(document.getElementsByClassName('shortcutButtons'));
+    shortCutButtons.forEach((shortCut) => {
+        shortCut.innerText = text;
+    });
+    
     // Update the instructions with the keyboard shortcut
     if (instructions) {
-        instructions.getElementsByTagName('STRONG')[0].innerText = text;
         instructions.style.display = recording ? 'block' : 'none';
     }
 

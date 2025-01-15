@@ -93,11 +93,11 @@ if (isAllowed) {
                 }
             });
         }
-    
+
         // Return true to keep the message channel open
         return true;
     });
-    
+
     // Function to handle the flow display tab logic
     function handleFlowTab(previousTabId) {
         // Retrieve the ID of the flow display tab from local storage
@@ -164,6 +164,16 @@ if (isAllowed) {
             } catch (error) {
                 console.error("Error capturing screenshot:", error);
             }
+        } else if (command === "toggle_recording") {
+            chrome.storage.local.get('isRecording', (data) => {
+                if (data.isRecording) {
+                    chrome.runtime.sendMessage({ action: 'keyboard_pause' });
+                } else {
+                    chrome.runtime.sendMessage({ action: 'keyboard_record' });
+                }
+                // Send a message to the panel to toggle recording
+
+            })
         }
     });
 

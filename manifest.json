@@ -16,6 +16,13 @@
         "mac": "Command+Shift+E"
       },
       "description": "Take a screenshot of the current tab"
+    },
+    "toggle_recording": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+S",
+        "mac": "Command+Shift+S"
+      },
+      "description": "Start/Pause Recording"
     }
   },
   "host_permissions": [

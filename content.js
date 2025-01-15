@@ -122,12 +122,21 @@ if (!window.hasContentScriptRun) {
         if (area === 'local' && changes.hasOwnProperty('isRecording')) {
             const newValue = changes.isRecording.newValue;
 
-            // If isRecording changes to false, stop recording
+            // If isRecording changes to false, stop recording and remove 'highlight-stroke' class from all elements
             if (newValue === false) {
-                toggleRecording(false);
+                toggleRecording(newValue);
+
+                // Select all elements with the 'highlight-stroke' class
+                const highlightedElements = document.querySelectorAll('.highlight-stroke');
+
+                // Remove the class from each element
+                highlightedElements.forEach(element => {
+                    element.classList.remove('highlight-stroke');
+                });
             }
         }
     });
+
 
     function handleGetHighlightedText(sendResponse) {
         const highlightedElement = document.getElementsByClassName('highlight-stroke');
