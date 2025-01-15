@@ -76,22 +76,24 @@ const isAllowed = checkUrl();
 
 if(isAllowed){
 
-// Listener to handle messages from pannel.js
-chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-    if (request.action === 'openFlowDisplay') {
-        // Handle the request to open or switch to the flow display tab
-        handleFlowTab(request.previousTabId);
-    } else if (request.action === 'goBack') {
-        // Handle the request to go back to the previously recorded tab
-        chrome.storage.local.get('previousTabId', function (data) {
-            if (data.previousTabId) {
-                // Activate the previously recorded tab
-                chrome.tabs.update(data.previousTabId, { active: true });
-            }
-        });
-    }
-});
-
+    chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+        if (message.action === 'openFlowDisplay') {
+            handleFlowTab(message.previousTabId);
+            sendResponse({ status: "Flow Display opened" });
+        } else if (message.action === 'goBack') {
+            chrome.storage.local.get('previousTabId', function (data) {
+                if (data.previousTabId) {
+                    chrome.tabs.update(data.previousTabId, { active: true });
+                    sendResponse({ status: "Returned to previous tab" });
+                } else {
+                    sendResponse({ status: "No previous tab found" });
+                }
+            });
+        }
+    
+        // Return true to keep the message channel open for asynchronous response
+        return true;
+    });
 // Function to handle the flow display tab logic
 function handleFlowTab(previousTabId) {
     // Retrieve the ID of the flow display tab from local storage

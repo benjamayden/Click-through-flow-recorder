@@ -281,48 +281,38 @@ function updateRecordingButtons({ recording = true }) {
 }
 
 
-// Event listener for the "View Flow" button
 document.getElementById('openFlow')?.addEventListener('click', async function () {
     // Get the currently active tab in the current window
     const [currentTab] = await chrome.tabs.query({ active: true, currentWindow: true });
 
     if (currentTab) {
-        // Check if the current URL is allowed
         const isAllowed = await checkUrl();
-
-        // Initialize previousTabId
         let previousTabId = null;
 
-        // If the URL is allowed, set `previousTabId` to the current tab's ID
         if (isAllowed) {
             previousTabId = currentTab.id;
         } else {
-            // If not allowed, attempt to retrieve the existing `previousTabId` from storage
             const storedData = await new Promise((resolve) => {
                 chrome.storage.local.get(['previousTabId'], resolve);
             });
-            previousTabId = storedData.previousTabId || null; // Use stored value or null
+            previousTabId = storedData.previousTabId || null;
         }
 
-        // Save the previousTabId and pause recording
         chrome.storage.local.set({ previousTabId, isRecording: false });
 
-        // Send a message to open the flow display tab
-        chrome.runtime.sendMessage({ action: 'openFlowDisplay', previousTabId }, () => {
-            // Update button states to reflect the "Flow Display" view
-            updateFlowButtons({ showFlow: false }); // Hides "View Flow" and shows "Back"
-            updateRecordingButtons({ recording: false }); // Shows "Record" and hides "Pause"
+        // Use chrome.runtime.sendMessage with callback to ensure the response
+        chrome.runtime.sendMessage({ action: 'openFlowDisplay', previousTabId }, (response) => {
+            console.log(response.status);
+            updateFlowButtons({ showFlow: false });
+            updateRecordingButtons({ recording: false });
         });
     }
 });
 
-
-// Event listener for the "Back" button (used in flowDisplay.html)
 document.getElementById('backButton')?.addEventListener('click', async function () {
-    // Send a message to go back to the previously recorded tab
-    chrome.runtime.sendMessage({ action: 'goBack' }, () => {
-        // Update button states to reflect the default view
-        updateFlowButtons({ showFlow: true }); // Shows "View Flow" and hides "Back"
+    chrome.runtime.sendMessage({ action: 'goBack' }, (response) => {
+        console.log(response.status);
+        updateFlowButtons({ showFlow: true });
     });
 });
 
@@ -369,17 +359,4 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         });
 
     }
-    // else if (request.action === 'changeToFlow') {
-    //     console.log('change to view flow button')
-    //     const openFlowButton = document.getElementById('openFlow');
-    //     const backButton = document.getElementById('backButton');
-    //     if (openFlowButton) openFlowButton.style.display = 'flex';
-    //     if (backButton) backButton.style.display = 'none';
-    // } else if (request.action === 'changeToBack') {
-    //     console.log('change to back button')
-    //     const openFlowButton = document.getElementById('openFlow');
-    //     const backButton = document.getElementById('backButton');
-    //     if (openFlowButton) openFlowButton.style.display = 'none';
-    //     if (backButton) backButton.style.display = 'flex';
-    // }
 })
