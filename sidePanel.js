@@ -16,15 +16,11 @@ async function checkUrl() {
     // If the URL doesn't match allowed patterns, show a toast message and exit
     if (allowed.length !== 0) {
         if (!currentUrl || !allowed.some(pattern => pattern.test(currentUrl))) {
-            showToastMessage('Url not allowed:\nonly use Internal or Demo');
-            console.log("allowRecording: ", allowRecording)
             return allowRecording;
         }
     }
     allowRecording = true;
-    console.log("allowRecording: ", allowRecording)
     return allowRecording;
-    // Additional logic for allowed URL, if needed...
 }
 
 // Function to show toast messages
@@ -198,15 +194,9 @@ function removeDuplicates(log) {
 
 document.getElementById('pauseRecording').addEventListener('click', function () {
     // Pause recording functionality
-    showToastMessage('Recording paused!');
     chrome.storage.local.set({ isRecording: false }, function () {
-        let recordButton = document.getElementById('startRecording');
-        let pauseButton = document.getElementById('pauseRecording');
-        let instructions = document.getElementById('instructions');
-        instructions.style.display = 'none';
-        recordButton.style.display = 'flex';;
-        recordButton.textContent = 'Record';
-        pauseButton.style.display = 'none'; // Hide pause button
+        updateRecordingButtons({ recording: false }); // Shows "Record" and hides "Pause"
+        showToastMessage('Recording paused!');
     });
 });
 
@@ -214,116 +204,135 @@ document.getElementById('pauseRecording').addEventListener('click', function () 
 // Listen for messages from content script to update log dynamically
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action === 'tabChanged') {
-        let recordButton = document.getElementById('startRecording');
-        let pauseButton = document.getElementById('pauseRecording');
-        recordButton.style.display = 'flex';;
-        recordButton.textContent = 'Record';
-        pauseButton.style.display = 'none'; // Hide pause button
+        updateRecordingButtons({ recording: false }); // Shows "Record" and hides "Pause"
+        chrome.storage.local.get(['isRecording'], async function (result) {
+            const isRecording = result.isRecording || false;
+            if (!isRecording) {
+                showToastMessage('Recording paused!');
+            }
+        })
+
     }
 })
 
 
+// Add an event listener to the "Start Recording" button
 document.getElementById('startRecording').addEventListener('click', async function () {
-    // Ensure that checkUrl() is called asynchronously
+    // Call `checkUrl()` to ensure the current URL is allowed for recording
     const isAllowed = await checkUrl();
-
     // Proceed only if the URL is allowed
     if (isAllowed) {
-
-
-
-        const recordButton = document.getElementById('startRecording');
-        const pauseButton = document.getElementById('pauseRecording'); // Your pause button
-        const instructions = document.getElementById('instructions');
-        chrome.storage.local.get(['isRecording'], function (result) {
+        // Access the current recording state from local storage
+        chrome.storage.local.get(['isRecording'], async function (result) {
             const isRecording = result.isRecording || false;
-            let text = "Ctrl+Shift+E";
-            chrome.runtime.getPlatformInfo(function(info) {
-                if (info.os === "mac") {
-                  text = "Command+Shift+E"
-                }
-              });     
             if (!isRecording) {
-                // Start recording
-                chrome.storage.local.set({ isRecording: true }, function () {
+                // Get the current active tab
+                const [currentTab] = await chrome.tabs.query({ active: true, currentWindow: true });
+                // Start recording and store the current tab's ID as `previousTabId`
+                chrome.storage.local.set({
+                    isRecording: true,
+                    previousTabId: currentTab.id // Save the current tab as the starting point
+                }, function () {
+                    updateRecordingButtons({ recording: true }); // Shows "Pause" and hides "Record"
+                    // Show a toast message to indicate recording has started
                     showToastMessage('Recording started!');
-                    instructions.getElementsByTagName('STRONG')[0].innerText = text;
-                    instructions.style.display = 'block';
-                    recordButton.style.display = 'none';
-                    pauseButton.style.display = 'flex'; // Show the pause button
-                    
+
                 });
             }
         });
-    }
+    } else { showToastMessage('Url not allowed:\nonly use Internal or Demo'); }
 });
 
+
+
+// Utility function to update the visibility of "View Flow" and "Back" buttons
+function updateFlowButtons({ showFlow = true }) {
+    const openFlowButton = document.getElementById('openFlow'); // "View Flow" button
+    const backButton = document.getElementById('backButton');   // "Back" button
+
+    // Show or hide the "View Flow" button based on `showFlow` flag
+    if (openFlowButton) openFlowButton.style.display = showFlow ? 'flex' : 'none';
+
+    // Show or hide the "Back" button based on `showFlow` flag
+    if (backButton) backButton.style.display = showFlow ? 'none' : 'flex';
+}
+
+// Utility function to update the visibility and state of "Record" and "Pause" buttons
+function updateRecordingButtons({ recording = true }) {
+    const recordButton = document.getElementById('startRecording'); // "Start Recording" button
+    const pauseButton = document.getElementById('pauseRecording');  // "Pause Recording" button
+    const instructions = document.getElementById('instructions');   // Instructions for shortcut
+
+    // Set the correct keyboard shortcut based on the OS
+    let text = "Ctrl+Shift+E";
+    chrome.runtime.getPlatformInfo(function (info) {
+        if (info.os === "mac") {
+            text = "Command+Shift+E";
+        }
+    });
+
+    // Update the instructions with the keyboard shortcut
+    if (instructions) {
+        instructions.getElementsByTagName('STRONG')[0].innerText = text;
+        instructions.style.display = recording ? 'block' : 'none';
+    }
+
+    // Show or hide the "Record" and "Pause" buttons based on the `recording` flag
+    if (recordButton) recordButton.style.display = recording ? 'none' : 'flex';
+    if (pauseButton) pauseButton.style.display = recording ? 'flex' : 'none';
+}
 
 
 // Event listener for the "View Flow" button
 document.getElementById('openFlow')?.addEventListener('click', async function () {
-    // Get the current active tab
+    // Get the currently active tab in the current window
     const [currentTab] = await chrome.tabs.query({ active: true, currentWindow: true });
 
-    if (currentTab?.url?.includes('flowDisplay.html')) {
-        // If we're already on flowDisplay.html, do nothing here.
-        return;
-    } else {
-        // Set recording state to paused
+    if (currentTab) {
+        // Check if the current URL is allowed
+        const isAllowed = await checkUrl();
 
-        chrome.storage.local.set({ isRecording: false });
+        // Initialize previousTabId
+        let previousTabId = null;
 
-        chrome.storage.local.get(["isRecording"], function (result) {
-            // If recording is paused, show a toast message
-            if (result.isRecording) {
-                showToastMessage('Recording paused!');
-            }
-        });
-        // Update recording button state
-        const recordButton = document.getElementById('startRecording');
-        if (recordButton) {
-
-            recordButton.textContent = 'Record';
-            recordButton.style.display = 'flex';
+        // If the URL is allowed, set `previousTabId` to the current tab's ID
+        if (isAllowed) {
+            previousTabId = currentTab.id;
+        } else {
+            // If not allowed, attempt to retrieve the existing `previousTabId` from storage
+            const storedData = await new Promise((resolve) => {
+                chrome.storage.local.get(['previousTabId'], resolve);
+            });
+            previousTabId = storedData.previousTabId || null; // Use stored value or null
         }
 
-        // Hide the pause button
-        const pauseRecordingButton = document.getElementById('pauseRecording');
-        if (pauseRecordingButton) pauseRecordingButton.style.display = 'none';
+        // Save the previousTabId and pause recording
+        chrome.storage.local.set({ previousTabId, isRecording: false });
 
-        // Open the flowDisplay page in a new tab and pass current tab ID
-        chrome.runtime.sendMessage({ action: 'openFlowDisplay', previousTabId: currentTab.id });
-
-        // Hide "View Flow" button and show "Back" button
-        const openFlowButton = document.getElementById('openFlow');
-        const backButton = document.getElementById('backButton');
-        if (openFlowButton) openFlowButton.style.display = 'none';
-        if (backButton) backButton.style.display = 'flex';
+        // Send a message to open the flow display tab
+        chrome.runtime.sendMessage({ action: 'openFlowDisplay', previousTabId }, () => {
+            // Update button states to reflect the "Flow Display" view
+            updateFlowButtons({ showFlow: false }); // Hides "View Flow" and shows "Back"
+            updateRecordingButtons({ recording: false }); // Shows "Record" and hides "Pause"
+            showToastMessage('Recording paused!');
+        });
     }
 });
 
-// Event listener for the "Back" button (on flowDisplay.html)
-document.getElementById('backButton')?.addEventListener('click', function () {
-    chrome.runtime.sendMessage({ action: 'goBack' });
 
-    // Hide "Back" button and show "View Flow" button
-    const openFlowButton = document.getElementById('openFlow');
-    const backButton = document.getElementById('backButton');
-    const recordButton = document.getElementById('startRecording');
-    if (openFlowButton) openFlowButton.style.display = 'flex';
-    if (backButton) backButton.style.display = 'none';
-    if (recordButton) {
-        recordButton.style.display = 'flex'
-        recordButton.textContent = 'Record';
-    }
-
+// Event listener for the "Back" button (used in flowDisplay.html)
+document.getElementById('backButton')?.addEventListener('click', async function () {
+    // Send a message to go back to the previously recorded tab
+    chrome.runtime.sendMessage({ action: 'goBack' }, () => {
+        // Update button states to reflect the default view
+        updateFlowButtons({ showFlow: true }); // Shows "View Flow" and hides "Back"
+    });
 });
+
 
 
 document.getElementById('clearLog').addEventListener('click', function () {
-
     const confirmDelete = confirm("Are you sure you want to delete the log? This action is irreversible.");
-
     if (confirmDelete) {
         // Clear the log and flowTitle
         chrome.storage.local.set({ clickLog: [], flowTitle: '' }, function () {
@@ -334,7 +343,6 @@ document.getElementById('clearLog').addEventListener('click', function () {
         // Action was cancelled, no need to do anything
         console.log("Log deletion cancelled.");
     }
-
 })
 
 
@@ -363,17 +371,18 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             displayLog(result.clickLog || []); // Ensure it's an array
         });
 
-    } else if (request.action === 'changeToFlow') {
-        console.log('change to view flow button')
-        const openFlowButton = document.getElementById('openFlow');
-        const backButton = document.getElementById('backButton');
-        if (openFlowButton) openFlowButton.style.display = 'flex';
-        if (backButton) backButton.style.display = 'none';
-    } else if (request.action === 'changeToBack') {
-        console.log('change to back button')
-        const openFlowButton = document.getElementById('openFlow');
-        const backButton = document.getElementById('backButton');
-        if (openFlowButton) openFlowButton.style.display = 'none';
-        if (backButton) backButton.style.display = 'flex';
     }
+    // else if (request.action === 'changeToFlow') {
+    //     console.log('change to view flow button')
+    //     const openFlowButton = document.getElementById('openFlow');
+    //     const backButton = document.getElementById('backButton');
+    //     if (openFlowButton) openFlowButton.style.display = 'flex';
+    //     if (backButton) backButton.style.display = 'none';
+    // } else if (request.action === 'changeToBack') {
+    //     console.log('change to back button')
+    //     const openFlowButton = document.getElementById('openFlow');
+    //     const backButton = document.getElementById('backButton');
+    //     if (openFlowButton) openFlowButton.style.display = 'none';
+    //     if (backButton) backButton.style.display = 'flex';
+    // }
 })

@@ -70,40 +70,6 @@ if (!window.hasContentScriptRun) {
         return text; // Return the original text if 4 or fewer words
     }
 
-
-
-    // function handleMouseDown(event) {
-    //     if (isRecording) {
-    //         let clickedElement = event.target;
-    //         const preClickedElement = document.getElementsByClassName('highlight-stroke');
-    //         Array.from(preClickedElement).forEach(element => {
-    //             element.classList.remove('highlight-stroke');
-    //         });
-
-    //         let elementText = getShortenedText(getElementText(clickedElement));
-    //         let url = window.location.href;
-    //         let timestamp = new Date().toISOString();
-    //         id += 1;
-
-    //         // Log click only if recording is enabled
-    //         chrome.storage.local.get(['clickLog'], function (result) {
-    //             if (chrome.runtime.lastError) {
-    //                 console.error("Error accessing storage:", chrome.runtime.lastError);
-    //                 return;
-    //             }
-    //             clickedElement.classList.add('highlight-stroke');
-    //             elementText = elementText.replace(/,/g, '');
-
-    //             const newLogEntry = { id, elementText, url, timestamp };
-
-    //             setTimeout(function () {
-    //                 chrome.runtime.sendMessage({ action: 'captureScreen', newLogEntry });
-    //             }, 200);
-    //         });
-    //     }
-    // }
-
-
     // Listener for screen capture completion
     chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
         if (request.action === 'captureComplete') {
@@ -151,17 +117,19 @@ if (!window.hasContentScriptRun) {
         }
     });
 
+
+    chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+        if (message.action === 'getHighlightedText') {
+            const highlightedElement = document.getElementsByClassName('highlight-stroke');
+            let elementText = "";
+    
+            if (highlightedElement.length > 0) {
+                elementText = highlightedElement[0].innerText || highlightedElement[0].textContent || '';
+            }
+    
+            sendResponse({ elementText });
+        }
+    });
 }
 
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-    if (message.action === 'getHighlightedText') {
-        const highlightedElement = document.getElementsByClassName('highlight-stroke');
-        let elementText = "";
 
-        if (highlightedElement.length > 0) {
-            elementText = highlightedElement[0].innerText || highlightedElement[0].textContent || '';
-        }
-
-        sendResponse({ elementText });
-    }
-});
