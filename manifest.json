@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "Button Click Logger",
+  "name": "Flow guider",
   "version": "1.0",
   "permissions": [
     "storage",
@@ -25,39 +25,26 @@
       "description": "Start/Pause Recording"
     }
   },
-  "host_permissions": [
-       "<all_urls>"
-  ],
+  "host_permissions": ["<all_urls>"],
   "side_panel": {
     "default_path": "sidePanel.html"
   },
   "background": {
     "service_worker": "background.js"
   },
+  "options_page": "options.html",
   "content_scripts": [
     {
-      "matches": [
-        "http://iaptus.internal/*",
-        "https://demo.iaptus.co.uk/*"
-      ],
-      "css": [
-        "content.css"
-      ],
-      "js": [
-        "content.js"
-      ],
+      "matches": ["<all_urls>"],
+      "css": ["content.css"],
+      "js": ["content.js"],
       "run_at": "document_start"
     }
   ],
   "web_accessible_resources": [
     {
-      "resources": [
-        "flowDisplay.html",
-        "flowDisplay.js"
-      ],
-      "matches": [
-        "<all_urls>"
-      ]
+      "resources": ["flowDisplay.html", "flowDisplay.js"],
+      "matches": ["<all_urls>"]
     }
   ],
   "icons": {
@@ -66,5 +53,4 @@
     "48": "images/logo48.png",
     "128": "images/logo128.png"
   }
-
 }

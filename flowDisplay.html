@@ -1,690 +1,106 @@
 <!--!Font Awesome Free 6.7.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.-->
 <!DOCTYPE html>
 <html>
-
-<head>
+  <head>
     <title>Flow Display</title>
-    <style>
-        /* General button styling */
-        button {
-            display: flex;
-            gap: 0.25rem;
-            height: 2rem;
-            width: fit-content;
-            padding-left: 0.75rem;
-            padding-right: 0.75rem;
-            align-items: center;
-            justify-content: center;
-            min-width: fit-content;
-            cursor: pointer;
-            font-size: 14px;
-            border: none;
-            border-radius: 0.25rem;
-            box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
-            transition: background-color 0.3s ease, box-shadow 0.3s ease, transform 0.1s ease;
-        }
-
-        /* Primary button (main actions) */
-        .primary-btn {
-            background-color: #4CAF50;
-            color: white;
-        }
-
-        .primary-btn:hover {
-            background-color: #245726;
-            box-shadow: 0px 6px 8px rgba(0, 0, 0, 0.15);
-        }
-
-        .primary-btn:active {
-            transform: scale(0.98);
-            background-color: #3e8e41;
-        }
-
-        /* Secondary button (supporting actions) */
-        .secondary-btn {
-            border: 1px solid #45a049;
-            background-color: white;
-            color: #3e8e41;
-        }
-
-        .secondary-btn:hover {
-            border: 1px solid #3e8e41;
-            background-color: #245726;
-            color: #fff;
-            box-shadow: 0px 6px 8px rgba(0, 0, 0, 0.15);
-        }
-
-        .secondary-btn:active {
-            transform: scale(0.98);
-            background-color: #245726;
-        }
-
-        /* Destructive button (for deleting, removing, etc.) */
-        /* Destructive button (for deleting, removing, etc.) */
-        .destructive-btn {
-            border: 1px solid #f44336;
-            color: #ba2d2b;
-            background-color: white;
-            width: fit-content;
-            padding-top: 0.25rem;
-            padding-bottom: 0.25rem;
-        }
-
-        .destructive-btn:hover {
-            background-color: #ba2d2b;
-            color: white;
-            box-shadow: 0px 6px 8px rgba(0, 0, 0, 0.15);
-        }
-
-        .destructive-btn:active {
-            transform: scale(0.98);
-            background-color: #d32f2f;
-            color: white;
-        }
-
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-            display: flex;
-            justify-content: center;
-            align-items: start;
-            height: 100vh;
-            background-color: #f4f4f4;
-        }
-
-        main {
-            max-width: 720px;
-            width: 100%;
-            padding: 1rem;
-            box-sizing: border-box;
-            background-color: white;
-            border: 1px solid #ddd;
-            border-radius: 0.25rem;
-        }
-
-        .header {
-            position: sticky;
-            top: 0;
-            display: flex;
-            flex-direction: row;
-            justify-content: space-between;
-            align-items: center;
-            gap: 0.125rem;
-            background-color: white;
-            padding-top: 0.75rem;
-            padding-bottom: 0.75rem;
-            z-index: 100;
-            border-bottom: 1px solid #ddd;
-        }
-
-        .footer {
-            position: sticky;
-            bottom: 0rem;
-            height: 100%;
-            display: flex;
-            flex-direction: column;
-            gap: 0.125rem;
-            background-color: white;
-            padding-top: 1rem;
-            padding-bottom: 3.5rem;
-            z-index: 100;
-            border-top: 1px solid #ddd;
-        }
-
-        /* Print styling */
-        @media print {
-            /* Hide specified elements */
-
-            body * {
-                display: none;
-            }
-
-            .hide-on-print {
-                display: none;
-            }
-
-            .custom {
-                justify-content: center;
-                align-items: center;
-                height: 900px;
-            }
-
-            .custom h3 {
-                font-size: 4rem !important;
-                text-align: center;
-                width: 100%;
-                font-weight: 400;
-            }
-
-            p {
-                display: flex;
-                padding: 0.25rem;
-                font-size: 1rem;
-                width: 100%;
-            }
-
-            main {
-                display: flex;
-                flex-direction: column;
-                border: none;
-            }
-
-            /* Display header on each printed page */
-            .header {
-                display: flex;
-                position: static;
-                top: 0;
-                left: 0;
-            }
-
-            #flowTitle {
-                display: flex;
-            }
-
-            img {
-                width: 100% !important;
-            }
-
-            #archived {
-                display: none;
-            }
-
-            /* Each section starts on a new page */
-            #log>.block {
-                page-break-after: always;
-                margin: 0;
-            }
-        }
-
-        .subinfo {
-            font-size: 12px;
-            color: rgb(52, 52, 52);
-            margin: 0;
-        }
-
-        h1 {
-            margin: 0;
-            padding: 0.25rem;
-            border: 1px solid transparent;
-            border-radius: 0.25rem;
-        }
-
-        h2 {
-            display: block;
-            /* Ensure the title behaves like a block element (default for h2) */
-            width: 100%;
-            /* Ensure the title takes up the full width of its container */
-            white-space: normal;
-            /* Allow text to wrap */
-            word-wrap: break-word;
-            /* Break long words to avoid overflow */
-            overflow: hidden;
-            /* Hide overflow if necessary */
-            text-overflow: ellipsis;
-            /* Show ellipsis if overflow happens */
-            font-size: 1.125rem;
-            padding: 0.25rem;
-            border: 1px solid transparent;
-            border-radius: 0.25rem;
-            cursor: default;
-            font-weight: 400;
-            margin: 0;
-        }
-
-        .archive-entry h2 {
-            display: block;
-            width: 100%;
-            /* or a fixed width like 300px if you want a specific limit */
-            max-width: 300px;
-            /* Optional, limits width to 300px, adjust as needed */
-            white-space: nowrap;
-            /* Prevent text from wrapping */
-            overflow: hidden;
-            /* Hide overflow content */
-            text-overflow: ellipsis;
-            /* Display '...' when content overflows */
-            font-size: 1.125rem;
-            padding: 0.25rem;
-            border: 1px solid transparent;
-            border-radius: 0.25rem;
-            cursor: default;
-            font-weight: 400;
-            margin: 0;
-        }
-
-
-        p {
-            display: flex;
-            padding: 0.25rem;
-            font-size: 0.9rem;
-            width: 100%;
-            margin: 0;
-            border: 1px solid transparent;
-            border-radius: 0.25rem;
-            cursor: default;
-        }
-
-        .logList {
-            display: flex;
-            flex-direction: column;
-            padding-top: 1rem;
-            padding-bottom: 1rem;
-        }
-
-
-        .log-entry,
-        .archive-entry {
-            display: flex;
-            width: 100%;
-            flex-direction: row;
-            align-items: center;
-            gap: 0.25rem;
-            padding: 1rem;
-            border-radius: 0.25rem;
-            border: 1px solid black;
-            box-sizing: border-box;
-            transition: all 0.3s ease;
-            overflow: hidden;
-        }
-
-
-        .archive-entry {
-            margin-bottom: 0.5rem;
-            background-color: rgb(235, 235, 235);
-            color: rgb(96, 96, 96);
-            border: 1px solid rgb(110, 110, 110);
-        }
-
-
-
-        @keyframes shrink {
-            from {
-                max-height: 2000px;
-                opacity: 1;
-            }
-
-            to {
-                max-height: 0;
-                opacity: 0;
-            }
-        }
-
-        .editing {
-            display: flex;
-            align-items: center;
-            justify-items: center;
-            color: #245726;
-            opacity: 1;
-        }
-
-        .editing.remove {
-            animation: shrink 0.3s ease-out forwards;
-            transform-origin: top;
-        }
-
-        .block {
-            gap: 0;
-            overflow: hidden;
-            max-height: 2000px;
-            transition: max-height 0.3s ease-out, opacity 0.3s ease-out;
-            opacity: 1;
-            position: relative;
-        }
-
-        /* Triggering the shrink animation when an element is being removed */
-        .block.remove {
-            animation: shrink 0.3s ease-out forwards;
-            transform-origin: top;
-            /* Shrink from the top */
-        }
-
-
-        .hideOnDrag {
-            height: 0 !important;
-            visibility: hidden !important;
-            transition: height 0.3s ease, visibility 0.3s ease;
-            display: none;
-        }
-
-        .placeholder {
-            background-color: #f0f0f0;
-            border: dashed 2px #ccc;
-            width: 100%;
-            transition: height 0.3s ease;
-        }
-
-        .log-entry img,
-        .log-entry p,
-        .log-entry button {
-            transition: height 0.3s ease, visibility 0.3s ease;
-        }
-
-
-
-        img {
-            width: 100%;
-            height: auto;
-            display: block;
-            margin-top: 5px;
-        }
-
-        .container {
-            display: flex;
-            flex-direction: column;
-            width: 100%;
-        }
-
-        .content {
-            font-size: 16px;
-        }
-
-        .subInfo {
-            flex-direction: row;
-            justify-content: space-between;
-            width: 100%;
-        }
-
-        .group {
-            gap: 0.125rem;
-            display: flex;
-            flex-direction: column;
-
-        }
-
-
-
-        .help {
-            flex-direction: row;
-            align-items: center;
-        }
-
-        /* Add to your CSS file */
-        .toast {
-            position: fixed;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background-color: #333;
-            color: #fff;
-            padding: 10px 20px;
-            border-radius: 0.25rem;
-            opacity: 0;
-            visibility: hidden;
-            transition: opacity 0.5s, visibility 0s 0.5s;
-            z-index: 9999;
-        }
-
-        .toast.show {
-            opacity: 1;
-            visibility: visible;
-            transition: opacity 0.5s;
-        }
-
-        /* Draggable styling */
-        .container.draggable {
-            cursor: grab;
-            opacity: 0.5;
-            transform: translateX(32px);
-            width: 96%;
-
-        }
-
-        /* Archived section */
-        #archived {
-            margin-top: 2rem;
-        }
-
-        .hidden {
-            display: none;
-        }
-
-        /* Edit mode styling */
-        .editable {
-            border: 1px dashed #ccc;
-            border-radius: 0.25rem;
-            cursor: text;
-        }
-
-        .addEntryContainer {
-            display: flex;
-            flex-direction: row;
-            align-items: center;
-            justify-content: center;
-            width: 100%;
-            height: 0.5rem;
-            border: 0;
-            opacity: 0;
-            transition: height 0.5s ease, opacity 0.5s ease;
-            overflow: hidden;
-            position: relative;
-        }
-
-        .addEntryContainer.canAdd:hover {
-            height: 3rem;
-            opacity: 1;
-        }
-
-        .growNewEntry {
-            height: 132px !important;
-        }
-
-        button svg {
-            height: 1rem;
-            width: 1rem;
-            color: inherit;
-            /* Inherit the text color of the button */
-            fill: currentColor;
-            display: block;
-        }
-
-        .action,
-        .addEntry {
-            position: absolute;
-            display: flex;
-            flex-direction: row;
-            gap: 0.5rem;
-            height: 2rem;
-            width: fit-content;
-        }
-
-        .row {
-            position: relative;
-            display: flex;
-            flex-direction: row;
-            gap: 0.5rem;
-        }
-
-        span {
-            display: flex;
-            flex-direction: row;
-            align-items: center;
-            justify-content: center;
-            gap: 0.5rem;
-        }
-
-        /* The switch - the outer container */
-        .switch {
-            position: relative;
-            display: inline-block;
-            width: 6rem;
-            height: 2rem;
-        }
-
-        /* Hide the default HTML checkbox */
-        .switch input {
-            opacity: 0;
-            width: 0;
-            height: 0;
-        }
-
-        /* The slider */
-        .slider {
-            position: absolute;
-            cursor: pointer;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: #ccc;
-            transition: 0.4s;
-        }
-
-        /* The circle inside the slider */
-        .slider:before {
-            position: absolute;
-            content: "";
-            height: 1.5rem;
-            width: 1.5rem;
-            left: 4px;
-            bottom: 4px;
-            background-color: white;
-            transition: 0.4s;
-            z-index: 2;
-        }
-
-
-        /* When the checkbox is checked, move the slider */
-        input:checked+.slider {
-            background-color: #245726;
-        }
-
-        /* Move the circle when checked */
-        input:checked+.slider:before {
-            transform: translateX(4rem);
-        }
-
-        /* Rounded slider */
-        .slider.round {
-            border-radius: 1rem;
-
-        }
-
-        .slider.round:before {
-            border-radius: 50%;
-        }
-
-        .toggle-label {
-            position: absolute;
-            font-size: 0.8rem;
-            top: 50%;
-            left: 38px;
-            transform: translateY(-50%);
-            z-index: 1;
-            transition: 0.4s;
-        }
-
-
-        .toggle-label.right {
-            left: 16px;
-            color: white;
-        }
-
-        .view-icon,
-        .edit-icon {
-            position: absolute;
-            font-size: 0.8rem;
-            top: 50%;
-            transform: translateY(-50%);
-            z-index: 3;
-            opacity: 0;
-            width: 0.95rem;
-            height: 0.95rem;
-            transition: 0.4s;
-        }
-
-        input:checked+.slider .edit-icon {
-            opacity: 1;
-            transform: translate(2rem, -0.5rem);
-        }
-
-        input:not(:checked)+.slider .view-icon {
-            opacity: 1;
-            transform: translate(-2rem, -0.45rem);
-
-        }
-    </style>
-</head>
-
-<body>
-
+    <link rel="stylesheet" href="index.css"> 
+    <link rel="stylesheet" href="flowDisplay.css"> 
+  </head>
+
+  <body>
     <main>
-        <div class="header">
-            <h1 id="flowTitle">Click Log</h1>
-            <div class="row hide-on-print">
-                <span id="isEditingText" class="editing hide-on-print"></span>
-                <button class="secondary-btn" style="display: none;" id="reorder">
-                    <span id="reorderSpan">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512">
-                            <path
-                                d="M182.6 9.4c-12.5-12.5-32.8-12.5-45.3 0l-96 96c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L128 109.3l0 293.5L86.6 361.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l96 96c12.5 12.5 32.8 12.5 45.3 0l96-96c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L192 402.7l0-293.5 41.4 41.4c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3l-96-96z" />
-                        </svg>
-                        Reorder
-                    </span>
-                    <span id="finishedSpan" style="display: none;">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512">
-                            <path
-                                d="M438.6 105.4c12.5 12.5 12.5 32.8 0 45.3l-256 256c-12.5 12.5-32.8 12.5-45.3 0l-128-128c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0L160 338.7 393.4 105.4c12.5-12.5 32.8-12.5 45.3 0z" />
-                        </svg>
-                        Finished
-                    </span>
-                </button>
-                <div>
-                    <label class="switch">
-                        <input type="checkbox" id="toggle" aria-checked="false" aria-labelledby="toggleLabel"
-                            role="switch">
-                        <span class="slider round">
-                            <svg class='view-icon' xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512">
-                                <path
-                                    d="M288 80c-65.2 0-118.8 29.6-159.9 67.7C89.6 183.5 63 226 49.4 256c13.6 30 40.2 72.5 78.6 108.3C169.2 402.4 222.8 432 288 432s118.8-29.6 159.9-67.7C486.4 328.5 513 286 526.6 256c-13.6-30-40.2-72.5-78.6-108.3C406.8 109.6 353.2 80 288 80zM95.4 112.6C142.5 68.8 207.2 32 288 32s145.5 36.8 192.6 80.6c46.8 43.5 78.1 95.4 93 131.1c3.3 7.9 3.3 16.7 0 24.6c-14.9 35.7-46.2 87.7-93 131.1C433.5 443.2 368.8 480 288 480s-145.5-36.8-192.6-80.6C48.6 356 17.3 304 2.5 268.3c-3.3-7.9-3.3-16.7 0-24.6C17.3 208 48.6 156 95.4 112.6zM288 336c44.2 0 80-35.8 80-80s-35.8-80-80-80c-.7 0-1.3 0-2 0c1.3 5.1 2 10.5 2 16c0 35.3-28.7 64-64 64c-5.5 0-10.9-.7-16-2c0 .7 0 1.3 0 2c0 44.2 35.8 80 80 80zm0-208a128 128 0 1 1 0 256 128 128 0 1 1 0-256z" />
-                            </svg>
-                            <svg class='edit-icon' xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-                                <path
-                                    d="M362.7 19.3L314.3 67.7 444.3 197.7l48.4-48.4c25-25 25-65.5 0-90.5L453.3 19.3c-25-25-65.5-25-90.5 0zm-71 71L58.6 323.5c-10.4 10.4-18 23.3-22.2 37.4L1 481.2C-1.5 489.7 .8 498.8 7 505s15.3 8.5 23.7 6.1l120.3-35.4c14.1-4.2 27-11.8 37.4-22.2L421.7 220.3 291.7 90.3z" />
-                            </svg>
-                            <span id="toggleLabel" class="toggle-label">Viewing</span>
-                        </span>
-                    </label>
-                </div>
-            </div>
-
-
+      <div class="header">
+        <h1 id="flowTitle">Click Log</h1>
+        <div class="row hide-on-print">
+          <span id="isEditingText" class="editing hide-on-print"></span>
+          <button class="secondary-btn" style="display: none" id="reorder">
+            <span id="reorderSpan">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512">
+                <path
+                  d="M182.6 9.4c-12.5-12.5-32.8-12.5-45.3 0l-96 96c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L128 109.3l0 293.5L86.6 361.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l96 96c12.5 12.5 32.8 12.5 45.3 0l96-96c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L192 402.7l0-293.5 41.4 41.4c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3l-96-96z"
+                />
+              </svg>
+              Reorder
+            </span>
+            <span id="finishedSpan" style="display: none">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512">
+                <path
+                  d="M438.6 105.4c12.5 12.5 12.5 32.8 0 45.3l-256 256c-12.5 12.5-32.8 12.5-45.3 0l-128-128c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0L160 338.7 393.4 105.4c12.5-12.5 32.8-12.5 45.3 0z"
+                />
+              </svg>
+              Finished
+            </span>
+          </button>
+          <div>
+            <label class="switch">
+              <input
+                type="checkbox"
+                id="toggle"
+                aria-checked="false"
+                aria-labelledby="toggleLabel"
+                role="switch"
+              />
+              <span class="slider round">
+                <svg
+                  class="view-icon"
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 576 512"
+                >
+                  <path
+                    d="M288 80c-65.2 0-118.8 29.6-159.9 67.7C89.6 183.5 63 226 49.4 256c13.6 30 40.2 72.5 78.6 108.3C169.2 402.4 222.8 432 288 432s118.8-29.6 159.9-67.7C486.4 328.5 513 286 526.6 256c-13.6-30-40.2-72.5-78.6-108.3C406.8 109.6 353.2 80 288 80zM95.4 112.6C142.5 68.8 207.2 32 288 32s145.5 36.8 192.6 80.6c46.8 43.5 78.1 95.4 93 131.1c3.3 7.9 3.3 16.7 0 24.6c-14.9 35.7-46.2 87.7-93 131.1C433.5 443.2 368.8 480 288 480s-145.5-36.8-192.6-80.6C48.6 356 17.3 304 2.5 268.3c-3.3-7.9-3.3-16.7 0-24.6C17.3 208 48.6 156 95.4 112.6zM288 336c44.2 0 80-35.8 80-80s-35.8-80-80-80c-.7 0-1.3 0-2 0c1.3 5.1 2 10.5 2 16c0 35.3-28.7 64-64 64c-5.5 0-10.9-.7-16-2c0 .7 0 1.3 0 2c0 44.2 35.8 80 80 80zm0-208a128 128 0 1 1 0 256 128 128 0 1 1 0-256z"
+                  />
+                </svg>
+                <svg
+                  class="edit-icon"
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 512 512"
+                >
+                  <path
+                    d="M362.7 19.3L314.3 67.7 444.3 197.7l48.4-48.4c25-25 25-65.5 0-90.5L453.3 19.3c-25-25-65.5-25-90.5 0zm-71 71L58.6 323.5c-10.4 10.4-18 23.3-22.2 37.4L1 481.2C-1.5 489.7 .8 498.8 7 505s15.3 8.5 23.7 6.1l120.3-35.4c14.1-4.2 27-11.8 37.4-22.2L421.7 220.3 291.7 90.3z"
+                  />
+                </svg>
+                <span id="toggleLabel" class="toggle-label">Viewing</span>
+              </span>
+            </label>
+          </div>
         </div>
-        <div id="log" class="logList dropTarget"></div> <!-- Log section -->
-        <!-- Archived entries section -->
-        <div id="archived" style="display: none;" class="container hide-on-print">
-            <div id="archivedEntries" class="logList"></div>
+      </div>
+      <div id="log" class="logList dropTarget"></div>
+      <!-- Log section -->
+      <!-- Archived entries section -->
+      <div id="archived" style="display: none" class="container hide-on-print">
+        <div id="archivedEntries" class="logList"></div>
+      </div>
+      <div id="footer" class="footer hide-on-print">
+        <div class="action container">
+          <button class="secondary-btn" id="printPDF">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+              <path
+                d="M64 464l48 0 0 48-48 0c-35.3 0-64-28.7-64-64L0 64C0 28.7 28.7 0 64 0L229.5 0c17 0 33.3 6.7 45.3 18.7l90.5 90.5c12 12 18.7 28.3 18.7 45.3L384 304l-48 0 0-144-80 0c-17.7 0-32-14.3-32-32l0-80L64 48c-8.8 0-16 7.2-16 16l0 384c0 8.8 7.2 16 16 16zM176 352l32 0c30.9 0 56 25.1 56 56s-25.1 56-56 56l-16 0 0 32c0 8.8-7.2 16-16 16s-16-7.2-16-16l0-48 0-80c0-8.8 7.2-16 16-16zm32 80c13.3 0 24-10.7 24-24s-10.7-24-24-24l-16 0 0 48 16 0zm96-80l32 0c26.5 0 48 21.5 48 48l0 64c0 26.5-21.5 48-48 48l-32 0c-8.8 0-16-7.2-16-16l0-128c0-8.8 7.2-16 16-16zm32 128c8.8 0 16-7.2 16-16l0-64c0-8.8-7.2-16-16-16l-16 0 0 96 16 0zm80-112c0-8.8 7.2-16 16-16l48 0c8.8 0 16 7.2 16 16s-7.2 16-16 16l-32 0 0 32 32 0c8.8 0 16 7.2 16 16s-7.2 16-16 16l-32 0 0 48c0 8.8-7.2 16-16 16s-16-7.2-16-16l0-64 0-64z"
+              />
+            </svg>
+            Export PDF
+          </button>
+          <button class="secondary-btn" id="saveImages">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+              <path
+                d="M448 80c8.8 0 16 7.2 16 16l0 319.8-5-6.5-136-176c-4.5-5.9-11.6-9.3-19-9.3s-14.4 3.4-19 9.3L202 340.7l-30.5-42.7C167 291.7 159.8 288 152 288s-15 3.7-19.5 10.1l-80 112L48 416.3l0-.3L48 96c0-8.8 7.2-16 16-16l384 0zM64 32C28.7 32 0 60.7 0 96L0 416c0 35.3 28.7 64 64 64l384 0c35.3 0 64-28.7 64-64l0-320c0-35.3-28.7-64-64-64L64 32zm80 192a48 48 0 1 0 0-96 48 48 0 1 0 0 96z"
+              />
+            </svg>
+            Export PNGs
+          </button>
+          <button class="secondary-btn" id="toClipBoard">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512">
+              <path
+                d="M280 64l40 0c35.3 0 64 28.7 64 64l0 320c0 35.3-28.7 64-64 64L64 512c-35.3 0-64-28.7-64-64L0 128C0 92.7 28.7 64 64 64l40 0 9.6 0C121 27.5 153.3 0 192 0s71 27.5 78.4 64l9.6 0zM64 112c-8.8 0-16 7.2-16 16l0 320c0 8.8 7.2 16 16 16l256 0c8.8 0 16-7.2 16-16l0-320c0-8.8-7.2-16-16-16l-16 0 0 24c0 13.3-10.7 24-24 24l-88 0-88 0c-13.3 0-24-10.7-24-24l0-24-16 0zm128-8a24 24 0 1 0 0-48 24 24 0 1 0 0 48z"
+              />
+            </svg>
+            Copy to clipboard
+          </button>
+          <button class="secondary-btn" id="getLinks">Copy links</button>
         </div>
-        <div id='footer' class="footer hide-on-print">
-            <div class="action container">
-                <button class="secondary-btn" id="printPDF">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-                        <path
-                            d="M64 464l48 0 0 48-48 0c-35.3 0-64-28.7-64-64L0 64C0 28.7 28.7 0 64 0L229.5 0c17 0 33.3 6.7 45.3 18.7l90.5 90.5c12 12 18.7 28.3 18.7 45.3L384 304l-48 0 0-144-80 0c-17.7 0-32-14.3-32-32l0-80L64 48c-8.8 0-16 7.2-16 16l0 384c0 8.8 7.2 16 16 16zM176 352l32 0c30.9 0 56 25.1 56 56s-25.1 56-56 56l-16 0 0 32c0 8.8-7.2 16-16 16s-16-7.2-16-16l0-48 0-80c0-8.8 7.2-16 16-16zm32 80c13.3 0 24-10.7 24-24s-10.7-24-24-24l-16 0 0 48 16 0zm96-80l32 0c26.5 0 48 21.5 48 48l0 64c0 26.5-21.5 48-48 48l-32 0c-8.8 0-16-7.2-16-16l0-128c0-8.8 7.2-16 16-16zm32 128c8.8 0 16-7.2 16-16l0-64c0-8.8-7.2-16-16-16l-16 0 0 96 16 0zm80-112c0-8.8 7.2-16 16-16l48 0c8.8 0 16 7.2 16 16s-7.2 16-16 16l-32 0 0 32 32 0c8.8 0 16 7.2 16 16s-7.2 16-16 16l-32 0 0 48c0 8.8-7.2 16-16 16s-16-7.2-16-16l0-64 0-64z" />
-                    </svg>
-                    Export PDF
-                </button>
-                <button class="secondary-btn" id="saveImages">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-                        <path
-                            d="M448 80c8.8 0 16 7.2 16 16l0 319.8-5-6.5-136-176c-4.5-5.9-11.6-9.3-19-9.3s-14.4 3.4-19 9.3L202 340.7l-30.5-42.7C167 291.7 159.8 288 152 288s-15 3.7-19.5 10.1l-80 112L48 416.3l0-.3L48 96c0-8.8 7.2-16 16-16l384 0zM64 32C28.7 32 0 60.7 0 96L0 416c0 35.3 28.7 64 64 64l384 0c35.3 0 64-28.7 64-64l0-320c0-35.3-28.7-64-64-64L64 32zm80 192a48 48 0 1 0 0-96 48 48 0 1 0 0 96z" />
-                    </svg>
-                    Export PNGs
-                </button>
-                <button class="secondary-btn" id="toClipBoard">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512">
-                        <path
-                            d="M280 64l40 0c35.3 0 64 28.7 64 64l0 320c0 35.3-28.7 64-64 64L64 512c-35.3 0-64-28.7-64-64L0 128C0 92.7 28.7 64 64 64l40 0 9.6 0C121 27.5 153.3 0 192 0s71 27.5 78.4 64l9.6 0zM64 112c-8.8 0-16 7.2-16 16l0 320c0 8.8 7.2 16 16 16l256 0c8.8 0 16-7.2 16-16l0-320c0-8.8-7.2-16-16-16l-16 0 0 24c0 13.3-10.7 24-24 24l-88 0-88 0c-13.3 0-24-10.7-24-24l0-24-16 0zm128-8a24 24 0 1 0 0-48 24 24 0 1 0 0 48z" />
-                    </svg>
-                    Copy to clipboard
-                </button>
-                <button class="secondary-btn" id="getLinks">
-                    Copy links
-                </button>
-            </div>
-        </div>
+      </div>
     </main>
     <script src="flowDisplay.js"></script>
-</body>
-
+  </body>
 </html>
