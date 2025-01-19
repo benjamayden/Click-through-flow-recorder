@@ -1,6 +1,3 @@
-
-
-
 html,
 body {
   height: 100%;
@@ -54,7 +51,7 @@ main {
   /* Enable scrolling if content overflows */
 }
 
-.container{
+.container {
   display: flex;
   width: 100%;
   flex-direction: column;
@@ -71,7 +68,6 @@ main {
   border-radius: 0.5rem;
   gap: 0.25rem;
 }
-
 
 .footer {
   position: sticky;
@@ -100,36 +96,62 @@ li {
   display: flex;
   flex-direction: row;
   background-color: var(--color-white);
-  border: 1px solid  var(--color-border-light);
+  border: 1px solid var(--color-border-dark);
   border-radius: 0.5rem;
-  padding: 16px;
+  align-items: center;
+  padding: 0.5rem;
+  gap: 0.5rem;
+}
+
+.image-container {
+  border-radius: 0.25rem;
+  height: 3rem;
+  width: 4.5rem;
+  overflow: hidden;
+  position: relative;
+}
+
+.image-container img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover; /* Ensure the image fits inside and maintains its aspect ratio */
 }
 
 .elementName {
   font-weight: bold;
   font-size: 1em;
   margin-bottom: 0.125rem;
-  color: var(--color-border-dark);
+  color: var(--color-black);
 }
 
 .elementDetails {
   display: flex;
   gap: 0.25rem;
   font-size: 0.9em;
-  color:  var(--color-border-dark);
+  color: var(--color-black);
 }
 
 .elementDetails span {
   margin-right: 8px;
 }
-
+.elementId {
+  color: var(--color-border-dark);
+}
 .elementLink {
-  color:  var(--color-primary-main);
+  color: var(--color-primary-main);
   text-decoration: none;
 }
 
 .elementLink:hover {
   text-decoration: underline;
+}
+.remove-shot {
+  width: 2rem;
+  height: 2rem;
+  display: flex;
+  padding: 0;
+  align-items: center;
+  justify-content: center;
 }
 
 .pause {
@@ -141,19 +163,19 @@ li {
   display: none;
 }
 
-.instructions{
-  margin:0;
+.instructions {
+  margin: 0;
 }
 
-#instructions{
+#instructions {
   display: none;
 }
-.instructions-container{
+.instructions-container {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
 }
 
-button{
-    width: 100%;
+button {
+  width: 100%;
 }

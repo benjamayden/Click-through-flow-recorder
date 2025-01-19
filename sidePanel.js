@@ -200,13 +200,20 @@ function displayLog(clickLog) {
 
     const listItem = document.createElement("li");
 
+    const imageContainer = document.createElement("div");
+    imageContainer.className = "image-container";
+    if (entry.dataUrl !== '') {
+        const imgElement = document.createElement('img');
+        imgElement.src = entry.dataUrl || 'placeholder.png';
+        imageContainer.appendChild(imgElement); // Ensure this line is within the same scope
+    }
+
     const detailContainer = document.createElement("div");
     detailContainer.className = "container";
 
+
     const actionContainer = document.createElement("div");
 
-    listItem.appendChild(detailContainer);
-    listItem.appendChild(actionContainer);
 
     // Create and append the element name
     const elementName = document.createElement("div");
@@ -223,7 +230,7 @@ function displayLog(clickLog) {
     id.textContent = `id: ${entry.id}`;
 
     const removeButton = document.createElement("button");
-    removeButton.className = "destructive-btn";
+    removeButton.className = "destructive-btn remove-shot";
     removeButton.innerText = "X";
 
     removeButton.addEventListener("click", function () {
@@ -243,7 +250,9 @@ function displayLog(clickLog) {
     detailContainer.appendChild(elementName);
     detailContainer.appendChild(details);
     actionContainer.appendChild(removeButton);
-
+    listItem.appendChild(imageContainer);
+    listItem.appendChild(detailContainer);
+    listItem.appendChild(actionContainer);
     // Append the list item to the list
     list.appendChild(listItem);
   });
