@@ -37,7 +37,6 @@ main {
   padding-top: 0.75rem;
   padding-bottom: 0.75rem;
   z-index: 100;
-  border-bottom: 1px solid var(--color-border-light);
 }
 
 .content {
@@ -62,11 +61,15 @@ main {
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  padding: 5px;
-  margin-top: 10px;
-  border: 1px solid var(--color-border-light);
+  margin-top: 0.5rem;
   border-radius: 0.5rem;
   gap: 0.25rem;
+}
+
+#log{
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 .footer {
@@ -79,7 +82,6 @@ main {
   padding-top: 0.75rem;
   padding-bottom: 0.75rem;
   z-index: 100;
-  border-top: 1px solid var(--color-border-light);
 }
 
 ul {
@@ -87,7 +89,7 @@ ul {
   padding: 0;
   margin: 0;
   display: flex;
-  flex-direction: column-reverse;
+  flex-direction: column;
   gap: 0.25rem;
   flex-grow: 1;
 }
@@ -109,6 +111,13 @@ li {
   width: 4.5rem;
   overflow: hidden;
   position: relative;
+}
+
+.icon-container{
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
 }
 
 .image-container img {
@@ -178,4 +187,16 @@ li {
 
 button {
   width: 100%;
+}
+
+.draggable {
+  opacity: 0.5;
+}
+
+.hideOnDrag {
+  visibility: hidden;
+}
+
+.animate {
+  transition: visibility 0.2s ease-in-out;
 }

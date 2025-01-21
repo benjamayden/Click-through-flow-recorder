@@ -1,5 +1,7 @@
 //sidePanel.js
 let isRecording = false;
+let clickLog = [];
+let archivedLog = [];
 
 chrome.storage.onChanged.addListener((changes, area) => {
   if (area === "local" && changes.isRecording) {
@@ -182,38 +184,124 @@ function displayLog(clickLog) {
     logDiv.textContent = "Archived logs only";
     return;
   }
+
   document.getElementById("clearLog").style.display = "flex";
   document.getElementById("footer").style.display = "flex";
+
   // Create a Set to keep track of unique IDs
   const uniqueIds = new Set();
-  // Create a list to display log entries
-  const list = document.createElement("ul");
 
-  clickLog.forEach((entry) => {
-    if (uniqueIds.has(entry.id)) {
-      return; // Skip this entry if the ID has already been processed
+  // Add drag-and-drop event handlers
+  let dragStartIndex;
+  let dragEndIndex;
+  logDiv.addEventListener("dragstart", (event) => {
+    dragStartIndex = event.target.closest("li").getAttribute("data-index");
+    console.log("dragstart",clickLog[dragStartIndex].elementText,dragStartIndex)
+    //console.log(effectAllowed)
+    event.dataTransfer.effectAllowed = "move";
+  });
+
+  logDiv.addEventListener("dragover", (event) => {
+    try{
+      dragEndIndex = event.target.closest("li").getAttribute("data-index");
+
+    console.log("dragover",clickLog[dragEndIndex].elementText,dragStartIndex,dragEndIndex)
+    }catch(err){console.log(err)}
+    event.preventDefault(); // Allow dropping
+  });
+
+  logDiv.addEventListener("drop", (event) => {
+    event.preventDefault();
+    try{
+    dragEndIndex = event.target.closest("li").getAttribute("data-index");
+    }catch(err){console.log(err)}
+    if (dragStartIndex !== null && dragEndIndex !== null) {
+      // Swap the items in clickLog
+      const temp = clickLog[dragStartIndex];
+      console.log("drop",temp.elementText,dragStartIndex,dragEndIndex)
+      clickLog[dragStartIndex] = clickLog[dragEndIndex];
+      clickLog[dragEndIndex] = temp;
+      console.log("after",clickLog)
+      // Save the updated order to Chrome storage
+      chrome.storage.local.set({ clickLog}, () => {
+        displayLog(clickLog); // Re-render the list
+        
+      });
     }
-    if (entry.isArchived) {
-      return;
+  });
+
+  logDiv.addEventListener("dragend", (event) => {
+    event.preventDefault();
+    if (dragStartIndex !== null && dragEndIndex !== null) {
+      // Swap the items in clickLog
+      const temp = clickLog[dragStartIndex];
+      console.log("drop",temp.elementText,dragStartIndex,dragEndIndex)
+      clickLog[dragStartIndex] = clickLog[dragEndIndex];
+      clickLog[dragEndIndex] = temp;
+      console.log("after",clickLog)
+      // Save the updated order to Chrome storage
+      chrome.storage.local.set({ clickLog}, () => {
+        displayLog(clickLog); // Re-render the list
+        
+      });
     }
+  })
+  // Render each log entry
+  clickLog.forEach((entry, index) => {
+    if (uniqueIds.has(entry.id) || entry.isArchived) return;
     uniqueIds.add(entry.id); // Add the ID to the set
 
     const listItem = document.createElement("li");
+    listItem.setAttribute("draggable", "true");
+    listItem.setAttribute("data-index", index); // Set the current index
+
+    const dragIcon = document.createElement("drag-icon");
+
+    // Create the SVG element
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.setAttribute("width", "10");
+    svg.setAttribute("height", "16");
+    svg.setAttribute("viewBox", "0 0 10 16");
+    svg.setAttribute("fill", "none");
+    svg.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+
+    // Define dot positions
+    const dotPositions = [
+      { cx: 2, cy: 2 },
+      { cx: 2, cy: 8 },
+      { cx: 2, cy: 14 },
+      { cx: 8, cy: 2 },
+      { cx: 8, cy: 8 },
+      { cx: 8, cy: 14 },
+    ];
+
+    // Create dots and append them to the SVG
+    dotPositions.forEach((pos) => {
+      const circle = document.createElementNS(
+        "http://www.w3.org/2000/svg",
+        "circle"
+      );
+      circle.setAttribute("cx", pos.cx);
+      circle.setAttribute("cy", pos.cy);
+      circle.setAttribute("r", "2"); // Dot radius
+      circle.setAttribute("fill", "var(--color-grey-dark)");
+      svg.appendChild(circle);
+    });
+    dragIcon.className = "icon-container";
+    dragIcon.appendChild(svg); // Append the SVG to the container
 
     const imageContainer = document.createElement("div");
     imageContainer.className = "image-container";
-    if (entry.dataUrl !== '') {
-        const imgElement = document.createElement('img');
-        imgElement.src = entry.dataUrl || 'placeholder.png';
-        imageContainer.appendChild(imgElement); // Ensure this line is within the same scope
+    if (entry.dataUrl !== "") {
+      const imgElement = document.createElement("img");
+      imgElement.src = entry.dataUrl || "placeholder.png";
+      imageContainer.appendChild(imgElement);
     }
 
     const detailContainer = document.createElement("div");
     detailContainer.className = "container";
 
-
     const actionContainer = document.createElement("div");
-
 
     // Create and append the element name
     const elementName = document.createElement("div");
@@ -243,24 +331,30 @@ function displayLog(clickLog) {
       });
     });
 
-    // Append the id and link to the details div
     details.appendChild(id);
 
     // Append the name and details to the list item
     detailContainer.appendChild(elementName);
     detailContainer.appendChild(details);
     actionContainer.appendChild(removeButton);
+    listItem.appendChild(dragIcon);
     listItem.appendChild(imageContainer);
     listItem.appendChild(detailContainer);
     listItem.appendChild(actionContainer);
-    // Append the list item to the list
-    list.appendChild(listItem);
-  });
 
-  logDiv.appendChild(list);
+    // Append the list item to the list
+    logDiv.appendChild(listItem);
+  });
+  if (logDiv) {
+    let length = logDiv.childElementCount;
+    if (length > 0) {
+      logDiv.children[length - 1].scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+  }
 }
 
-// Function to remove duplicates from the log
+
+
 function removeDuplicates(log) {
   const seen = new Set();
   return log.filter((entry) => {
