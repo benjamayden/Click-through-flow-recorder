@@ -168,12 +168,18 @@ function removeDuplicates(log) {
   });
 }
 
+let dragStartIndex;
+let clickLogCopy = []; // To store a local copy of clickLog for dynamic updates
+
 function displayLog(clickLog) {
   const logDiv = document.getElementById("log");
   logDiv.innerHTML = ""; // Clear previous log
 
-  // Check if there are any non-archived entries
-  const nonArchivedLogs = clickLog.filter((entry) => !entry.isArchived);
+  // Validate and filter logs
+  const validLogs = clickLog.filter(
+    (entry) => entry && typeof entry.isArchived !== "undefined"
+  );
+  const nonArchivedLogs = validLogs.filter((entry) => !entry.isArchived);
 
   if (clickLog.length === 0) {
     logDiv.textContent = "No logs recorded.";
@@ -188,132 +194,69 @@ function displayLog(clickLog) {
   document.getElementById("clearLog").style.display = "flex";
   document.getElementById("footer").style.display = "flex";
 
-  // Create a Set to keep track of unique IDs
   const uniqueIds = new Set();
-
-  // Add drag-and-drop event handlers
-  // let dragStartIndex;
-  // let dragEndIndex;
-  // logDiv.addEventListener("dragstart", (event) => {
-  //   dragStartIndex = event.target.closest("li").getAttribute("data-index");
-  //   console.log("dragstart",clickLog[dragStartIndex].elementText,dragStartIndex)
-  //   //console.log(effectAllowed)
-  //   event.dataTransfer.effectAllowed = "move";
-  // });
-
-  // logDiv.addEventListener("dragover", (event) => {
-  //   try{
-  //     dragEndIndex = event.target.closest("li").getAttribute("data-index");
-
-  //   console.log("dragover",clickLog[dragEndIndex].elementText,dragStartIndex,dragEndIndex)
-  //   }catch(err){console.log(err)}
-  //   event.preventDefault(); // Allow dropping
-  // });
-
-  // logDiv.addEventListener("drop", (event) => {
-  //   event.preventDefault();
-  //   try{
-  //   dragEndIndex = event.target.closest("li").getAttribute("data-index");
-  //   }catch(err){console.log(err)}
-  //   if (dragStartIndex !== null && dragEndIndex !== null) {
-  //     // Swap the items in clickLog
-  //     const temp = clickLog[dragStartIndex];
-  //     console.log("drop",temp.elementText,dragStartIndex,dragEndIndex)
-  //     clickLog[dragStartIndex] = clickLog[dragEndIndex];
-  //     clickLog[dragEndIndex] = temp;
-  //     console.log("after",clickLog)
-  //     // Save the updated order to Chrome storage
-  //     chrome.storage.local.set({ clickLog}, () => {
-  //       displayLog(clickLog); // Re-render the list
-        
-  //     });
-  //   }
-  // });
-
-  // logDiv.addEventListener("dragend", (event) => {
-  //   event.preventDefault();
-  //   if (dragStartIndex !== null && dragEndIndex !== null) {
-  //     // Swap the items in clickLog
-  //     const temp = clickLog[dragStartIndex];
-  //     console.log("drop",temp.elementText,dragStartIndex,dragEndIndex)
-  //     clickLog[dragStartIndex] = clickLog[dragEndIndex];
-  //     clickLog[dragEndIndex] = temp;
-  //     console.log("after",clickLog)
-  //     // Save the updated order to Chrome storage
-  //     chrome.storage.local.set({ clickLog}, () => {
-  //       displayLog(clickLog); // Re-render the list
-        
-  //     });
-  //   }
-  // })
-
-
   let dragStartIndex;
-  let dragEndIndex;
-  
-  // Add drag-and-drop event handlers
-  logDiv.addEventListener("dragstart", (event) => {
-    dragStartIndex = event.target.closest("li").getAttribute("data-index");
-    event.target.classList.add("dragging");
-    event.dataTransfer.effectAllowed = "move";
-  });
-  
-  logDiv.addEventListener("dragover", (event) => {
-    event.preventDefault(); // Allow dropping
-    const target = event.target.closest("li");
-    if (!target || target.classList.contains("dragging")) return;
-  
-    dragEndIndex = target.getAttribute("data-index");
-  
-    const draggedElement = logDiv.querySelector(".dragging");
-    if (draggedElement && dragEndIndex !== dragStartIndex) {
-      if (dragEndIndex > dragStartIndex) {
-        // Insert after the target
-        target.insertAdjacentElement("afterend", draggedElement);
-      } else {
-        // Insert before the target
-        target.insertAdjacentElement("beforebegin", draggedElement);
-      }
-    }
-  });
-  
-  logDiv.addEventListener("drop", (event) => {
-    event.preventDefault();
-    const draggedElement = logDiv.querySelector(".dragging");
-    if (draggedElement) draggedElement.classList.remove("dragging");
-  
-    if (dragStartIndex !== null && dragEndIndex !== null) {
-      // Update the clickLog array
-      const [movedItem] = clickLog.splice(dragStartIndex, 1);
-      clickLog.splice(dragEndIndex, 0, movedItem);
-  
-      // Save the updated order to Chrome storage
-      chrome.storage.local.set({ clickLog }, () => {
-        displayLog(clickLog); // Re-render the list to ensure consistency
-      });
-    }
-  });
-  
-  logDiv.addEventListener("dragend", (event) => {
-    event.preventDefault();
-    const draggedElement = logDiv.querySelector(".dragging");
-    if (draggedElement) draggedElement.classList.remove("dragging");
-  });
-  
-
+  let clickLogCopy = [...clickLog]; // Maintain a local copy for real-time updates
 
   // Render each log entry
   clickLog.forEach((entry, index) => {
     if (uniqueIds.has(entry.id) || entry.isArchived) return;
-    uniqueIds.add(entry.id); // Add the ID to the set
+    uniqueIds.add(entry.id); // Track unique IDs
 
     const listItem = document.createElement("li");
     listItem.setAttribute("draggable", "true");
     listItem.setAttribute("data-index", index); // Set the current index
+    listItem.classList.add("draggable-item");
 
-    const dragIcon = document.createElement("drag-icon");
+    // Add drag event listeners
+    listItem.addEventListener("dragstart", (event) => {
+      dragStartIndex = index;
+      listItem.classList.add("dragging"); // Add visual feedback
+      event.dataTransfer.effectAllowed = "move";
+    });
 
-    // Create the SVG element
+    listItem.addEventListener("dragover", (event) => {
+      event.preventDefault(); // Allow dropping
+      const draggingElement = document.querySelector(".dragging");
+      const overElement = event.target.closest("li");
+
+      if (!overElement || overElement === draggingElement) return;
+
+      const overIndex = parseInt(overElement.getAttribute("data-index"), 10);
+
+      if (overIndex > dragStartIndex) {
+        overElement.after(draggingElement); // Move visually down
+      } else {
+        overElement.before(draggingElement); // Move visually up
+      }
+
+      // Update clickLogCopy in real-time
+      if (dragStartIndex !== null && overIndex !== null) {
+        const [movedItem] = clickLogCopy.splice(dragStartIndex, 1);
+        clickLogCopy.splice(overIndex, 0, movedItem);
+        dragStartIndex = overIndex; // Update start index for subsequent moves
+      }
+    });
+
+    listItem.addEventListener("drop", (event) => {
+      event.preventDefault();
+      listItem.classList.remove("dragging");
+
+      // Save the updated order to storage
+      chrome.storage.local.set({ clickLog: clickLogCopy }, () => {
+        displayLog(clickLogCopy); // Re-render the list
+      });
+    });
+
+    listItem.addEventListener("dragend", () => {
+      listItem.classList.remove("dragging");
+      chrome.runtime.sendMessage({ action: 'updateFlowFromPanel' });
+    });
+
+    // UI Components
+    const dragIcon = document.createElement("div");
+    dragIcon.className = "icon-container";
+
     const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
     svg.setAttribute("width", "10");
     svg.setAttribute("height", "16");
@@ -321,7 +264,6 @@ function displayLog(clickLog) {
     svg.setAttribute("fill", "none");
     svg.setAttribute("xmlns", "http://www.w3.org/2000/svg");
 
-    // Define dot positions
     const dotPositions = [
       { cx: 2, cy: 2 },
       { cx: 2, cy: 8 },
@@ -331,7 +273,6 @@ function displayLog(clickLog) {
       { cx: 8, cy: 14 },
     ];
 
-    // Create dots and append them to the SVG
     dotPositions.forEach((pos) => {
       const circle = document.createElementNS(
         "http://www.w3.org/2000/svg",
@@ -339,18 +280,19 @@ function displayLog(clickLog) {
       );
       circle.setAttribute("cx", pos.cx);
       circle.setAttribute("cy", pos.cy);
-      circle.setAttribute("r", "2"); // Dot radius
+      circle.setAttribute("r", "2");
       circle.setAttribute("fill", "var(--color-grey-dark)");
       svg.appendChild(circle);
     });
-    dragIcon.className = "icon-container";
-    dragIcon.appendChild(svg); // Append the SVG to the container
+
+    dragIcon.appendChild(svg);
 
     const imageContainer = document.createElement("div");
     imageContainer.className = "image-container";
-    if (entry.dataUrl !== "") {
+
+    if (entry.dataUrl) {
       const imgElement = document.createElement("img");
-      imgElement.src = entry.dataUrl || "placeholder.png";
+      imgElement.src = entry.dataUrl;
       imageContainer.appendChild(imgElement);
     }
 
@@ -359,57 +301,50 @@ function displayLog(clickLog) {
 
     const actionContainer = document.createElement("div");
 
-    // Create and append the element name
     const elementName = document.createElement("div");
     elementName.classList.add("elementName");
-    elementName.textContent = getShortenedText(entry.elementText);
+    elementName.textContent = entry.elementText;
 
-    // Create and append the details div
     const details = document.createElement("div");
     details.classList.add("elementDetails");
 
-    // Create and append the ID
     const id = document.createElement("span");
     id.classList.add("elementId");
     id.textContent = `id: ${entry.id}`;
 
     const removeButton = document.createElement("button");
     removeButton.className = "destructive-btn remove-shot";
-    removeButton.innerText = "X";
+    removeButton.textContent = "X";
 
-    removeButton.addEventListener("click", function () {
-      const updatedLog = clickLog.filter(
+    removeButton.addEventListener("click", () => {
+      const updatedLog = clickLogCopy.filter(
         (logEntry) => logEntry.id !== entry.id
       );
 
-      chrome.storage.local.set({ clickLog: updatedLog }, function () {
-        displayLog(updatedLog);
+      chrome.storage.local.set({ clickLog: updatedLog }, () => {
+        displayLog(updatedLog); // Re-render after removal
+        chrome.runtime.sendMessage({ action: 'updateFlowFromPanel' });
       });
     });
 
     details.appendChild(id);
-
-    // Append the name and details to the list item
     detailContainer.appendChild(elementName);
     detailContainer.appendChild(details);
     actionContainer.appendChild(removeButton);
+
     listItem.appendChild(dragIcon);
     listItem.appendChild(imageContainer);
     listItem.appendChild(detailContainer);
     listItem.appendChild(actionContainer);
 
-    // Append the list item to the list
     logDiv.appendChild(listItem);
   });
-  if (logDiv) {
-    let length = logDiv.childElementCount;
-    if (length > 0) {
-      logDiv.children[length - 1].scrollIntoView({ behavior: "smooth", block: "nearest" });
-    }
+
+  // Auto-scroll to the bottom if items were added
+  if (logDiv.childElementCount > 0) {
+    logDiv.lastElementChild.scrollIntoView({ behavior: "smooth" });
   }
 }
-
-
 
 function removeDuplicates(log) {
   const seen = new Set();
@@ -559,3 +494,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     });
   }
 });
+
+
+
+

@@ -8,11 +8,11 @@ chrome.runtime.onInstalled.addListener(() => {
 let isRecording = false;
 
 chrome.storage.onChanged.addListener((changes, area) => {
-    if (area === "local" && changes.isRecording) {
-      isRecording = changes.isRecording.newValue;
-      console.log('record: ',isRecording)
-    }
-  });
+  if (area === "local" && changes.isRecording) {
+    isRecording = changes.isRecording.newValue;
+    console.log("record: ", isRecording);
+  }
+});
 
 // Set panel behavior to open on icon click
 chrome.sidePanel
@@ -64,7 +64,6 @@ async function checkUrl() {
 }
 // Listen for the panel closing
 chrome.runtime.onConnect.addListener((port) => {
-
   if (port.name === "sidePanel") {
     port.onDisconnect.addListener(() => {
       console.log("Side panel was closed");
@@ -97,7 +96,6 @@ chrome.tabs.onActivated.addListener(() => {
 
 // Listen for tab updates (navigating or reloading)
 chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
-
   if (changeInfo.status === "complete") {
     // Check if the URL passes the allowed URL check before stopping recording
 
@@ -135,7 +133,6 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
 });
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-
   if (message.action === "openFlowDisplay") {
     // Ensure handleFlowTab doesn't block the response
     handleFlowTab(message.previousTabId);
@@ -152,6 +149,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     });
   } else if (message.action === "openOptions") {
     openOrFocusOptionsTab();
+  } else if (message.action === "updateFlowFromPanel") {
+    chrome.storage.local.get(["flowDisplayTabId"], function (result) {
+      if (result.flowDisplayTabId) {
+        chrome.tabs.reload(result.flowDisplayTabId);
+      }
+    });
   }
 });
 
@@ -225,7 +228,7 @@ chrome.commands.onCommand.addListener(async (command) => {
                   url,
                   timestamp,
                   dataUrl,
-                  isArchived: false
+                  isArchived: false,
                 };
 
                 // Store the log entry in local storage
@@ -259,7 +262,6 @@ chrome.commands.onCommand.addListener(async (command) => {
 });
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-
   if (message.action === "captureScreen") {
     chrome.tabs.captureVisibleTab(
       null,
