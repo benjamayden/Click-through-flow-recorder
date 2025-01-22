@@ -192,60 +192,116 @@ function displayLog(clickLog) {
   const uniqueIds = new Set();
 
   // Add drag-and-drop event handlers
+  // let dragStartIndex;
+  // let dragEndIndex;
+  // logDiv.addEventListener("dragstart", (event) => {
+  //   dragStartIndex = event.target.closest("li").getAttribute("data-index");
+  //   console.log("dragstart",clickLog[dragStartIndex].elementText,dragStartIndex)
+  //   //console.log(effectAllowed)
+  //   event.dataTransfer.effectAllowed = "move";
+  // });
+
+  // logDiv.addEventListener("dragover", (event) => {
+  //   try{
+  //     dragEndIndex = event.target.closest("li").getAttribute("data-index");
+
+  //   console.log("dragover",clickLog[dragEndIndex].elementText,dragStartIndex,dragEndIndex)
+  //   }catch(err){console.log(err)}
+  //   event.preventDefault(); // Allow dropping
+  // });
+
+  // logDiv.addEventListener("drop", (event) => {
+  //   event.preventDefault();
+  //   try{
+  //   dragEndIndex = event.target.closest("li").getAttribute("data-index");
+  //   }catch(err){console.log(err)}
+  //   if (dragStartIndex !== null && dragEndIndex !== null) {
+  //     // Swap the items in clickLog
+  //     const temp = clickLog[dragStartIndex];
+  //     console.log("drop",temp.elementText,dragStartIndex,dragEndIndex)
+  //     clickLog[dragStartIndex] = clickLog[dragEndIndex];
+  //     clickLog[dragEndIndex] = temp;
+  //     console.log("after",clickLog)
+  //     // Save the updated order to Chrome storage
+  //     chrome.storage.local.set({ clickLog}, () => {
+  //       displayLog(clickLog); // Re-render the list
+        
+  //     });
+  //   }
+  // });
+
+  // logDiv.addEventListener("dragend", (event) => {
+  //   event.preventDefault();
+  //   if (dragStartIndex !== null && dragEndIndex !== null) {
+  //     // Swap the items in clickLog
+  //     const temp = clickLog[dragStartIndex];
+  //     console.log("drop",temp.elementText,dragStartIndex,dragEndIndex)
+  //     clickLog[dragStartIndex] = clickLog[dragEndIndex];
+  //     clickLog[dragEndIndex] = temp;
+  //     console.log("after",clickLog)
+  //     // Save the updated order to Chrome storage
+  //     chrome.storage.local.set({ clickLog}, () => {
+  //       displayLog(clickLog); // Re-render the list
+        
+  //     });
+  //   }
+  // })
+
+
   let dragStartIndex;
   let dragEndIndex;
+  
+  // Add drag-and-drop event handlers
   logDiv.addEventListener("dragstart", (event) => {
     dragStartIndex = event.target.closest("li").getAttribute("data-index");
-    console.log("dragstart",clickLog[dragStartIndex].elementText,dragStartIndex)
-    //console.log(effectAllowed)
+    event.target.classList.add("dragging");
     event.dataTransfer.effectAllowed = "move";
   });
-
+  
   logDiv.addEventListener("dragover", (event) => {
-    try{
-      dragEndIndex = event.target.closest("li").getAttribute("data-index");
-
-    console.log("dragover",clickLog[dragEndIndex].elementText,dragStartIndex,dragEndIndex)
-    }catch(err){console.log(err)}
     event.preventDefault(); // Allow dropping
+    const target = event.target.closest("li");
+    if (!target || target.classList.contains("dragging")) return;
+  
+    dragEndIndex = target.getAttribute("data-index");
+  
+    const draggedElement = logDiv.querySelector(".dragging");
+    if (draggedElement && dragEndIndex !== dragStartIndex) {
+      if (dragEndIndex > dragStartIndex) {
+        // Insert after the target
+        target.insertAdjacentElement("afterend", draggedElement);
+      } else {
+        // Insert before the target
+        target.insertAdjacentElement("beforebegin", draggedElement);
+      }
+    }
   });
-
+  
   logDiv.addEventListener("drop", (event) => {
     event.preventDefault();
-    try{
-    dragEndIndex = event.target.closest("li").getAttribute("data-index");
-    }catch(err){console.log(err)}
+    const draggedElement = logDiv.querySelector(".dragging");
+    if (draggedElement) draggedElement.classList.remove("dragging");
+  
     if (dragStartIndex !== null && dragEndIndex !== null) {
-      // Swap the items in clickLog
-      const temp = clickLog[dragStartIndex];
-      console.log("drop",temp.elementText,dragStartIndex,dragEndIndex)
-      clickLog[dragStartIndex] = clickLog[dragEndIndex];
-      clickLog[dragEndIndex] = temp;
-      console.log("after",clickLog)
+      // Update the clickLog array
+      const [movedItem] = clickLog.splice(dragStartIndex, 1);
+      clickLog.splice(dragEndIndex, 0, movedItem);
+  
       // Save the updated order to Chrome storage
-      chrome.storage.local.set({ clickLog}, () => {
-        displayLog(clickLog); // Re-render the list
-        
+      chrome.storage.local.set({ clickLog }, () => {
+        displayLog(clickLog); // Re-render the list to ensure consistency
       });
     }
   });
-
+  
   logDiv.addEventListener("dragend", (event) => {
     event.preventDefault();
-    if (dragStartIndex !== null && dragEndIndex !== null) {
-      // Swap the items in clickLog
-      const temp = clickLog[dragStartIndex];
-      console.log("drop",temp.elementText,dragStartIndex,dragEndIndex)
-      clickLog[dragStartIndex] = clickLog[dragEndIndex];
-      clickLog[dragEndIndex] = temp;
-      console.log("after",clickLog)
-      // Save the updated order to Chrome storage
-      chrome.storage.local.set({ clickLog}, () => {
-        displayLog(clickLog); // Re-render the list
-        
-      });
-    }
-  })
+    const draggedElement = logDiv.querySelector(".dragging");
+    if (draggedElement) draggedElement.classList.remove("dragging");
+  });
+  
+
+
   // Render each log entry
   clickLog.forEach((entry, index) => {
     if (uniqueIds.has(entry.id) || entry.isArchived) return;

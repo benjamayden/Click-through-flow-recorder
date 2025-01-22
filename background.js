@@ -225,6 +225,7 @@ chrome.commands.onCommand.addListener(async (command) => {
                   url,
                   timestamp,
                   dataUrl,
+                  isArchived: false
                 };
 
                 // Store the log entry in local storage
