@@ -317,10 +317,9 @@ function displayLog(clickLog) {
     removeButton.textContent = "X";
 
     removeButton.addEventListener("click", () => {
-      const updatedLog = clickLogCopy.filter(
-        (logEntry) => logEntry.id !== entry.id
+      const updatedLog = clickLogCopy.map(
+        (logEntry) => logEntry.id === entry.id ? { ...logEntry, isArchived: true } : logEntry
       );
-
       chrome.storage.local.set({ clickLog: updatedLog }, () => {
         displayLog(updatedLog); // Re-render after removal
         chrome.runtime.sendMessage({ action: 'updateFlowFromPanel' });

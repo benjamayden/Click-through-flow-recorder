@@ -1,6 +1,6 @@
 
 // Initialize variables
-let isEditMode = false;
+let isEditMode = true;
 let clickLog = [];
 let archivedLog = [];
 let reorder = false;
@@ -52,52 +52,6 @@ function saveClickLog() {
     setTimeout(() => {
         isEditingText.innerText = ''; // Clear the text after fade-out
     }, 2000); // Match the animation duration (0.3s in the CSS)
-}
-
-// Reference to the toggle input
-const toggle = document.getElementById('toggle');
-const toggleLabel = document.getElementById('toggleLabel');
-
-// Event listener for change event
-toggle.addEventListener('change', function () {
-    this.setAttribute('aria-checked', this.checked ? 'true' : 'false');
-    const reorder = document.getElementById('reorder')
-    if (this.checked) {
-        toggleLabel.classList.add('right');
-        toggleLabel.textContent = 'Editing'; // Update label dynamically
-        reorder.style.display = 'flex';
-    } else {
-        toggleLabel.classList.remove('right');
-        toggleLabel.textContent = 'Viewing'; // Update label dynamically
-        reorder.style.display = 'none';
-    }
-    isEditMode = this.checked;
-    toggleEditMode(isEditMode);
-});
-
-// Toggle edit mode for entries
-function toggleEditMode(enable) {
-    const flowTitleElement = document.getElementById('flowTitle');
-    const footerElement = document.getElementById('footer');
-    const archivedElement = document.getElementById('archived');
-
-    if (enable) {
-        flowTitleElement.contentEditable = true;
-        flowTitleElement.classList.add('editable');
-        footerElement.style.display = 'none';
-        archivedElement.style.display = 'flex';
-    } else {
-        flowTitleElement.contentEditable = false;
-        flowTitleElement.classList.remove('editable');
-        footerElement.style.display = 'flex';
-        archivedElement.style.display = 'none';
-
-        // Save the updated title
-        chrome.storage.local.set({ flowTitle: flowTitleElement.textContent });
-        // Save entries
-        saveClickLog();
-    }
-    renderLog();
 }
 
 // Render the click log
@@ -171,6 +125,7 @@ function renderLog() {
                 elementText: 'Enter title',
                 description: 'Enter description',
                 dataUrl: '',
+                alt:'',
                 id: nextId,
                 isArchived: false,
                 class: 'custom',
@@ -229,6 +184,7 @@ function renderLog() {
         if (entry.dataUrl !== '') {
             const imgElement = document.createElement('img');
             imgElement.src = entry.dataUrl || 'placeholder.png';
+            imgElement.alt = entry.alt||''
             logEntryDiv.appendChild(imgElement); // Ensure this line is within the same scope
         }
 
