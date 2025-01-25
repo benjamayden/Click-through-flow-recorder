@@ -234,12 +234,36 @@ p {
   transition: height 0.3s ease, visibility 0.3s ease;
 }
 
-img {
+/* img {
   width: 100%;
   height: auto;
   display: block;
   margin-top: 5px;
   border-radius: 0.125rem;
+} */
+
+.image-container{
+  width: 100%;
+  height: auto;
+  margin-top: 5px;
+  border-radius: 0.125rem;
+  position: relative;
+  display:flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.imgElement {  
+  cursor: crosshair;
+}
+
+.crop-area {
+  position: absolute;
+  border: 2px dashed var(--color-primary-dark);
+  background-color: var(--color-primary-main);
+  opacity: 0.45;
+  pointer-events: none;
+  display: none;
 }
 
 .container {

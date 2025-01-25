@@ -1,4 +1,3 @@
-
 // Initialize variables
 let isEditMode = true;
 let clickLog = [];
@@ -6,606 +5,686 @@ let archivedLog = [];
 let reorder = false;
 let nextId = 999;
 
-
 loadClickLog();
-
 
 // Load click log from storage
 function loadClickLog() {
-    chrome.storage.local.get(['clickLog', 'archivedLog', 'flowTitle'], function (result) {
-        const flowTitleElement = document.getElementById('flowTitle');
-        flowTitleElement.textContent = result.flowTitle || 'Click Log'; // Default title if not set
-        let renderedLog = [];
-        let id = -1;
-        result.clickLog.forEach(entry => {
-            if (entry.id !== id) {
-                nextId++;
-                id = entry.id;
-                renderedLog.push(entry)
-            }
-        })
-        clickLog = renderedLog || [];
-        archivedLog = result.archivedLog || [];
-        renderLog();
-        renderArchivedLog();
-    });
+  chrome.storage.local.get(
+    ["clickLog", "archivedLog", "flowTitle"],
+    function (result) {
+      const flowTitleElement = document.getElementById("flowTitle");
+      flowTitleElement.textContent = result.flowTitle || "Click Log"; // Default title if not set
+      let renderedLog = [];
+      let id = -1;
+      result.clickLog.forEach((entry) => {
+        if (entry.id !== id) {
+          nextId++;
+          id = entry.id;
+          renderedLog.push(entry);
+        }
+      });
+      clickLog = renderedLog || [];
+      archivedLog = result.archivedLog || [];
+      renderLog();
+      renderArchivedLog();
+    }
+  );
 }
 
 // Save click log to storage
 function saveClickLog() {
-    chrome.storage.local.set({ clickLog, archivedLog }, function () {
-        console.log('Click log updated in storage');
-    });
-    chrome.runtime.sendMessage({ action: 'updatePanelFromFlow' });
+  chrome.storage.local.set({ clickLog, archivedLog }, function () {
+    console.log("Click log updated in storage");
+  });
+  chrome.runtime.sendMessage({ action: "updatePanelFromFlow" });
 
-    const isEditingText = document.getElementById('isEditingText');
-    // Set the "Saved!" text and fade it in
-    isEditingText.innerText = 'Saved!';
-    isEditingText.classList.remove('remove'); // Ensure the animation reset
+  const isEditingText = document.getElementById("isEditingText");
+  // Set the "Saved!" text and fade it in
+  isEditingText.innerText = "Saved!";
+  isEditingText.classList.remove("remove"); // Ensure the animation reset
 
-    // Wait 3 seconds, then fade out
-    setTimeout(() => {
-        isEditingText.classList.add('remove'); // Trigger the "shrink" animation
-    }, 1700);
+  // Wait 3 seconds, then fade out
+  setTimeout(() => {
+    isEditingText.classList.add("remove"); // Trigger the "shrink" animation
+  }, 1700);
 
-    // Optionally clear the text after the animation completes (e.g., after 0.3s)
-    setTimeout(() => {
-        isEditingText.innerText = ''; // Clear the text after fade-out
-    }, 2000); // Match the animation duration (0.3s in the CSS)
+  // Optionally clear the text after the animation completes (e.g., after 0.3s)
+  setTimeout(() => {
+    isEditingText.innerText = ""; // Clear the text after fade-out
+  }, 2000); // Match the animation duration (0.3s in the CSS)
 }
 
 // Render the click log
 function renderLog() {
-    const logDiv = document.getElementById('log');
-    logDiv.innerHTML = '';
+  const logDiv = document.getElementById("log");
+  logDiv.innerHTML = "";
 
-    if (clickLog.length === 0) {
-        logDiv.textContent = 'No logs recorded.';
-        return;
+  if (clickLog.length === 0) {
+    logDiv.textContent = "No logs recorded.";
+    return;
+  }
+
+  clickLog.forEach((entry, index) => {
+    if (entry.isArchived) return; // Skip archived entries
+    const blockContainer = document.createElement("div");
+    blockContainer.className = "container block";
+    blockContainer.dataset.id = entry.id;
+    blockContainer.id = entry.id;
+    const logEntryDiv = document.createElement("div");
+    logEntryDiv.className = "log-entry container";
+    if (entry.class) logEntryDiv.classList.add(entry.class);
+    logEntryDiv.draggable = reorder;
+
+    if (reorder) {
+      // Handle drag events
+      blockContainer.addEventListener("dragstart", dragStart);
+      blockContainer.addEventListener("dragover", dragOver);
+      blockContainer.addEventListener("dragend", drop);
     }
 
-    clickLog.forEach((entry, index) => {
-        if (entry.isArchived) return; // Skip archived entries
-        const blockContainer = document.createElement('div');
-        blockContainer.className = 'container block';
-        blockContainer.dataset.id = entry.id;
-        blockContainer.id = entry.id;
-        const logEntryDiv = document.createElement('div');
-        logEntryDiv.className = 'log-entry container';
-        if (entry.class) logEntryDiv.classList.add(entry.class);
-        logEntryDiv.draggable = reorder;
+    // Content editable when in edit mode
+    const titleElement = document.createElement("h2");
+    titleElement.className = "title";
+    titleElement.textContent = entry.elementText;
+    titleElement.contentEditable = isEditMode;
+    if (isEditMode) titleElement.classList.add("editable");
 
-        if (reorder) {
-            // Handle drag events
-            blockContainer.addEventListener('dragstart', dragStart);
-            blockContainer.addEventListener('dragover', dragOver);
-            blockContainer.addEventListener('dragend', drop);
-        }
+    const descriptionParagraph = document.createElement("p");
+    descriptionParagraph.className = "description";
+    descriptionParagraph.textContent = entry.description
+      ? entry.description
+      : "Enter description";
+    if (descriptionParagraph.textContent === "Enter description") {
+      descriptionParagraph.classList.add("hide-on-print");
+    }
+    descriptionParagraph.contentEditable = isEditMode;
+    if (isEditMode) descriptionParagraph.classList.add("editable");
 
+    // Actions
+    const addEntryContainer = document.createElement("div");
+    addEntryContainer.className = "addEntryContainer hide-on-print";
+    addEntryContainer.style.pointerEvents = "none";
+    if (isEditMode) {
+      addEntryContainer.classList.add("canAdd");
+      addEntryContainer.style.pointerEvents = "auto";
+    }
 
-        // Content editable when in edit mode
-        const titleElement = document.createElement('h2');
-        titleElement.className = 'title';
-        titleElement.textContent = entry.elementText;
-        titleElement.contentEditable = isEditMode;
-        if (isEditMode) titleElement.classList.add('editable');
+    const actionsContainer = document.createElement("div");
+    actionsContainer.className = "action addEntry hide-on-print";
+    addEntryContainer.appendChild(actionsContainer);
 
-        const descriptionParagraph = document.createElement('p');
-        descriptionParagraph.className = 'description';
-        descriptionParagraph.textContent = entry.description ? entry.description : "Enter description";
-        if (descriptionParagraph.textContent === "Enter description") {
-            descriptionParagraph.classList.add('hide-on-print');
-        }
-        descriptionParagraph.contentEditable = isEditMode;
-        if (isEditMode) descriptionParagraph.classList.add('editable');
+    const addEntryButton = document.createElement("button");
+    addEntryButton.id = "addEntry";
+    addEntryButton.className = "secondary-btn";
+    addEntryButton.innerText = "Add";
 
-        // Actions
-        const addEntryContainer = document.createElement('div');
-        addEntryContainer.className = 'addEntryContainer hide-on-print'
-        addEntryContainer.style.pointerEvents = 'none';
-        if (isEditMode) {
-            addEntryContainer.classList.add('canAdd')
-            addEntryContainer.style.pointerEvents = 'auto';
-        };
+    // Add click event listener to the button
+    addEntryButton.addEventListener("click", function () {
+      const newEntry = {
+        elementText: "Enter title",
+        description: "Enter description",
+        dataUrl: "",
+        alt: "",
+        id: nextId,
+        isArchived: false,
+        class: "custom",
+      };
+      nextId++;
 
-        const actionsContainer = document.createElement('div');
-        actionsContainer.className = 'action addEntry hide-on-print';
-        addEntryContainer.appendChild(actionsContainer)
+      clickLog.splice(index + 1, 0, newEntry); // Insert after the parent
 
-        const addEntryButton = document.createElement('button');
-        addEntryButton.id = "addEntry";
-        addEntryButton.className = 'secondary-btn';
-        addEntryButton.innerText = "Add";
-
-        // Add click event listener to the button
-        addEntryButton.addEventListener('click', function () {
-
-
-            const newEntry = {
-                elementText: 'Enter title',
-                description: 'Enter description',
-                dataUrl: '',
-                alt:'',
-                id: nextId,
-                isArchived: false,
-                class: 'custom',
-            };
-            nextId++;
-
-            clickLog.splice(index + 1, 0, newEntry); // Insert after the parent
-
-
-
-            addEntryContainer.classList.add('growNewEntry');
-            setTimeout(() => {
-                saveClickLog();  // Save the updated log
-                addEntryContainer.classList.remove('growNewEntry');
-                renderLog();
-            }, 250)
-
-
-        });
-        actionsContainer.appendChild(addEntryButton)
-
-        // Remove button
-        const removeButton = document.createElement('button');
-        removeButton.className = 'destructive-btn';
-        removeButton.textContent = 'Remove';
-        removeButton.onclick = function () {
-            // Add the animation class
-            blockContainer.classList.add('remove');
-
-            // Wait for the animation to complete before archiving and re-rendering
-            setTimeout(() => {
-                entry.isArchived = true; // Mark entry as archived
-                saveClickLog();          // Save the updated click log
-                renderLog();             // Re-render active logs
-                renderArchivedLog();     // Re-render archived logs
-            }, 300); // Match the duration of the animation (0.3s)
-        };
-
-        actionsContainer.appendChild(removeButton)
-
-
-        // Update entry data on blur
-        titleElement.addEventListener('blur', function () {
-            entry.elementText = titleElement.textContent;
-            saveClickLog();
-        });
-
-        descriptionParagraph.addEventListener('blur', function () {
-            entry.description = descriptionParagraph.textContent;
-            saveClickLog();
-        });
-
-        // Append elements
-        logEntryDiv.appendChild(titleElement);
-        logEntryDiv.appendChild(descriptionParagraph);
-        if (entry.dataUrl !== '') {
-            const imgElement = document.createElement('img');
-            imgElement.src = entry.dataUrl || 'placeholder.png';
-            imgElement.alt = entry.alt||''
-            logEntryDiv.appendChild(imgElement); // Ensure this line is within the same scope
-        }
-
-        blockContainer.appendChild(logEntryDiv);
-        blockContainer.appendChild(addEntryContainer);
-        logDiv.appendChild(blockContainer);
-
+      addEntryContainer.classList.add("growNewEntry");
+      setTimeout(() => {
+        saveClickLog(); // Save the updated log
+        addEntryContainer.classList.remove("growNewEntry");
+        renderLog();
+      }, 250);
     });
+    actionsContainer.appendChild(addEntryButton);
+
+    // Remove button
+    const removeButton = document.createElement("button");
+    removeButton.className = "destructive-btn";
+    removeButton.textContent = "Remove";
+    removeButton.onclick = function () {
+      // Add the animation class
+      blockContainer.classList.add("remove");
+
+      // Wait for the animation to complete before archiving and re-rendering
+      setTimeout(() => {
+        entry.isArchived = true; // Mark entry as archived
+        saveClickLog(); // Save the updated click log
+        renderLog(); // Re-render active logs
+        renderArchivedLog(); // Re-render archived logs
+      }, 300); // Match the duration of the animation (0.3s)
+    };
+
+    actionsContainer.appendChild(removeButton);
+
+    // Update entry data on blur
+    titleElement.addEventListener("blur", function () {
+      entry.elementText = titleElement.textContent;
+      saveClickLog();
+    });
+
+    descriptionParagraph.addEventListener("blur", function () {
+      entry.description = descriptionParagraph.textContent;
+      saveClickLog();
+    });
+
+    // Append elements
+    logEntryDiv.appendChild(titleElement);
+    logEntryDiv.appendChild(descriptionParagraph);
+    if (entry.dataUrl !== "") {
+      if (!entry["originalImage"]) {
+        entry["originalImage"] = entry.dataUrl;
+        saveClickLog();
+      }
+      const imageContainer = document.createElement("div");
+      imageContainer.className = "image-container";
+      const imgElement = document.createElement("canvas");
+      imgElement.className = "imgElement";
+      const cropArea = document.createElement("div");
+      cropArea.className = "crop-area";
+
+      const ctx = imgElement.getContext("2d");
+      let image = null;
+      let isDragging = false;
+      let cropStart = { x: 0, y: 0 };
+      let cropEnd = { x: 0, y: 0 };
+
+      image = new Image();
+      image.src = entry.dataUrl;
+      image.onload = () => {
+
+      imgElement.width = image.width;
+      imgElement.height = image.height;
+
+      const containerRect = imageContainer.getBoundingClientRect();
+
+      // Calculate scale ratio to fit the image in the container if needed
+      const ratio = Math.min(
+        containerRect.width / image.width,
+        containerRect.height / image.height,
+        1 // Do not enlarge small images
+      );
+
+      // Scale the canvas in CSS
+      const displayWidth = image.width * ratio;
+      const displayHeight = image.height * ratio;
+      imgElement.style.width = `${displayWidth}px`;
+      imgElement.style.height = `${displayHeight}px`;
+
+      // Draw original resolution so cropping will be sharp
+      ctx.drawImage(image, 0, 0);
+        // Now image.width and image.height are known
+        // At this point you can create your canvas, size it, and do ctx.drawImage(image, 0, 0)
+    };
+      imgElement.src = entry.dataUrl || "placeholder.png";
+      imgElement.alt = entry.alt || "";
+      imageContainer.appendChild(imgElement);
+      imageContainer.appendChild(cropArea);
+      logEntryDiv.appendChild(imageContainer); // Ensure this line is within the same scope
+
+      imgElement.addEventListener('mousedown', (e) => {
+        if (!image) return;
+        isDragging = true;
+        const rect = imgElement.getBoundingClientRect();
+        const scaleX = imgElement.width / rect.width;
+        const scaleY = imgElement.height / rect.height;
+        cropStart.x = (e.clientX - rect.left) * scaleX;
+        cropStart.y = (e.clientY - rect.top) * scaleY;
+        cropArea.style.left = `${e.clientX - rect.left}px`;
+        cropArea.style.top = `${e.clientY - rect.top}px`;
+        cropArea.style.width = '0px';
+        cropArea.style.height = '0px';
+        cropArea.style.display = 'block';
+      });
+      
+      imgElement.addEventListener('mousemove', (e) => {
+        if (isDragging) {
+          const rect = imgElement.getBoundingClientRect();
+          const scaleX = imgElement.width / rect.width;
+          const scaleY = imgElement.height / rect.height;
+      
+          cropEnd.x = (e.clientX - rect.left) * scaleX;
+          cropEnd.y = (e.clientY - rect.top) * scaleY;
+      
+          const left = Math.min(cropStart.x, cropEnd.x) / scaleX;
+          const top = Math.min(cropStart.y, cropEnd.y) / scaleY;
+          const width = Math.abs(cropEnd.x - cropStart.x) / scaleX;
+          const height = Math.abs(cropEnd.y - cropStart.y) / scaleY;
+      
+          cropArea.style.left = `${left}px`;
+          cropArea.style.top = `${top}px`;
+          cropArea.style.width = `${width-2}px`;
+          cropArea.style.height = `${height-2}px`;
+        }
+      });
+      
+      imgElement.addEventListener('mouseup', () => {
+        isDragging = false;
+        cropArea.style.display = 'none';
+        
+      });
+    }
+
+    blockContainer.appendChild(logEntryDiv);
+    blockContainer.appendChild(addEntryContainer);
+    logDiv.appendChild(blockContainer);
+  });
 }
 
 // Render archived entries
 function renderArchivedLog() {
-    const archivedDiv = document.getElementById('archivedEntries');
-    archivedDiv.innerHTML = '';
+  const archivedDiv = document.getElementById("archivedEntries");
+  archivedDiv.innerHTML = "";
 
-    archivedLog = clickLog.filter(entry => entry.isArchived);
+  archivedLog = clickLog.filter((entry) => entry.isArchived);
 
-    archivedLog.forEach((entry, index) => {
-        const logEntryDiv = document.createElement('div');
-        logEntryDiv.className = 'archive-entry hide-on-print';
+  archivedLog.forEach((entry, index) => {
+    const logEntryDiv = document.createElement("div");
+    logEntryDiv.className = "archive-entry hide-on-print";
 
-        const titleElement = document.createElement('h2');
-        titleElement.className = 'title';
-        titleElement.textContent = entry.elementText;
+    const titleElement = document.createElement("h2");
+    titleElement.className = "title";
+    titleElement.textContent = entry.elementText;
 
+    const restoreButton = document.createElement("button");
+    restoreButton.className = "secondary-btn";
+    restoreButton.textContent = "Restore";
+    restoreButton.onclick = function () {
+      let thisId = entry.id;
+      entry.isArchived = false;
 
+      saveClickLog();
+      renderLog();
+      renderArchivedLog();
+      // Assuming you have a way to select the restored entry, for example:
+      const restoredEntryElement = document.getElementById(thisId);
 
-        const restoreButton = document.createElement('button');
-        restoreButton.className = 'secondary-btn';
-        restoreButton.textContent = 'Restore';
-        restoreButton.onclick = function () {
-            let thisId = entry.id;
-            entry.isArchived = false;
+      // Scroll it into view
+      if (restoredEntryElement) {
+        restoredEntryElement.scrollIntoView({
+          behavior: "smooth",
+          block: "center",
+        });
+      }
+    };
 
-            saveClickLog();
-            renderLog();
-            renderArchivedLog();
-            // Assuming you have a way to select the restored entry, for example:
-            const restoredEntryElement = document.getElementById(thisId);
+    // Create Remove Button
+    const removeButton = document.createElement("button");
+    removeButton.className = "destructive-btn danger"; // Add a danger class for styling
+    removeButton.textContent = "Remove";
+    removeButton.onclick = function () {
+      // Remove the entry completely from clickLog
+      clickLog = clickLog.filter((block) => block.id !== entry.id);
 
-            // Scroll it into view
-            if (restoredEntryElement) {
-                restoredEntryElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }
-        };
+      // Save the updated log and re-render the archived log
+      saveClickLog();
+      renderArchivedLog();
+      chrome.runtime.sendMessage({ action: "updatePanelFromFlow" });
+    };
+    //add a remove button that removes it entriely from storage
 
-        // Create Remove Button
-        const removeButton = document.createElement('button');
-        removeButton.className = 'destructive-btn danger';  // Add a danger class for styling
-        removeButton.textContent = 'Remove';
-        removeButton.onclick = function () {
-            // Remove the entry completely from clickLog
-            clickLog = clickLog.filter(block => block.id !== entry.id);
-
-            // Save the updated log and re-render the archived log
-            saveClickLog();
-            renderArchivedLog();
-            chrome.runtime.sendMessage({ action: 'updatePanelFromFlow' });
-        };
-        //add a remove button that removes it entriely from storage
-
-        logEntryDiv.appendChild(titleElement);
-        logEntryDiv.appendChild(restoreButton);
-        logEntryDiv.appendChild(removeButton);
-        archivedDiv.appendChild(logEntryDiv);
-    });
+    logEntryDiv.appendChild(titleElement);
+    logEntryDiv.appendChild(restoreButton);
+    logEntryDiv.appendChild(removeButton);
+    archivedDiv.appendChild(logEntryDiv);
+  });
 }
 
 // Drag and Drop functions
 let draggedItem = null;
 
 function dragStart(e) {
-    draggedItem = this;
-    // Add the hideOnDrag class to all elements to be hidden
-    document.querySelectorAll('.log-entry img, .log-entry p, .log-entry button').forEach(el => {
-        el.classList.add('hideOnDrag');
-        el.classList.add('animate')
+  draggedItem = this;
+  // Add the hideOnDrag class to all elements to be hidden
+  document
+    .querySelectorAll(".log-entry img, .log-entry p, .log-entry button")
+    .forEach((el) => {
+      el.classList.add("hideOnDrag");
+      el.classList.add("animate");
     });
 
-    document.querySelectorAll('.addEntryContainer').forEach(el => {
-        el.style.pointerEvents = 'none'; // Disable interaction
-    });
+  document.querySelectorAll(".addEntryContainer").forEach((el) => {
+    el.style.pointerEvents = "none"; // Disable interaction
+  });
 
-    setTimeout(() => {
-        this.classList.add('draggable');
-    }, 0);
+  setTimeout(() => {
+    this.classList.add("draggable");
+  }, 0);
 }
 
 function dragOver(e) {
-    e.preventDefault();
+  e.preventDefault();
 
-    // Ensure `draggedItem` is globally defined
-    if (!draggedItem) return;
+  // Ensure `draggedItem` is globally defined
+  if (!draggedItem) return;
 
-    // Get bounding box of the current element
-    const bounding = this.getBoundingClientRect();
+  // Get bounding box of the current element
+  const bounding = this.getBoundingClientRect();
 
-    // Calculate the midpoint of the current element
-    const midpoint = bounding.y + bounding.height / 2;
+  // Calculate the midpoint of the current element
+  const midpoint = bounding.y + bounding.height / 2;
 
-    // Parent container for the log entries
-    const parent = this.parentNode;
+  // Parent container for the log entries
+  const parent = this.parentNode;
 
-    // Dragged below the midpoint: place after current element
-    if (e.clientY > midpoint) {
-        if (this.nextSibling !== draggedItem) {
-
-            parent.insertBefore(draggedItem, this.nextSibling);
-        }
+  // Dragged below the midpoint: place after current element
+  if (e.clientY > midpoint) {
+    if (this.nextSibling !== draggedItem) {
+      parent.insertBefore(draggedItem, this.nextSibling);
     }
-    // Dragged above the midpoint: place before current element
-    else {
-        if (this !== draggedItem) {
-            parent.insertBefore(draggedItem, this);
-        }
+  }
+  // Dragged above the midpoint: place before current element
+  else {
+    if (this !== draggedItem) {
+      parent.insertBefore(draggedItem, this);
     }
-
+  }
 }
-
 
 function drop(e) {
-    e.preventDefault();
+  e.preventDefault();
 
-    const parent = this.parentNode;
-    const siblings = Array.from(parent.children);
-    const draggedIndex = siblings.indexOf(draggedItem);
-    const targetIndex = siblings.indexOf(this);
+  const parent = this.parentNode;
+  const siblings = Array.from(parent.children);
+  const draggedIndex = siblings.indexOf(draggedItem);
+  const targetIndex = siblings.indexOf(this);
 
-    if (draggedIndex < targetIndex) {
-        parent.insertBefore(draggedItem, this.nextSibling);
-        moveEntry(draggedIndex, targetIndex);
-    } else {
-        parent.insertBefore(draggedItem, this);
-        moveEntry(draggedIndex, targetIndex);
-    }
-    const reorderedIds = Array.from(parent.querySelectorAll(".container.block")).map(
-        (block) => parseInt(block.dataset.id)
-    );
-    clickLog = reorderedIds.map((id) => clickLog.find((entry) => entry.id === id));
-    draggedItem.classList.remove('draggable');
-    saveClickLog();
-
+  if (draggedIndex < targetIndex) {
+    parent.insertBefore(draggedItem, this.nextSibling);
+    moveEntry(draggedIndex, targetIndex);
+  } else {
+    parent.insertBefore(draggedItem, this);
+    moveEntry(draggedIndex, targetIndex);
+  }
+  const reorderedIds = Array.from(
+    parent.querySelectorAll(".container.block")
+  ).map((block) => parseInt(block.dataset.id));
+  clickLog = reorderedIds.map((id) =>
+    clickLog.find((entry) => entry.id === id)
+  );
+  draggedItem.classList.remove("draggable");
+  saveClickLog();
 }
-
 
 function endDrag() {
-    console.log(clickLog)
-    // Restore visibility of elements
-    document
-        .querySelectorAll(".log-entry img, .log-entry p, .log-entry button")
-        .forEach((el) => {
-            el.classList.remove("hideOnDrag");
-            el.classList.remove("animate");
-        });
-    document.querySelectorAll('.addEntryContainer').forEach(el => {
-        el.style.pointerEvents = 'auto'; // Disable interaction
+  console.log(clickLog);
+  // Restore visibility of elements
+  document
+    .querySelectorAll(".log-entry img, .log-entry p, .log-entry button")
+    .forEach((el) => {
+      el.classList.remove("hideOnDrag");
+      el.classList.remove("animate");
     });
-
+  document.querySelectorAll(".addEntryContainer").forEach((el) => {
+    el.style.pointerEvents = "auto"; // Disable interaction
+  });
 }
-
 
 function moveEntry(fromIndex, toIndex) {
-    const entry = clickLog.splice(fromIndex, 1)[0];
-    clickLog.splice(toIndex, 0, entry);
+  const entry = clickLog.splice(fromIndex, 1)[0];
+  clickLog.splice(toIndex, 0, entry);
 }
 
-document.getElementById('reorder').addEventListener('click', function () {
-    reorder = !reorder;
-    const reorderSpan = document.getElementById('reorderSpan');
-    const finishSpan = document.getElementById('finishedSpan');
-    renderLog()
-    if (reorder) {
-        dragStart()
-        finishSpan.style.display = 'flex';
-        reorderSpan.style.display = 'none';
-
-
-    } else {
-        endDrag()
-        finishSpan.style.display = 'none';
-        reorderSpan.style.display = 'flex';
-
-
-    }
-})
-
-// Set button text and functionality for returning to the previous tab
-document.getElementById('openFlow')?.addEventListener('click', function () {
-    // Send message to go back to the previous tab
-    chrome.runtime.sendMessage({ action: 'goBack' });
+document.getElementById("reorder").addEventListener("click", function () {
+  reorder = !reorder;
+  const reorderSpan = document.getElementById("reorderSpan");
+  const finishSpan = document.getElementById("finishedSpan");
+  renderLog();
+  if (reorder) {
+    dragStart();
+    finishSpan.style.display = "flex";
+    reorderSpan.style.display = "none";
+  } else {
+    endDrag();
+    finishSpan.style.display = "none";
+    reorderSpan.style.display = "flex";
+  }
 });
 
-
-
-
+// Set button text and functionality for returning to the previous tab
+document.getElementById("openFlow")?.addEventListener("click", function () {
+  // Send message to go back to the previous tab
+  chrome.runtime.sendMessage({ action: "goBack" });
+});
 
 // Function to check if log is empty and hide/show buttons accordingly
 function hideButtonsIfLogIsEmpty() {
-    chrome.storage.local.get(['clickLog'], function (result) {
-        const clickLog = result.clickLog || [];
+  chrome.storage.local.get(["clickLog"], function (result) {
+    const clickLog = result.clickLog || [];
 
-        // Get the buttons you want to hide/show
-        const buttons = document.getElementsByTagName('button'); // Get all button elements
-        const footer = document.getElementById('footer')
-        // Convert HTMLCollection to an array for easy iteration
-        const buttonArray = Array.from(buttons);
-
-        if (clickLog.length === 0) {
-            // Hide buttons if the log is empty
-            buttonArray.forEach(button => button.style.display = 'none');
-            footer.style.display = 'none'
-        }
-    });
-}
-
-
-
-
-document.getElementById('printPDF').addEventListener('click', function () {
-    window.print();
-});
-
-
-function captureElement(element) {
-    const canvas = document.createElement('canvas');
-    const context = canvas.getContext('2d');
-
-    // Set canvas size based on the element's bounding box
-    const rect = element.getBoundingClientRect();
-    const scale = window.devicePixelRatio || 1;
-    canvas.width = 1920 * scale;
-    canvas.height = rect.height * scale;
-    console.log(rect.height);
-    context.scale(scale, scale);
-
-    // Set background color for the canvas
-    context.fillStyle = 'white';
-    context.fillRect(0, 0, 1920, rect.height);
-
-    // Helper function to load an image
-    function loadImage(src) {
-        return new Promise((resolve) => {
-            const img = new Image();
-            img.src = src;
-            img.onload = () => resolve(img);
-            img.onerror = () => resolve(null); // Resolve with null if image fails to load
-        });
-    }
-
-    // Current Y-coordinate on the canvas
-    let currentY = 50; // Start with some padding at the top
-
-    // Function to render child elements (text, images)
-    async function renderChildren() {
-        for (const child of element.childNodes) {
-            if (child.tagName === 'H2' && child.classList && !child.classList.contains('hide-on-print')) {
-                console.log("Rendering title");
-                // Render title elements
-                context.font = 'bold 48px Arial';
-                context.fillStyle = 'black';
-                context.fillText(child.textContent, 30, currentY);
-                currentY += 40; // Increment Y for the next element (line spacing)
-            } else if (child.tagName === 'P' && child.classList && !child.classList.contains('hide-on-print')) {
-                console.log("Rendering description");
-                // Render description text
-                context.font = '24px Arial';
-                context.fillStyle = 'black';
-                context.fillText(child.textContent, 30, currentY);
-                currentY += 20; // Increment Y for the next element (line spacing)
-            } else if (child.tagName === 'IMG') {
-                console.log("Rendering image");
-                // Load and render image elements
-                const img = await loadImage(child.src);
-                if (img) {
-                    const imgRect = child.getBoundingClientRect();
-                    const imgHeight = imgRect.height;
-                    context.drawImage(
-                        img,
-                        rect.left,
-                        currentY,
-                        imgRect.width - 32,
-                        imgRect.height - 32
-                    );
-                    currentY += imgHeight + 10; // Increment Y by image height and some padding
-                }
-            }
-        }
-    }
-
-
-    // Wait for all images to load, then render everything
-    return new Promise(async (resolve) => {
-        await renderChildren();
-        resolve(canvas.toDataURL('image/png'));
-    });
-}
-
-document.getElementById('saveImages').addEventListener('click', async function () {
-    const logEntries = document.querySelectorAll('.log-entry'); // Select all log entries
-    for (let entryIndex = 0; entryIndex < logEntries.length; entryIndex++) {
-        const entry = logEntries[entryIndex];
-        // Skip log entries with the class 'custom'
-        if (entry.classList.contains('custom')) {
-            continue;
-        }
-        const flowTitle = document.getElementById('flowTitle') ? document.getElementById('flowTitle').textContent.trim() : 'Flow';
-
-        // Hide any items within log-entry marked with 'hide-on-print' before capture
-        const hideItems = entry.getElementsByClassName('hide-on-print');
-        if (hideItems.length) {
-            Array.from(hideItems).forEach(item => {
-                item.style.display = 'none';
-            });
-        }
-
-        const imageResize = entry.getElementsByTagName('img');
-        if (imageResize.length) {
-            Array.from(imageResize).forEach(item => {
-                item.style.width = '1920px';
-            });
-        }
-        // Generate a filename for the saved image
-        const filename = `${flowTitle}_${entryIndex + 1}.png`;
-
-        // Capture the full log entry element
-        const imageData = await captureElement(entry);
-
-        // Create a link element to trigger the image download
-        const link = document.createElement('a');
-        link.href = imageData;
-        link.download = filename;
-        link.click();
-
-        // Restore visibility of hidden items
-        if (hideItems.length) {
-            Array.from(hideItems).forEach(item => {
-                item.style.display = 'flex'; // Restore original display property
-            });
-        }
-        if (imageResize.length) {
-            Array.from(imageResize).forEach(item => {
-                item.style.width = '100%';
-            });
-        }
-    }
-});
-
-
-document.getElementById('toClipBoard').addEventListener('click', async () => {
-    try {
-        // Gather all <h2>, <p>, and <img> elements in document order
-        const elements = document.querySelectorAll('h1, h2, p, img');
-        let htmlContent = '';
-
-        elements.forEach(element => {
-            if (element.tagName === 'H1') {
-                htmlContent += `<h1>${element.textContent}</h1>`;
-            } else if (element.tagName === 'H2') {
-                htmlContent += `<h3>${element.textContent}</h3>`;
-            } else if (element.tagName === 'P' && element.textContent !== 'Enter description') {
-                htmlContent += `<p>${element.textContent}</p>`;
-            } else if (element.tagName === 'IMG') {
-                htmlContent += `<img src="${element.src}" alt="${element.alt || ''}" />`;
-                htmlContent += `<p>&nbsp;&nbsp;&nbsp;</p>`;
-            }
-
-        });
-
-        // Create a ClipboardItem with the HTML content
-        const blob = new Blob([htmlContent], { type: 'text/html' });
-        const clipboardItem = new ClipboardItem({ 'text/html': blob });
-        await navigator.clipboard.write([clipboardItem]);
-
-        alert('Content copied to clipboard! You can now paste it into Google Docs.');
-    } catch (error) {
-        console.error('Error copying to clipboard:', error);
-        alert('Failed to copy content to clipboard.');
-    }
-});
-
-
-
-chrome.storage.local.get(['clickLog'], function (result) {
-    const logDiv = document.getElementById('log');
-    let clickLog = result.clickLog || [];
-    logDiv.innerHTML = ''; // Clear previous log
+    // Get the buttons you want to hide/show
+    const buttons = document.getElementsByTagName("button"); // Get all button elements
+    const footer = document.getElementById("footer");
+    // Convert HTMLCollection to an array for easy iteration
+    const buttonArray = Array.from(buttons);
 
     if (clickLog.length === 0) {
-        logDiv.textContent = 'No logs recorded.';
-        return;
+      // Hide buttons if the log is empty
+      buttonArray.forEach((button) => (button.style.display = "none"));
+      footer.style.display = "none";
     }
+  });
+}
 
-    // Function to save clickLog to Chrome storage
-
-
-    renderLog(); // Initial rendering of the log
+document.getElementById("printPDF").addEventListener("click", function () {
+  window.print();
 });
 
-const getLinks = document.getElementById('getLinks');
+function captureElement(element) {
+  const canvas = document.createElement("canvas");
+  const context = canvas.getContext("2d");
 
-getLinks.addEventListener('click', async () => {
-    let links = "";
-    chrome.storage.local.get(['clickLog'], async function (result) {
-        if (result.clickLog) {
-            result.clickLog.forEach(entry => {
-                if (entry.url) {
-                    links += `${entry.url},${entry.elementText}\n`;
-                }
-            });
+  // Set canvas size based on the element's bounding box
+  const rect = element.getBoundingClientRect();
+  const scale = window.devicePixelRatio || 1;
+  canvas.width = 1920 * scale;
+  canvas.height = rect.height * scale;
+  console.log(rect.height);
+  context.scale(scale, scale);
 
-            try {
-                // Create a ClipboardItem with the text content
-                const blob = new Blob([links], { type: 'text/plain' });
-                const clipboardItem = new ClipboardItem({ 'text/plain': blob });
-                await navigator.clipboard.write([clipboardItem]);
-                console.log('Links copied to clipboard successfully!');
-            } catch (error) {
-                console.error('Failed to copy links to clipboard:', error);
-            }
-        } else {
-            console.warn('No clickLog found in storage.');
-        }
+  // Set background color for the canvas
+  context.fillStyle = "white";
+  context.fillRect(0, 0, 1920, rect.height);
+
+  // Helper function to load an image
+  function loadImage(src) {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.src = src;
+      img.onload = () => resolve(img);
+      img.onerror = () => resolve(null); // Resolve with null if image fails to load
     });
+  }
+
+  // Current Y-coordinate on the canvas
+  let currentY = 50; // Start with some padding at the top
+
+  // Function to render child elements (text, images)
+  async function renderChildren() {
+    for (const child of element.childNodes) {
+      if (
+        child.tagName === "H2" &&
+        child.classList &&
+        !child.classList.contains("hide-on-print")
+      ) {
+        console.log("Rendering title");
+        // Render title elements
+        context.font = "bold 48px Arial";
+        context.fillStyle = "black";
+        context.fillText(child.textContent, 30, currentY);
+        currentY += 40; // Increment Y for the next element (line spacing)
+      } else if (
+        child.tagName === "P" &&
+        child.classList &&
+        !child.classList.contains("hide-on-print")
+      ) {
+        console.log("Rendering description");
+        // Render description text
+        context.font = "24px Arial";
+        context.fillStyle = "black";
+        context.fillText(child.textContent, 30, currentY);
+        currentY += 20; // Increment Y for the next element (line spacing)
+      } else if (child.tagName === "IMG") {
+        console.log("Rendering image");
+        // Load and render image elements
+        const img = await loadImage(child.src);
+        if (img) {
+          const imgRect = child.getBoundingClientRect();
+          const imgHeight = imgRect.height;
+          context.drawImage(
+            img,
+            rect.left,
+            currentY,
+            imgRect.width - 32,
+            imgRect.height - 32
+          );
+          currentY += imgHeight + 10; // Increment Y by image height and some padding
+        }
+      }
+    }
+  }
+
+  // Wait for all images to load, then render everything
+  return new Promise(async (resolve) => {
+    await renderChildren();
+    resolve(canvas.toDataURL("image/png"));
+  });
+}
+
+document
+  .getElementById("saveImages")
+  .addEventListener("click", async function () {
+    const logEntries = document.querySelectorAll(".log-entry"); // Select all log entries
+    for (let entryIndex = 0; entryIndex < logEntries.length; entryIndex++) {
+      const entry = logEntries[entryIndex];
+      // Skip log entries with the class 'custom'
+      if (entry.classList.contains("custom")) {
+        continue;
+      }
+      const flowTitle = document.getElementById("flowTitle")
+        ? document.getElementById("flowTitle").textContent.trim()
+        : "Flow";
+
+      // Hide any items within log-entry marked with 'hide-on-print' before capture
+      const hideItems = entry.getElementsByClassName("hide-on-print");
+      if (hideItems.length) {
+        Array.from(hideItems).forEach((item) => {
+          item.style.display = "none";
+        });
+      }
+
+      const imageResize = entry.getElementsByTagName("img");
+      if (imageResize.length) {
+        Array.from(imageResize).forEach((item) => {
+          item.style.width = "1920px";
+        });
+      }
+      // Generate a filename for the saved image
+      const filename = `${flowTitle}_${entryIndex + 1}.png`;
+
+      // Capture the full log entry element
+      const imageData = await captureElement(entry);
+
+      // Create a link element to trigger the image download
+      const link = document.createElement("a");
+      link.href = imageData;
+      link.download = filename;
+      link.click();
+
+      // Restore visibility of hidden items
+      if (hideItems.length) {
+        Array.from(hideItems).forEach((item) => {
+          item.style.display = "flex"; // Restore original display property
+        });
+      }
+      if (imageResize.length) {
+        Array.from(imageResize).forEach((item) => {
+          item.style.width = "100%";
+        });
+      }
+    }
+  });
+
+document.getElementById("toClipBoard").addEventListener("click", async () => {
+  try {
+    // Gather all <h2>, <p>, and <img> elements in document order
+    const elements = document.querySelectorAll("h1, h2, p, img");
+    let htmlContent = "";
+
+    elements.forEach((element) => {
+      if (element.tagName === "H1") {
+        htmlContent += `<h1>${element.textContent}</h1>`;
+      } else if (element.tagName === "H2") {
+        htmlContent += `<h3>${element.textContent}</h3>`;
+      } else if (
+        element.tagName === "P" &&
+        element.textContent !== "Enter description"
+      ) {
+        htmlContent += `<p>${element.textContent}</p>`;
+      } else if (element.tagName === "IMG") {
+        htmlContent += `<img src="${element.src}" alt="${
+          element.alt || ""
+        }" />`;
+        htmlContent += `<p>&nbsp;&nbsp;&nbsp;</p>`;
+      }
+    });
+
+    // Create a ClipboardItem with the HTML content
+    const blob = new Blob([htmlContent], { type: "text/html" });
+    const clipboardItem = new ClipboardItem({ "text/html": blob });
+    await navigator.clipboard.write([clipboardItem]);
+
+    alert(
+      "Content copied to clipboard! You can now paste it into Google Docs."
+    );
+  } catch (error) {
+    console.error("Error copying to clipboard:", error);
+    alert("Failed to copy content to clipboard.");
+  }
+});
+
+chrome.storage.local.get(["clickLog"], function (result) {
+  const logDiv = document.getElementById("log");
+  let clickLog = result.clickLog || [];
+  logDiv.innerHTML = ""; // Clear previous log
+
+  if (clickLog.length === 0) {
+    logDiv.textContent = "No logs recorded.";
+    return;
+  }
+
+  // Function to save clickLog to Chrome storage
+
+  renderLog(); // Initial rendering of the log
+});
+
+const getLinks = document.getElementById("getLinks");
+
+getLinks.addEventListener("click", async () => {
+  let links = "";
+  chrome.storage.local.get(["clickLog"], async function (result) {
+    if (result.clickLog) {
+      result.clickLog.forEach((entry) => {
+        if (entry.url) {
+          links += `${entry.url},${entry.elementText}\n`;
+        }
+      });
+
+      try {
+        // Create a ClipboardItem with the text content
+        const blob = new Blob([links], { type: "text/plain" });
+        const clipboardItem = new ClipboardItem({ "text/plain": blob });
+        await navigator.clipboard.write([clipboardItem]);
+        console.log("Links copied to clipboard successfully!");
+      } catch (error) {
+        console.error("Failed to copy links to clipboard:", error);
+      }
+    } else {
+      console.warn("No clickLog found in storage.");
+    }
+  });
 });
