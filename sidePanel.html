@@ -10,8 +10,13 @@
 <body>
   <main>
     <div class="header">
-      <button id="pauseRecording" class="secondary-btn pause">Pause</button>
-      <button id="startRecording" class="primary-btn">Record</button>
+      <button id="pauseRecording" class="secondary-btn pause">Stop</button>
+      <button id="startRecording" class="primary-btn">Capture</button>
+      <div id="flow-buttons">
+        <button id="openFlow" class="secondary-btn">View flow editor</button>
+        <button id="backButton" class="secondary-btn back">Last captured tab</button>
+      </div>
+
       <div class="instructions-container">
         <p id="record-instructions" class="instructions">
           Toggle record: <strong><span class="shortcutButtons">Ctrl</span>+Shift+S</strong> 
@@ -24,7 +29,6 @@
     </div>
 
     <div class="content logContainer">
-        <button id="clearLog" class="destructive-btn">Clear log</button>
         <ul id="log">
           <!-- Log section -->
         </ul>
@@ -35,10 +39,7 @@
 
 
     <div id="footer" class="footer">
-      <!-- uncomment if you want to copy the raw data -->
-      <!-- <button id="copyLog" class="secondary-btn">Copy Log (CSV)</button> -->
-      <button id="openFlow" class="secondary-btn">View flow</button>
-      <button id="backButton" class="secondary-btn back">Back</button>
+      <button id="clearLog" class="destructive-btn">Clear log</button>
     </div>
   </main>
 

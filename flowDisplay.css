@@ -253,10 +253,6 @@ p {
   overflow: hidden;
 }
 
-.imgElement {  
-  cursor: crosshair;
-}
-
 .crop-area {
   position: absolute;
   border: 2px dashed var(--color-primary-dark);
@@ -264,6 +260,18 @@ p {
   opacity: 0.45;
   pointer-events: none;
   display: none;
+}
+
+.crop-button-container {
+  display: flex;
+  position: absolute; 
+  left: 1rem;
+  top: -2rem;
+  transition: top 0.3s ease-in-out;
+}
+
+.image-container:hover .crop-button-container {
+  top: 1rem;
 }
 
 .container {

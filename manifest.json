@@ -1,13 +1,14 @@
 {
   "manifest_version": 3,
   "name": "Flow guider",
-  "version": "1.0",
+  "version": "2.0",
   "permissions": [
     "storage",
     "activeTab",
     "scripting",
     "sidePanel",
-    "unlimitedStorage"
+    "unlimitedStorage",
+    "contextMenus"
   ],
   "commands": {
     "take_screenshot": {

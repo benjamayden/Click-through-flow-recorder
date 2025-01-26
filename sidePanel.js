@@ -184,7 +184,7 @@ function displayLog(clickLog) {
   if (clickLog.length === 0) {
     logDiv.textContent = "No logs recorded.";
     document.getElementById("clearLog").style.display = "none";
-    document.getElementById("footer").style.display = "none";
+    document.getElementById("flow-buttons").style.display = "none";
     return;
   } else if (nonArchivedLogs.length === 0) {
     logDiv.textContent = "Archived logs only";
@@ -192,7 +192,7 @@ function displayLog(clickLog) {
   }
 
   document.getElementById("clearLog").style.display = "flex";
-  document.getElementById("footer").style.display = "flex";
+  document.getElementById("flow-buttons").style.display = "flex";
 
   const uniqueIds = new Set();
   let dragStartIndex;
@@ -386,6 +386,14 @@ function updateFlowButtons({ showFlow = true }) {
   if (backButton) backButton.style.display = showFlow ? "none" : "flex";
 }
 
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.action === "changeToBack") {
+    updateFlowButtons({ showFlow: false });
+  } else if (message.action === "changeToBackFlowButton") {
+    updateFlowButtons({ showFlow: true });
+  }
+});
+
 // Utility function to update the visibility and state of "Record" and "Pause" buttons
 function updateRecordingButtons({ recording = true }) {
   const recordButton = document.getElementById("startRecording"); // "Start Recording" button
@@ -460,11 +468,12 @@ document.getElementById("clearLog").addEventListener("click", function () {
     // Clear the log and flowTitle
     chrome.storage.local.set({ clickLog: [], flowTitle: "" }, function () {
       displayLog([]); // Clear the displayed log
-      console.log("Log and flow title cleared.");
+      showToastMessage("Log and flow title cleared.");
+      chrome.runtime.sendMessage({ action: 'updateFlowFromPanel' });
     });
   } else {
     // Action was cancelled, no need to do anything
-    console.log("Log deletion cancelled.");
+    showToastMessage("Log deletion cancelled.");
   }
 });
 
