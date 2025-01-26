@@ -7,59 +7,61 @@ let nextId = 999;
 
 loadClickLog();
 
-
-
 function showToastMessage(message, clickableElement = null, onClick = null) {
-    let toastContainer = document.getElementById("toast-container");
-    if (!toastContainer) {
-      toastContainer = document.createElement("div");
-      toastContainer.id = "toast-container";
-      toastContainer.className = "toast-container";
-      document.body.appendChild(toastContainer);
-    }
-  
-    // Create a new toast
-    const toast = document.createElement("div");
-    toast.className = "toast";
-    toast.innerHTML = message; // Use innerHTML to allow adding HTML elements
-    toastContainer.appendChild(toast);
-  
-    // Add clickable element if provided
-    if (clickableElement && onClick) {
-      const clickable = document.createElement("span");
-      clickable.className = "toast-clickable";
-      clickable.textContent = clickableElement;
-      // Attach the click event
-      clickable.addEventListener("click", onClick);
-  
-      // Append the clickable element to the toast
-      toast.appendChild(clickable);
-    }
-  
-    // Show the toast after a brief delay
-    setTimeout(() => {
-      toastContainer.classList.add("show");
-      toast.classList.add("show");
-    }, 100);
-  
-    // Remove the toast after 5 seconds (3 seconds + extra 2 seconds)
-    setTimeout(() => {
-      toastContainer.classList.remove("show");
-      toast.classList.remove("show");
-  
-      // Remove the toast element from the DOM
-      setTimeout(() => {
-        toast.remove();
-        // If no more toasts remain, remove the container
-        if (toastContainer.children.length === 0) {
-          setTimeout(() => {
-            toastContainer.remove();
-          }, 900);
-        }
-      }, 500); // Wait for the fade-out animation to finish
-    }, 5000); // Total time for the toast (3 seconds + 2 seconds delay)
+  let toastContainer = document.getElementById("toast-container");
+  if (!toastContainer) {
+    toastContainer = document.createElement("div");
+    toastContainer.id = "toast-container";
+    toastContainer.className = "toast-container";
+    document.body.appendChild(toastContainer);
   }
-  
+
+  // Create a new toast
+  const toast = document.createElement("div");
+  toast.className = "toast";
+  toast.innerHTML = message; // Use innerHTML to allow adding HTML elements
+  toastContainer.appendChild(toast);
+
+  // Add clickable element if provided
+  if (clickableElement && onClick) {
+    const clickable = document.createElement("span");
+    clickable.className = "toast-clickable";
+    clickable.textContent = clickableElement;
+    // Attach the click event
+    clickable.addEventListener("click", onClick);
+
+    // Append the clickable element to the toast
+    toast.appendChild(clickable);
+  }
+
+  // Show the toast after a brief delay
+  setTimeout(() => {
+    toastContainer.classList.add("show");
+    toast.classList.add("show");
+  }, 100);
+
+  // Remove the toast after 5 seconds (3 seconds + extra 2 seconds)
+  setTimeout(() => {
+    toastContainer.classList.remove("show");
+    toast.classList.remove("show");
+
+    // Remove the toast element from the DOM
+    setTimeout(() => {
+      toast.remove();
+      // If no more toasts remain, remove the container
+      if (toastContainer.children.length === 0) {
+        setTimeout(() => {
+          toastContainer.remove();
+        }, 900);
+      }
+    }, 500); // Wait for the fade-out animation to finish
+  }, 5000); // Total time for the toast (3 seconds + 2 seconds delay)
+}
+
+document.getElementById("flowTitle").addEventListener("blur", function() {
+  const flowTitle = this.textContent.trim();
+  chrome.storage.local.set({ flowTitle }, function() {});
+});
 
 
 // Load click log from storage
@@ -88,8 +90,7 @@ function loadClickLog() {
 
 // Save click log to storage
 function saveClickLog() {
-  chrome.storage.local.set({ clickLog, archivedLog }, function () {
-  });
+  chrome.storage.local.set({ clickLog, archivedLog }, function () {});
   chrome.runtime.sendMessage({ action: "updatePanelFromFlow" });
 
   const isEditingText = document.getElementById("isEditingText");
@@ -137,24 +138,86 @@ function renderLog() {
     }
 
     // Content editable when in edit mode
-    const titleElement = document.createElement("h2");
+    const titleElement = document.createElement("h3");
     titleElement.className = "title";
     titleElement.textContent = entry.elementText;
+    if(titleElement.textContent === "Enter header")  {titleElement.classList.add("hide-on-print", 'placeHolderText')}
     titleElement.contentEditable = isEditMode;
     if (isEditMode) titleElement.classList.add("editable");
+    
+    titleElement.onblur = function() {
+        if(titleElement.textContent === ""){
+            titleElement.textContent = "Enter header";
+            titleElement.classList.add("hide-on-print", 'placeHolderText');
+            entry.elementText = "";
+        }else{
+            entry.elementText = titleElement.textContent;
+        }
+        
+        saveClickLog();
+      };
+      titleElement.addEventListener("focus", function() {
+        if (titleElement.textContent === "Enter header") {
+            titleElement.classList.remove("hide-on-print", 'placeHolderText');
+            titleElement.textContent = "";
+        }else if(titleElement.textContent === ""){
+            titleElement.textContent = "Enter header";
+            titleElement.classList.add("hide-on-print", 'placeHolderText');
+        }
+      });
+    
 
-    const descriptionParagraph = document.createElement("p");
-    descriptionParagraph.className = "description";
-    descriptionParagraph.textContent = entry.description
-      ? entry.description
-      : "Enter description";
-    if (descriptionParagraph.textContent === "Enter description") {
-      descriptionParagraph.classList.add("hide-on-print");
+
+    const descriptionContainer = document.createElement("div");
+    descriptionContainer.className = "description-container";
+    descriptionContainer.contentEditable = isEditMode;
+    if (isEditMode) descriptionContainer.classList.add("editable");
+    if(descriptionContainer.textContent.trim() === "Enter description")  {descriptionContainer.classList.add("hide-on-print", 'placeHolderText')}
+    // Helper function to save the content from the container
+    function saveDescription() {
+      const paragraphs = Array.from(descriptionContainer.querySelectorAll("p"));
+      const description = paragraphs
+        .map((paragraph) => paragraph.textContent.trim())
+        .filter((text) => text !== "") // Exclude empty paragraphs
+        .join("\n");
+      entry.description = description; // Update entry.description
+      saveClickLog(); // Save to the log
     }
-    descriptionParagraph.contentEditable = isEditMode;
-    if (isEditMode) descriptionParagraph.classList.add("editable");
 
-    // Actions
+    // Populate description container with existing content
+    if (entry.description?.trim()) {
+      entry.description.split("\n").forEach((line) => {
+        const paragraph = document.createElement("p");
+        paragraph.textContent = line.trim();
+        descriptionContainer.appendChild(paragraph);
+      });
+    } else {
+      const placeholderParagraph = document.createElement("p");
+      placeholderParagraph.textContent = "Enter description";
+      placeholderParagraph.classList.add("hide-on-print", "placeHolderText");
+      descriptionContainer.appendChild(placeholderParagraph);
+    }
+
+    // Handle focus event to add a placeholder paragraph if the container is empty
+    descriptionContainer.addEventListener("focus", () => {
+      if (descriptionContainer.children.length === 0) {
+        const placeholderParagraph = document.createElement("p");
+        placeholderParagraph.textContent = "Enter description";
+        placeholderParagraph.classList.add("hide-on-print", "placeHolderText");
+        descriptionContainer.appendChild(placeholderParagraph);
+      }
+    });
+
+    // Handle blur event to save the content when the user clicks away
+    descriptionContainer.addEventListener("blur", saveDescription);
+
+    // Save content before the page reloads or the tab is closed
+    window.addEventListener("beforeunload", (e) => {
+        const flowTitle = document.getElementById("flowTitle").textContent.trim();
+        chrome.storage.local.set({ flowTitle });
+        saveClickLog(); // Ensure content is saved
+    });
+
     const addEntryContainer = document.createElement("div");
     addEntryContainer.className = "addEntryContainer hide-on-print";
     addEntryContainer.style.pointerEvents = "none";
@@ -215,202 +278,221 @@ function renderLog() {
 
     actionsContainer.appendChild(removeButton);
 
-    // Update entry data on blur
-    titleElement.addEventListener("blur", function () {
-      entry.elementText = titleElement.textContent;
-      saveClickLog();
-    });
-
-    descriptionParagraph.addEventListener("blur", function () {
-      entry.description = descriptionParagraph.textContent;
-      saveClickLog();
-    });
-
     // Append elements
     logEntryDiv.appendChild(titleElement);
-    logEntryDiv.appendChild(descriptionParagraph);
+    logEntryDiv.appendChild(descriptionContainer);
 
     if (entry.dataUrl && entry.dataUrl !== "") {
-        // Create main container
-        const imageContainer = document.createElement("div");
-        imageContainer.className = "image-container";
-      
-        // Create canvas for displaying and cropping image
-        const canvasElement = document.createElement("canvas");
-        canvasElement.className = "imgElement";
-      
-        // Create crop area overlay
-        const cropArea = document.createElement("div");
-        cropArea.className = "crop-area";
-      
-        // Create crop button
-        const cropButtonContainer = document.createElement("div");
-        cropButtonContainer.className = "crop-button-container";
-        const cropButton = document.createElement("button");
-        cropButton.id = "crop-action";
-        cropButton.className = "secondary-btn";
-        cropButton.innerText = "Crop";
-        cropButtonContainer.appendChild(cropButton);
-      
-        // Add everything to the DOM
-        imageContainer.appendChild(cropButtonContainer);
-        imageContainer.appendChild(canvasElement);
-        imageContainer.appendChild(cropArea);
-        logEntryDiv.appendChild(imageContainer);
-      
-        // Get the canvas context
-        const ctx = canvasElement.getContext("2d");
-        let isDragging = false;
-        let cropStart = { x: 0, y: 0 };
-        let cropEnd = { x: 0, y: 0 };
-      
-        // Load the dataUrl image
-        const displayImage = new Image();
-        displayImage.src = entry.dataUrl;
-        displayImage.onload = () => {
+      // Create main container
+      const imageContainer = document.createElement("div");
+      imageContainer.className = "image-container";
+
+      // Create canvas for displaying and cropping image
+      const canvasElement = document.createElement("canvas");
+      canvasElement.className = "imgElement";
+
+      // Create crop area overlay
+      const cropArea = document.createElement("div");
+      cropArea.className = "crop-area";
+
+      // Create crop button
+      const cropButtonContainer = document.createElement("div");
+      cropButtonContainer.className = "crop-button-container";
+      const cropButton = document.createElement("button");
+      cropButton.id = "crop-action";
+      cropButton.className = "secondary-btn";
+      cropButton.innerText = "Crop";
+      cropButtonContainer.appendChild(cropButton);
+
+      // Add everything to the DOM
+      imageContainer.appendChild(cropButtonContainer);
+      imageContainer.appendChild(canvasElement);
+      imageContainer.appendChild(cropArea);
+      logEntryDiv.appendChild(imageContainer);
+
+      // Get the canvas context
+      const ctx = canvasElement.getContext("2d");
+      let isDragging = false;
+      let cropStart = { x: 0, y: 0 };
+      let cropEnd = { x: 0, y: 0 };
+
+      // Load the dataUrl image
+      const displayImage = new Image();
+      displayImage.src = entry.dataUrl;
+      displayImage.onload = () => {
+        // Set canvas to original size
+        canvasElement.width = displayImage.width;
+        canvasElement.height = displayImage.height;
+
+        // Fit the displayed canvas to the container
+        const containerRect = imageContainer.getBoundingClientRect();
+        const ratio = Math.min(
+          containerRect.width / displayImage.width,
+          containerRect.height / displayImage.height,
+          1 // Don't enlarge small images
+        );
+        const displayWidth = displayImage.width * ratio;
+        const displayHeight = displayImage.height * ratio;
+        canvasElement.style.width = `${displayWidth}px`;
+        canvasElement.style.height = `${displayHeight}px`;
+
+        // Draw the image at full resolution onto the canvas
+        ctx.drawImage(displayImage, 0, 0);
+      };
+
+      // Crop button click: re-load original image before cropping
+      cropButton.addEventListener("click", () => {
+        // Hide crop button
+        cropButtonContainer.style.display = "none";
+        imageContainer.style.cursor = "crosshair";
+        const originalImage = new Image();
+        originalImage.src = entry.originalImage; // Wipe dataUrl and load original
+
+        originalImage.onload = () => {
+          // Clear canvas before drawing
+          ctx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+
           // Set canvas to original size
-          canvasElement.width = displayImage.width;
-          canvasElement.height = displayImage.height;
-      
-          // Fit the displayed canvas to the container
+          canvasElement.width = originalImage.width;
+          canvasElement.height = originalImage.height;
+
+          // Fit the displayed canvas to container
           const containerRect = imageContainer.getBoundingClientRect();
           const ratio = Math.min(
-            containerRect.width / displayImage.width,
-            containerRect.height / displayImage.height,
-            1 // Don't enlarge small images
+            containerRect.width / originalImage.width,
+            containerRect.height / originalImage.height
           );
-          const displayWidth = displayImage.width * ratio;
-          const displayHeight = displayImage.height * ratio;
-          canvasElement.style.width = `${displayWidth}px`;
-          canvasElement.style.height = `${displayHeight}px`;
-      
-          // Draw the image at full resolution onto the canvas
-          ctx.drawImage(displayImage, 0, 0);
-        };
-      
-        // Crop button click: re-load original image before cropping
-        cropButton.addEventListener("click", () => {
-          // Hide crop button
-          cropButtonContainer.style.display = "none";
-            imageContainer.style.cursor = "crosshair";
-          const originalImage = new Image();
-          originalImage.src = entry.originalImage; // Wipe dataUrl and load original
-      
-          originalImage.onload = () => {
-            // Clear canvas before drawing
-            ctx.clearRect(0, 0, canvasElement.width, canvasElement.height);
-      
-            // Set canvas to original size
-            canvasElement.width = originalImage.width;
-            canvasElement.height = originalImage.height;
-      
-            // Fit the displayed canvas to container
-            const containerRect = imageContainer.getBoundingClientRect();
-            const ratio = Math.min(
-              containerRect.width / originalImage.width,
-              containerRect.height / originalImage.height
-            );
-            const displayWidth = originalImage.width * ratio;
-            const displayHeight = originalImage.height * ratio;
-            canvasElement.style.width = `100%`;
-            canvasElement.style.height = `auto`;
-      
-            // Draw the full original image
-            ctx.drawImage(originalImage, 0, 0);
-      
-            // Reset crop coords
+          const displayWidth = originalImage.width * ratio;
+          const displayHeight = originalImage.height * ratio;
+          canvasElement.style.width = `100%`;
+          canvasElement.style.height = `auto`;
+
+          // Draw the full original image
+          ctx.drawImage(originalImage, 0, 0);
+
+          // Reset crop coords
+          isDragging = false;
+          cropStart = { x: 0, y: 0 };
+          cropEnd = { x: 0, y: 0 };
+
+          // mousedown: start the crop box
+          canvasElement.addEventListener("mousedown", (e) => {
+            isDragging = true;
+            const rect = canvasElement.getBoundingClientRect();
+            cropStart.x =
+              (e.clientX - rect.left) * (originalImage.width / rect.width);
+            cropStart.y =
+              (e.clientY - rect.top) * (originalImage.height / rect.height);
+
+            // Position the crop area overlay
+            cropArea.style.left = `${e.clientX - rect.left}px`;
+            cropArea.style.top = `${e.clientY - rect.top}px`;
+            cropArea.style.width = "0px";
+            cropArea.style.height = "0px";
+            cropArea.style.display = "block";
+          });
+
+          // mousemove: resize the crop box
+          canvasElement.addEventListener("mousemove", (e) => {
+            if (!isDragging) return;
+            const rect = canvasElement.getBoundingClientRect();
+            cropEnd.x =
+              (e.clientX - rect.left) * (originalImage.width / rect.width);
+            cropEnd.y =
+              (e.clientY - rect.top) * (originalImage.height / rect.height);
+
+            const left =
+              Math.min(cropStart.x, cropEnd.x) /
+              (originalImage.width / rect.width);
+            const top =
+              Math.min(cropStart.y, cropEnd.y) /
+              (originalImage.height / rect.height);
+            const width =
+              Math.abs(cropEnd.x - cropStart.x) /
+              (originalImage.width / rect.width);
+            const height =
+              Math.abs(cropEnd.y - cropStart.y) /
+              (originalImage.height / rect.height);
+
+            // Update crop area overlay in the DOM
+            cropArea.style.left = `${left}px`;
+            cropArea.style.top = `${top}px`;
+            cropArea.style.width = `${width - 2}px`;
+            cropArea.style.height = `${height - 2}px`;
+          });
+
+          // mouseup: finalise crop
+          canvasElement.addEventListener("mouseup", () => {
+            if (!isDragging) return;
             isDragging = false;
-            cropStart = { x: 0, y: 0 };
-            cropEnd = { x: 0, y: 0 };
-      
-            // mousedown: start the crop box
-            canvasElement.addEventListener("mousedown", (e) => {
-              isDragging = true;
-              const rect = canvasElement.getBoundingClientRect();
-              cropStart.x = (e.clientX - rect.left) * (originalImage.width / rect.width);
-              cropStart.y = (e.clientY - rect.top) * (originalImage.height / rect.height);
-      
-              // Position the crop area overlay
-              cropArea.style.left = `${e.clientX - rect.left}px`;
-              cropArea.style.top = `${e.clientY - rect.top}px`;
-              cropArea.style.width = "0px";
-              cropArea.style.height = "0px";
-              cropArea.style.display = "block";
-            });
-      
-            // mousemove: resize the crop box
-            canvasElement.addEventListener("mousemove", (e) => {
-              if (!isDragging) return;
-              const rect = canvasElement.getBoundingClientRect();
-              cropEnd.x = (e.clientX - rect.left) * (originalImage.width / rect.width);
-              cropEnd.y = (e.clientY - rect.top) * (originalImage.height / rect.height);
-      
-              const left = Math.min(cropStart.x, cropEnd.x) / (originalImage.width / rect.width);
-              const top = Math.min(cropStart.y, cropEnd.y) / (originalImage.height / rect.height);
-              const width = Math.abs(cropEnd.x - cropStart.x) / (originalImage.width / rect.width);
-              const height = Math.abs(cropEnd.y - cropStart.y) / (originalImage.height / rect.height);
-      
-              // Update crop area overlay in the DOM
-              cropArea.style.left = `${left}px`;
-              cropArea.style.top = `${top}px`;
-              cropArea.style.width = `${width - 2}px`;
-              cropArea.style.height = `${height - 2}px`;
-            });
-      
-            // mouseup: finalise crop
-            canvasElement.addEventListener("mouseup", () => {
-              if (!isDragging) return;
-              isDragging = false;
-              cropArea.style.display = "none";
-      
-              const cropWidth = Math.abs(cropEnd.x - cropStart.x);
-              const cropHeight = Math.abs(cropEnd.y - cropStart.y);
-              const cropX = Math.min(cropStart.x, cropEnd.x);
-              const cropY = Math.min(cropStart.y, cropEnd.y);
-      
-              // Create a new canvas for the cropped region
-              const croppedCanvas = document.createElement("canvas");
-              const croppedCtx = croppedCanvas.getContext("2d");
-              croppedCanvas.width = cropWidth;
-              croppedCanvas.height = cropHeight;
-      
-              // Draw the cropped area
-              croppedCtx.drawImage(
-                originalImage,
-                cropX,
-                cropY,
-                cropWidth,
-                cropHeight,
-                0,
-                0,
-                cropWidth,
-                cropHeight
-              );
-      
-              // Convert to data URL
-              const croppedDataUrl = croppedCanvas.toDataURL();
-              entry.dataUrl = croppedDataUrl;
-      
-              // Display newly cropped image in our main canvas
-              ctx.clearRect(0, 0, canvasElement.width, canvasElement.height);
-              canvasElement.width = croppedCanvas.width;
-              canvasElement.height = croppedCanvas.height;
-              canvasElement.style.width = `${croppedCanvas.width}px`;
-              canvasElement.style.height = `${croppedCanvas.height}px`;
-              ctx.drawImage(croppedCanvas, 0, 0);
-      
-              // Save and re-render
-              imageContainer.style.cursor = "auto";
-              saveClickLog();
-              renderLog();
-            });
-          };
-      
-          originalImage.onerror = () => {
-            console.error("Failed to load the original image.");
-          };
-        });
+            cropArea.style.display = "none";
+
+            const cropWidth = Math.abs(cropEnd.x - cropStart.x);
+            const cropHeight = Math.abs(cropEnd.y - cropStart.y);
+            const cropX = Math.min(cropStart.x, cropEnd.x);
+            const cropY = Math.min(cropStart.y, cropEnd.y);
+
+            // Create a new canvas for the cropped region
+            const croppedCanvas = document.createElement("canvas");
+            const croppedCtx = croppedCanvas.getContext("2d");
+            croppedCanvas.width = cropWidth;
+            croppedCanvas.height = cropHeight;
+
+            // Draw the cropped area
+            croppedCtx.drawImage(
+              originalImage,
+              cropX,
+              cropY,
+              cropWidth,
+              cropHeight,
+              0,
+              0,
+              cropWidth,
+              cropHeight
+            );
+
+            // Convert to data URL
+            const croppedDataUrl = croppedCanvas.toDataURL();
+            entry.dataUrl = croppedDataUrl;
+
+            // Display newly cropped image in our main canvas
+            ctx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+            canvasElement.width = croppedCanvas.width;
+            canvasElement.height = croppedCanvas.height;
+            canvasElement.style.width = `${croppedCanvas.width}px`;
+            canvasElement.style.height = `${croppedCanvas.height}px`;
+            ctx.drawImage(croppedCanvas, 0, 0);
+
+            // Save and re-render
+            imageContainer.style.cursor = "auto";
+            saveClickLog();
+            renderLog();
+          });
+        };
+
+        originalImage.onerror = () => {
+          console.error("Failed to load the original image.");
+        };
+      });
+    const altTextElement = document.createElement("p");
+    altTextElement.textContent = "alternative text";
+    altTextElement.className = 'hide-on-print placeHolderText';
+    altTextElement.contentEditable = "true";
+    altTextElement.onblur = function() {
+      entry.alt = altTextElement.textContent;
+      saveClickLog();
+    };
+    altTextElement.addEventListener("focus", function() {
+      if (altTextElement.textContent === "alternative text") {
+        altTextElement.classList.remove("hide-on-print", 'placeHolderText');
+        altTextElement.textContent = "";
+      }else if(altTextElement.textContent === ""){
+        altTextElement.textContent = "alternative text";
+        altTextElement.classList.add("hide-on-print", 'placeHolderText');
       }
+    });
+    logEntryDiv.appendChild(altTextElement);
+    }
 
     blockContainer.appendChild(logEntryDiv);
     blockContainer.appendChild(addEntryContainer);
@@ -429,7 +511,7 @@ function renderArchivedLog() {
     const logEntryDiv = document.createElement("div");
     logEntryDiv.className = "archive-entry hide-on-print";
 
-    const titleElement = document.createElement("h2");
+    const titleElement = document.createElement("h3");
     titleElement.className = "title";
     titleElement.textContent = entry.elementText;
 
@@ -613,183 +695,89 @@ function hideButtonsIfLogIsEmpty() {
 }
 
 document.getElementById("printPDF").addEventListener("click", function () {
+  saveClickLog();
+  renderLog();
   window.print();
 });
-
-function captureElement(element) {
-  const canvas = document.createElement("canvas");
-  const context = canvas.getContext("2d");
-
-  // Set canvas size based on the element's bounding box
-  const rect = element.getBoundingClientRect();
-  const scale = window.devicePixelRatio || 1;
-  canvas.width = 1920 * scale;
-  canvas.height = rect.height * scale;
-  context.scale(scale, scale);
-
-  // Set background color for the canvas
-  context.fillStyle = "white";
-  context.fillRect(0, 0, 1920, rect.height);
-
-  // Helper function to load an image
-  function loadImage(src) {
-    return new Promise((resolve) => {
-      const img = new Image();
-      img.src = src;
-      img.onload = () => resolve(img);
-      img.onerror = () => resolve(null); // Resolve with null if image fails to load
-    });
-  }
-
-  // Current Y-coordinate on the canvas
-  let currentY = 50; // Start with some padding at the top
-
-  // Function to render child elements (text, images)
-  async function renderChildren() {
-    for (const child of element.childNodes) {
-      if (
-        child.tagName === "H2" &&
-        child.classList &&
-        !child.classList.contains("hide-on-print")
-      ) {
-        // Render title elements
-        context.font = "bold 48px Arial";
-        context.fillStyle = "black";
-        context.fillText(child.textContent, 30, currentY);
-        currentY += 40; // Increment Y for the next element (line spacing)
-      } else if (
-        child.tagName === "P" &&
-        child.classList &&
-        !child.classList.contains("hide-on-print")
-      ) {
-        // Render description text
-        context.font = "24px Arial";
-        context.fillStyle = "black";
-        context.fillText(child.textContent, 30, currentY);
-        currentY += 20; // Increment Y for the next element (line spacing)
-      } else if (child.tagName === "IMG") {
-        // Load and render image elements
-        const img = await loadImage(child.src);
-        if (img) {
-          const imgRect = child.getBoundingClientRect();
-          const imgHeight = imgRect.height;
-          context.drawImage(
-            img,
-            rect.left,
-            currentY,
-            imgRect.width - 32,
-            imgRect.height - 32
-          );
-          currentY += imgHeight + 10; // Increment Y by image height and some padding
-        }
-      }
-    }
-  }
-
-  // Wait for all images to load, then render everything
-  return new Promise(async (resolve) => {
-    await renderChildren();
-    resolve(canvas.toDataURL("image/png"));
-  });
-}
 
 document
   .getElementById("saveImages")
   .addEventListener("click", async function () {
     const logEntries = document.querySelectorAll(".log-entry"); // Select all log entries
+    const flowTitle = document.getElementById("flowTitle")
+      ? document.getElementById("flowTitle").textContent.trim()
+      : "Flow";
+
     for (let entryIndex = 0; entryIndex < logEntries.length; entryIndex++) {
       const entry = logEntries[entryIndex];
-      // Skip log entries with the class 'custom'
-      if (entry.classList.contains("custom")) {
-        continue;
-      }
-      const flowTitle = document.getElementById("flowTitle")
-        ? document.getElementById("flowTitle").textContent.trim()
-        : "Flow";
-
-      // Hide any items within log-entry marked with 'hide-on-print' before capture
-      const hideItems = entry.getElementsByClassName("hide-on-print");
-      if (hideItems.length) {
-        Array.from(hideItems).forEach((item) => {
-          item.style.display = "none";
-        });
-      }
-
-      const imageResize = entry.getElementsByTagName("img");
-      if (imageResize.length) {
-        Array.from(imageResize).forEach((item) => {
-          item.style.width = "1920px";
-        });
-      }
-      // Generate a filename for the saved image
-      const filename = `${flowTitle}_${entryIndex + 1}.png`;
-
-      // Capture the full log entry element
-      const imageData = await captureElement(entry);
-
-      // Create a link element to trigger the image download
-      const link = document.createElement("a");
-      link.href = imageData;
-      link.download = filename;
-      link.click();
-
-      // Restore visibility of hidden items
-      if (hideItems.length) {
-        Array.from(hideItems).forEach((item) => {
-          item.style.display = "flex"; // Restore original display property
-        });
-      }
-      if (imageResize.length) {
-        Array.from(imageResize).forEach((item) => {
-          item.style.width = "100%";
-        });
-      }
+      downloadImage(flowTitle, entry, entryIndex);
     }
   });
 
+function downloadImage(flowTitle, entry, entryIndex = 0) {
+  // Skip log entries with the class 'custom'
+  if (entry.classList.contains("custom")) {
+    return;
+  }
 
+  // Capture the image data from the canvas
+  const canvas = entry.querySelector("canvas");
+  if (canvas) {
+    const imageData = canvas.toDataURL("image/png");
 
-  document.getElementById("toClipBoard").addEventListener("click", async () => {
-    try {
-      // Gather h1, h2, p, img, and canvas in document order
-      const elements = document.querySelectorAll("h1, h2, p, img, canvas");
-      let htmlContent = "";
-  
-      elements.forEach((element) => {
-        // Build htmlContent by tag name
-        if (element.tagName === "H1") {
-          htmlContent += `<h1>${element.textContent}</h1>`;
-        } else if (element.tagName === "H2") {
-          htmlContent += `<h2>${element.textContent}</h2>`;
-        } else if (
-          element.tagName === "P" &&
-          element.textContent.trim() !== "Enter description"
-        ) {
-          htmlContent += `<p>${element.textContent}</p>`;
-        } else if (element.tagName === "IMG") {
-          // Use the existing image source
-          htmlContent += `<img src="${element.src}" alt="${element.alt || ""}" />`;
-          htmlContent += `<p>&nbsp;&nbsp;&nbsp;</p>`;
-        } else if (element.tagName === "CANVAS") {
-          // Convert canvas to data URL before adding
-          const dataUrl = element.toDataURL("image/png");
-          htmlContent += `<img src="${dataUrl}" alt="Canvas" />`;
-          htmlContent += `<p>&nbsp;&nbsp;&nbsp;</p>`;
-        }
-      });
-  
-      // Create a ClipboardItem with the HTML content
-      const blob = new Blob([htmlContent], { type: "text/html" });
-      const clipboardItem = new ClipboardItem({ "text/html": blob });
-      await navigator.clipboard.write([clipboardItem]);
-  
-      showToastMessage("Content copied to clipboard!");
-    } catch (error) {
-      console.error("Error copying to clipboard:", error);
-      alert("Failed to copy content to clipboard.");
-    }
-  });
+    // Create a filename for the saved image
+    const filename = `${flowTitle}_${entryIndex + 1}.png`;
 
+    // Create a link element to trigger the image download
+    const link = document.createElement("a");
+    link.href = imageData;
+    link.download = filename;
+    link.click();
+  }
+}
+
+document.getElementById("toClipBoard").addEventListener("click", async () => {
+  try {
+    // Gather h1, h3, p, img, and canvas in document order
+    const elements = document.querySelectorAll("h1, h3, p, img, canvas");
+    let htmlContent = "";
+
+    elements.forEach((element) => {
+      // Build htmlContent by tag name
+      if (element.tagName === "H1") {
+        htmlContent += `<h1>${element.textContent}</h1>`;
+      } else if (element.tagName === "H3") {
+        htmlContent += `<h3>${element.textContent}</h3>`;
+      } else if (
+        element.tagName === "P" &&
+        element.textContent.trim() !== "Enter description"
+      ) {
+        htmlContent += `<p>${element.textContent}</p>`;
+      } else if (element.tagName === "IMG") {
+        // Use the existing image source
+        htmlContent += `<img src="${element.src}" alt="${
+          element.alt || ""
+        }" />`;
+        htmlContent += `<p>&nbsp;&nbsp;&nbsp;</p>`;
+      } else if (element.tagName === "CANVAS") {
+        // Convert canvas to data URL before adding
+        const dataUrl = element.toDataURL("image/png");
+        htmlContent += `<img src="${dataUrl}" alt="${element.alt}" />`;
+        htmlContent += `<p>&nbsp;&nbsp;&nbsp;</p>`;
+      }
+    });
+
+    // Create a ClipboardItem with the HTML content
+    const blob = new Blob([htmlContent], { type: "text/html" });
+    const clipboardItem = new ClipboardItem({ "text/html": blob });
+    await navigator.clipboard.write([clipboardItem]);
+
+    showToastMessage("Content copied to clipboard!");
+  } catch (error) {
+    console.error("Error copying to clipboard:", error);
+    alert("Failed to copy content to clipboard.");
+  }
+});
 
 chrome.storage.local.get(["clickLog"], function (result) {
   const logDiv = document.getElementById("log");

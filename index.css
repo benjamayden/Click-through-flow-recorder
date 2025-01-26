@@ -64,6 +64,9 @@ button {
   background-color: var(--color-primary-light);
 }
 
+.placeHolderText{
+  color: var(--color-grey-mid);
+}
 /* Secondary button (supporting actions) */
 .secondary-btn {
   border: 1px solid var(--color-primary-main);
@@ -171,9 +174,9 @@ h1 {
   border-radius: 0.25rem;
 }
 
-h2 {
+h3 {
   display: block;
-  /* Ensure the title behaves like a block element (default for h2) */
+  /* Ensure the title behaves like a block element (default for h3) */
   width: 100%;
   /* Ensure the title takes up the full width of its container */
   white-space: normal;

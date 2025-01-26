@@ -73,6 +73,10 @@ main {
     font-weight: 400;
   }
 
+  h3{
+    display: flex;
+  }
+
   p {
     display: flex;
     padding: 0.25rem;
@@ -98,8 +102,8 @@ main {
     display: flex;
   }
 
-  img {
-    width: 100% !important;
+  img,canvas,image-container {
+    display: flex;
   }
 
   #archived {
@@ -119,7 +123,7 @@ main {
   margin: 0;
 }
 
-.archive-entry h2 {
+.archive-entry h3 {
   display: block;
   width: 100%;
   /* or a fixed width like 300px if you want a specific limit */
@@ -139,9 +143,24 @@ main {
 }
 
 h1,
-h2,
-p {
-  padding: 0.25rem;
+h3,
+p,.description-container{
+outline: none;
+}
+
+h1:focus,
+h3:focus,
+.description-container:focus{
+background-color: var(--color-border-light);
+}
+
+.description-container{
+  width: 100%;
+  display: flex;
+  align-items: start;
+  justify-content: start;
+  flex-direction: column;
+  gap:0.125rem;
 }
 
 .logList {
@@ -320,9 +339,8 @@ p {
 
 /* Edit mode styling */
 .editable {
-  border: 1px dashed var(--color-border-light);
-  border-radius: 0.25rem;
   cursor: text;
+  
 }
 
 .addEntryContainer {
