@@ -66,22 +66,23 @@ main {
     height: 900px;
   }
 
-  .custom h3 {
+  .custom .headerText {
     font-size: 4rem !important;
     text-align: center;
     width: 100%;
     font-weight: 400;
   }
 
-  h3{
+  .headerText{
     display: flex;
   }
 
-  p {
+  .description-container , .description-container p{
     display: flex;
     padding: 0.25rem;
     font-size: 1rem;
     width: 100%;
+    min-height: 16px;
   }
 
   main {
@@ -143,16 +144,18 @@ main {
 }
 
 h1,
-h3,
+.headerText,
 p,.description-container{
 outline: none;
+min-height: 0.9rem;
 }
 
 h1:focus,
-h3:focus,
+.headerText:focus,
 .description-container:focus{
-background-color: var(--color-border-light);
+background-color: var(--color-grey-lightest);
 }
+
 
 .description-container{
   width: 100%;
@@ -339,8 +342,9 @@ background-color: var(--color-border-light);
 
 /* Edit mode styling */
 .editable {
-  cursor: text;
-  
+width: 100%;
+border: none;
+background: none;
 }
 
 .addEntryContainer {

@@ -148,6 +148,8 @@ chrome.runtime.sendMessage({ action: "openPanel" });
 
 const port = chrome.runtime.connect({ name: "sidePanel" });
 
+
+
 function getShortenedText(text) {
   const words = text.split(/\s+/);
   if (words.length > 3) {
@@ -387,6 +389,7 @@ function updateFlowButtons({ showFlow = true }) {
 }
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  console.log(message.action)
   if (message.action === "changeToBack") {
     updateFlowButtons({ showFlow: false });
   } else if (message.action === "changeToBackFlowButton") {

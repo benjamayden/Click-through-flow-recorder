@@ -58,11 +58,10 @@ function showToastMessage(message, clickableElement = null, onClick = null) {
   }, 5000); // Total time for the toast (3 seconds + 2 seconds delay)
 }
 
-document.getElementById("flowTitle").addEventListener("blur", function() {
+document.getElementById("flowTitle").addEventListener("blur", function () {
   const flowTitle = this.textContent.trim();
-  chrome.storage.local.set({ flowTitle }, function() {});
+  chrome.storage.local.set({ flowTitle }, function () {});
 });
-
 
 // Load click log from storage
 function loadClickLog() {
@@ -137,86 +136,44 @@ function renderLog() {
       blockContainer.addEventListener("dragend", drop);
     }
 
-    // Content editable when in edit mode
-    const titleElement = document.createElement("h3");
-    titleElement.className = "title";
-    titleElement.textContent = entry.elementText;
-    if(titleElement.textContent === "Enter header")  {titleElement.classList.add("hide-on-print", 'placeHolderText')}
-    titleElement.contentEditable = isEditMode;
-    if (isEditMode) titleElement.classList.add("editable");
-    
-    titleElement.onblur = function() {
-        if(titleElement.textContent === ""){
-            titleElement.textContent = "Enter header";
-            titleElement.classList.add("hide-on-print", 'placeHolderText');
-            entry.elementText = "";
-        }else{
-            entry.elementText = titleElement.textContent;
-        }
-        
-        saveClickLog();
-      };
-      titleElement.addEventListener("focus", function() {
-        if (titleElement.textContent === "Enter header") {
-            titleElement.classList.remove("hide-on-print", 'placeHolderText');
-            titleElement.textContent = "";
-        }else if(titleElement.textContent === ""){
-            titleElement.textContent = "Enter header";
-            titleElement.classList.add("hide-on-print", 'placeHolderText');
-        }
-      });
-    
+    //---------Render Header -----------//
 
+    const titleElement = document.createElement("input");
+    titleElement.type = "text";
+    titleElement.placeholder = "Enter header"; // Native placeholder
+    titleElement.value = entry.elementText || ""; // Existing value or empty
+    titleElement.className = "editable headerText";
+    titleElement.addEventListener("blur", () => {
+      entry.elementText = titleElement.value.trim(); // Save on blur
+      saveClickLog();
+    });
+    logEntryDiv.appendChild(titleElement);
 
-    const descriptionContainer = document.createElement("div");
-    descriptionContainer.className = "description-container";
-    descriptionContainer.contentEditable = isEditMode;
-    if (isEditMode) descriptionContainer.classList.add("editable");
-    if(descriptionContainer.textContent.trim() === "Enter description")  {descriptionContainer.classList.add("hide-on-print", 'placeHolderText')}
-    // Helper function to save the content from the container
-    function saveDescription() {
-      const paragraphs = Array.from(descriptionContainer.querySelectorAll("p"));
-      const description = paragraphs
-        .map((paragraph) => paragraph.textContent.trim())
-        .filter((text) => text !== "") // Exclude empty paragraphs
-        .join("\n");
-      entry.description = description; // Update entry.description
-      saveClickLog(); // Save to the log
-    }
+    //---------Render description -----------//
 
-    // Populate description container with existing content
-    if (entry.description?.trim()) {
-      entry.description.split("\n").forEach((line) => {
-        const paragraph = document.createElement("p");
-        paragraph.textContent = line.trim();
-        descriptionContainer.appendChild(paragraph);
-      });
-    } else {
-      const placeholderParagraph = document.createElement("p");
-      placeholderParagraph.textContent = "Enter description";
-      placeholderParagraph.classList.add("hide-on-print", "placeHolderText");
-      descriptionContainer.appendChild(placeholderParagraph);
-    }
+    // Create Description Textarea
+    const descriptionTextarea = document.createElement("textarea");
+    descriptionTextarea.placeholder = "Enter description";
+    descriptionTextarea.value = entry.description || ""; // Populate with existing value
+    descriptionTextarea.className = "editable";
+    descriptionTextarea.style.resize = "none"; // Prevent manual resizing
 
-    // Handle focus event to add a placeholder paragraph if the container is empty
-    descriptionContainer.addEventListener("focus", () => {
-      if (descriptionContainer.children.length === 0) {
-        const placeholderParagraph = document.createElement("p");
-        placeholderParagraph.textContent = "Enter description";
-        placeholderParagraph.classList.add("hide-on-print", "placeHolderText");
-        descriptionContainer.appendChild(placeholderParagraph);
-      }
+    // Auto-grow textarea on input
+    descriptionTextarea.addEventListener("input", () => {
+      descriptionTextarea.style.height = "auto"; // Reset height
+      descriptionTextarea.style.height = `${descriptionTextarea.scrollHeight}px`; // Adjust to content
     });
 
-    // Handle blur event to save the content when the user clicks away
-    descriptionContainer.addEventListener("blur", saveDescription);
-
-    // Save content before the page reloads or the tab is closed
-    window.addEventListener("beforeunload", (e) => {
-        const flowTitle = document.getElementById("flowTitle").textContent.trim();
-        chrome.storage.local.set({ flowTitle });
-        saveClickLog(); // Ensure content is saved
+    // Save description on blur
+    descriptionTextarea.addEventListener("blur", () => {
+      entry.description = descriptionTextarea.value.trim();
+      saveClickLog();
     });
+    logEntryDiv.appendChild(descriptionTextarea);
+
+
+
+    //---------------Add new section------------//
 
     const addEntryContainer = document.createElement("div");
     addEntryContainer.className = "addEntryContainer hide-on-print";
@@ -259,6 +216,8 @@ function renderLog() {
     });
     actionsContainer.appendChild(addEntryButton);
 
+
+    //----------------Archive---------------------//
     // Remove button
     const removeButton = document.createElement("button");
     removeButton.className = "destructive-btn";
@@ -278,6 +237,8 @@ function renderLog() {
 
     actionsContainer.appendChild(removeButton);
 
+
+    //--------------Image--------------------//
     // Append elements
     logEntryDiv.appendChild(titleElement);
     logEntryDiv.appendChild(descriptionContainer);
@@ -474,24 +435,44 @@ function renderLog() {
           console.error("Failed to load the original image.");
         };
       });
-    const altTextElement = document.createElement("p");
-    altTextElement.textContent = "alternative text";
-    altTextElement.className = 'hide-on-print placeHolderText';
-    altTextElement.contentEditable = "true";
-    altTextElement.onblur = function() {
-      entry.alt = altTextElement.textContent;
-      saveClickLog();
-    };
-    altTextElement.addEventListener("focus", function() {
-      if (altTextElement.textContent === "alternative text") {
-        altTextElement.classList.remove("hide-on-print", 'placeHolderText');
-        altTextElement.textContent = "";
-      }else if(altTextElement.textContent === ""){
-        altTextElement.textContent = "alternative text";
-        altTextElement.classList.add("hide-on-print", 'placeHolderText');
+
+
+
+
+      //--------------------image alt text----------------//
+
+      const altTextElement = document.createElement("p");
+      if (entry.alt.trim() === "") {
+        altTextElement.textContent = "Image alt text";
+        altTextElement.classList.add("hide-on-print", "placeHolderText");
+      } else {
+        altTextElement.textContent = entry.alt;
+        altTextElement.classList.remove("hide-on-print", "placeHolderText");
       }
-    });
-    logEntryDiv.appendChild(altTextElement);
+      altTextElement.contentEditable = "true";
+
+      altTextElement.onblur = function () {
+        if (altTextElement.textContent === "") {
+          altTextElement.textContent = "Image alt text";
+          altTextElement.classList.add("hide-on-print", "placeHolderText");
+          entry.alt = "";
+        } else {
+          entry.alt = altTextElement.textContent;
+        }
+
+        saveClickLog();
+        console.log(entry.alt);
+      };
+      altTextElement.addEventListener("focus", function () {
+        if (altTextElement.textContent === "Image alt text") {
+          altTextElement.classList.remove("hide-on-print", "placeHolderText");
+          altTextElement.textContent = "";
+        } else if (altTextElement.textContent === "") {
+          altTextElement.textContent = "Image alt text";
+          altTextElement.classList.add("hide-on-print", "placeHolderText");
+        }
+      });
+      logEntryDiv.appendChild(altTextElement);
     }
 
     blockContainer.appendChild(logEntryDiv);
@@ -819,4 +800,13 @@ getLinks.addEventListener("click", async () => {
       console.warn("No clickLog found in storage.");
     }
   });
+});
+
+// Listen for messages from content.js to refresh the log display
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  console.log("screenshot taken");
+  if (request.action === "refreshLog") {
+    // Retrieve the updated log from storage and display it
+    loadClickLog();
+  }
 });
