@@ -160,17 +160,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     // Ensure handleFlowTab doesn't block the response
     handleFlowTab(message.previousTabId);
     sendResponse({ status: "Flow Display opened" });
-  } else if (message.action === "goBack") {
-    chrome.storage.local.get("previousTabId", function (data) {
-      if (data.previousTabId) {
-        chrome.tabs.update(data.previousTabId, { active: true }, () => {
-          sendResponse({ status: "Returned to previous tab" });
-        });
-      } else {
-        sendResponse({ status: "No previous tab found" });
-      }
-    });
-  } else if (message.action === "openOptions") {
+  } 
+
+  else if (message.action === "openOptions") {
     openOrFocusOptionsTab();
   } else if (message.action === "updateFlowFromPanel") {
     chrome.storage.local.get(["flowDisplayTabId"], function (result) {
@@ -316,7 +308,9 @@ if (info.menuItemId === "record-flow") {
       // 1. Open side panel (correctly)
 
       // Open the side panel in the current window
+      try{
       chrome.sidePanel.open({ windowId: tab.windowId });
+      }catch(err){console.log(err)}
       // 2. Send message to start recording
       chrome.runtime.sendMessage({ action: "keyboard_record" });
     }
@@ -376,3 +370,14 @@ async function takeScreenShoot(isAllowed) {
     console.error("Error capturing screenshot:", error);
   }
 }
+
+chrome.tabs.onActivated.addListener(function(activeInfo) {
+  chrome.storage.local.get("flowDisplayTabId", function(result) {
+    if (result.flowDisplayTabId === activeInfo.tabId) {
+      chrome.runtime.sendMessage({ action: "hideFlowButton" });
+    } else {
+      chrome.runtime.sendMessage({ action: "showFlowButton" });
+    }
+  });
+});
+

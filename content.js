@@ -4,10 +4,25 @@ let isRecording = false;
 
 // Function to find text of clicked element, traversing up to parent if needed
 function getElementText(element) {
-  while (element && element.textContent.trim() === "") {
-    element = element.parentElement;
+  let text = "";
+  if (element.getAttribute("aria-label")) {
+    text = element.getAttribute("aria-label");
+  } else if (element.textContent.trim() !== "") {
+    text = element.innerText.trim();
+  } else if (
+    element.firstElementChild &&
+    element.firstElementChild.innerText.trim() !== ""
+  ) {
+    text = element.firstElementChild.innerText.trim();
+  } else if (
+    element.parentElement &&
+    element.parentElement.innerText.trim() !== ""
+  ) {
+    text = element.parentElement.innerText.trim();
+  } else {
+    text = prompt("Please enter the text for this element:");
   }
-  return element ? element.textContent.trim() : "";
+  return text;
 }
 
 // Function to remove duplicates from the log based on the id
@@ -133,13 +148,40 @@ chrome.storage.onChanged.addListener((changes, area) => {
 });
 
 function handleGetHighlightedText(sendResponse) {
-  const highlightedElement =
-    document.getElementsByClassName("highlight-stroke");
-  const elementText =
-    highlightedElement.length > 0
-      ? highlightedElement[0].innerText ||
-        highlightedElement[0].textContent ||
-        ""
-      : "";
-  sendResponse({ elementText });
+  // Get the first element with the class "highlight-stroke"
+  const highlightedElement = document.querySelector(".highlight-stroke");
+  let text = "";
+  // Check if the element exists
+  if (!highlightedElement) {
+    console.error("No element with the class 'highlight-stroke' found.");
+    // Prompt user if no text can be extracted
+    text = prompt("Please enter the text for this element:") || "";
+    sendResponse({ elementText: text }); // Send an empty response if no element is found
+    return;
+  }
+
+
+  // Determine the text content based on available properties
+  if (highlightedElement.getAttribute("aria-label")) {
+    text = highlightedElement.getAttribute("aria-label");
+  } else if (highlightedElement.textContent.trim() !== "") {
+    text = highlightedElement.textContent.trim();
+  } else if (
+    highlightedElement.firstElementChild &&
+    highlightedElement.firstElementChild.textContent.trim() !== ""
+  ) {
+    text = highlightedElement.firstElementChild.textContent.trim();
+  } else if (
+    highlightedElement.parentElement &&
+    highlightedElement.parentElement.textContent.trim() !== ""
+  ) {
+    text = highlightedElement.parentElement.textContent.trim();
+  } else {
+    // Prompt user if no text can be extracted
+    text = prompt("Please enter the text for this element:") || "";
+  }
+
+  // Send the extracted or entered text
+  sendResponse({ elementText: text });
 }
+

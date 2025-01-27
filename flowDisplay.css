@@ -90,6 +90,7 @@ min-height: 0.9rem;
 }
 .descriptionText{
   font-family: Arial, Helvetica, sans-serif;
+  font-size: 16px;
 }
 
 h1:focus,
@@ -190,13 +191,6 @@ background-color: var(--color-grey-lightest);
   transition: height 0.3s ease, visibility 0.3s ease;
 }
 
-/* img {
-  width: 100%;
-  height: auto;
-  display: block;
-  margin-top: 5px;
-  border-radius: 0.125rem;
-} */
 
 .image-container{
   width: 100%;

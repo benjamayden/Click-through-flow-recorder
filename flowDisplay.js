@@ -241,7 +241,6 @@ function renderLog() {
       // Create main container
       const imageContainer = document.createElement("div");
       imageContainer.className = "image-container";
-
       // Create canvas for displaying and cropping image
       const canvasElement = document.createElement("canvas");
       canvasElement.className = "imgElement";
@@ -517,7 +516,7 @@ function dragStart(e) {
   draggedItem = this;
   // Add the hideOnDrag class to all elements to be hidden
   document
-    .querySelectorAll(".log-entry img, .log-entry p, .log-entry button")
+    .querySelectorAll(".image-container, .descriptionText, .action, .altText")
     .forEach((el) => {
       el.classList.add("hideOnDrag");
       el.classList.add("animate");
@@ -589,7 +588,7 @@ function drop(e) {
 function endDrag() {
   // Restore visibility of elements
   document
-    .querySelectorAll(".log-entry img, .log-entry p, .log-entry button")
+    .querySelectorAll(".image-container, .descriptionText, .action, .altText")
     .forEach((el) => {
       el.classList.remove("hideOnDrag");
       el.classList.remove("animate");

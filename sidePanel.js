@@ -369,33 +369,55 @@ document.getElementById("startRecording").addEventListener("click", () => {
   startRecording();
 });
 
-// Listen for 'toggle_recording' message from background
+
+// Consolidated onMessage handler
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if (message.action === "keyboard_record") {
-    startRecording();
-  } else if (message.action === "keyboard_pause") {
-    updateRecordingState(false); // Pause recording
+  if (!message || !message.action) {
+    console.error("Invalid message received:", message);
+    return;
+  }
+
+  switch (message.action) {
+    case "keyboard_record":
+      startRecording();
+      break;
+
+    case "keyboard_pause":
+      updateRecordingState(false);
+      break;
+
+    case "refreshLog":
+      chrome.storage.local.get(["clickLog"], (result) => {
+        const updatedLog = result.clickLog || [];
+        displayLog(updatedLog);
+      });
+      break;
+
+    case "updatePanelFromFlow":
+      displayLog([]);
+      chrome.storage.local.get(["clickLog"], (result) => {
+        displayLog(result.clickLog || []);
+      });
+      break;
+
+    case "hideFlowButton":
+      document.getElementById("openFlow").style.display = "none";
+      break;
+
+    case "showFlowButton":
+      document.getElementById("openFlow").style.display = "flex";
+      break;
+
+    default:
+      console.warn("Unhandled message action:", message.action);
+  }
+
+  // Optional: Send a response if needed
+  if (sendResponse) {
+    sendResponse({ status: "ok" });
   }
 });
 
-// Utility function to update the visibility of "View Flow" and "Back" buttons
-function updateFlowButtons({ showFlow = true }) {
-  const openFlowButton = document.getElementById("openFlow"); // "View Flow" button
-  const backButton = document.getElementById("backButton"); // "Back" button
-  // Show or hide the "View Flow" button based on `showFlow` flag
-  if (openFlowButton) openFlowButton.style.display = showFlow ? "flex" : "none";
-  // Show or hide the "Back" button based on `showFlow` flag
-  if (backButton) backButton.style.display = showFlow ? "none" : "flex";
-}
-
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  console.log(message.action)
-  if (message.action === "changeToBack") {
-    updateFlowButtons({ showFlow: false });
-  } else if (message.action === "changeToBackFlowButton") {
-    updateFlowButtons({ showFlow: true });
-  }
-});
 
 // Utility function to update the visibility and state of "Record" and "Pause" buttons
 function updateRecordingButtons({ recording = true }) {
@@ -453,15 +475,9 @@ document
         updateRecordingButtons({ recording: false });
       }
       chrome.runtime.sendMessage({ action: "openFlowDisplay", previousTabId });
-      updateFlowButtons({ showFlow: false });
     }
   });
 
-document.getElementById("backButton")?.addEventListener("click", function () {
-  chrome.runtime.sendMessage({ action: "goBack" }, (response) => {
-    updateFlowButtons({ showFlow: true });
-  });
-});
 
 document.getElementById("clearLog").addEventListener("click", function () {
   const confirmDelete = confirm(
@@ -484,28 +500,6 @@ document.getElementById("clearLog").addEventListener("click", function () {
 chrome.storage.local.get(["clickLog"], function (result) {
   displayLog(result.clickLog || []); // Ensure it's an array
 });
-
-// Listen for messages from content.js to refresh the log display
-chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  if (request.action === "refreshLog") {
-    // Retrieve the updated log from storage and display it
-    chrome.storage.local.get(["clickLog"], function (result) {
-      const updatedLog = result.clickLog || [];
-      displayLog(updatedLog); // Update the display with the latest log
-    });
-  }
-});
-
-// Listen for messages from content script to update log dynamically
-chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  if (request.action === "updatePanelFromFlow") {
-    displayLog([]);
-    chrome.storage.local.get(["clickLog"], function (result) {
-      displayLog(result.clickLog || []); // Ensure it's an array
-    });
-  }
-});
-
 
 
 

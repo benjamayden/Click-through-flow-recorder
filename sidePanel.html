@@ -1,49 +1,42 @@
 <!DOCTYPE html>
 <html>
+  <head>
+    <title>Button Click Logger</title>
+    <link rel="stylesheet" href="index.css" />
+    <link rel="stylesheet" href="sidePanel.css" />
+  </head>
 
-<head>
-  <title>Button Click Logger</title>
-  <link rel="stylesheet" href="index.css">
-  <link rel="stylesheet" href="sidePanel.css"> 
-</head>
+  <body>
+    <main>
+      <div class="header">
+        <button id="pauseRecording" class="secondary-btn pause">Stop</button>
+        <button id="startRecording" class="primary-btn">Capture</button>
+        <div id="flow-buttons">
+          <button id="openFlow" class="secondary-btn">View flow editor</button>
+        </div>
 
-<body>
-  <main>
-    <div class="header">
-      <button id="pauseRecording" class="secondary-btn pause">Stop</button>
-      <button id="startRecording" class="primary-btn">Capture</button>
-      <div id="flow-buttons">
-        <button id="openFlow" class="secondary-btn">View flow editor</button>
-        <button id="backButton" class="secondary-btn back">Last captured tab</button>
-      </div>
-
-      <div class="instructions-container">
-        <p id="record-instructions" class="instructions">
-          Toggle record: <strong><span class="shortcutButtons">Ctrl</span>+Shift+S</strong> 
+        <div class="instructions-container">
+          <p id="record-instructions" class="instructions">
+            Toggle record:
+            <strong><span class="shortcutButtons">Ctrl</span>+Shift+S</strong>
           </p>
           <p id="instructions" class="instructions">
-          Take screenshot: <strong><span class="shortcutButtons">Ctrl</span>+Shift+E</strong> 
+            Take screenshot:
+            <strong><span class="shortcutButtons">Ctrl</span>+Shift+E</strong>
           </p>
+        </div>
       </div>
 
-    </div>
-
-    <div class="content logContainer">
+      <div class="content logContainer">
         <ul id="log">
           <!-- Log section -->
         </ul>
+      </div>
+      <div id="footer" class="footer">
+        <button id="clearLog" class="destructive-btn">Clear log</button>
+      </div>
+    </main>
 
-
-
-    </div>
-
-
-    <div id="footer" class="footer">
-      <button id="clearLog" class="destructive-btn">Clear log</button>
-    </div>
-  </main>
-
-  <script src="sidePanel.js"></script>
-</body>
-
+    <script src="sidePanel.js"></script>
+  </body>
 </html>
