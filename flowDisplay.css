@@ -48,74 +48,12 @@ main {
   border-top: 1px solid var(--color-border-light);
 }
 
-/* Print styling */
-@media print {
-  /* Hide specified elements */
 
-  body * {
-    display: none;
-  }
 
-  .hide-on-print {
-    display: none;
-  }
-
-  .custom {
-    justify-content: center;
-    align-items: center;
-    height: 900px;
-  }
-
-  .custom .headerText {
-    font-size: 4rem !important;
-    text-align: center;
-    width: 100%;
-    font-weight: 400;
-  }
-
-  .headerText{
-    display: flex;
-  }
-
-  .description-container , .description-container p{
-    display: flex;
-    padding: 0.25rem;
-    font-size: 1rem;
-    width: 100%;
-    min-height: 16px;
-  }
-
-  main {
-    display: flex;
-    flex-direction: column;
-    border: none;
-  }
-
-  /* Display header on each printed page */
-  .header {
-    display: flex;
-    position: static;
-    top: 0;
-    left: 0;
-  }
-
-  #flowTitle {
-    display: flex;
-  }
-
-  img,canvas,image-container {
-    display: flex;
-  }
-
-  #archived {
-    display: none;
-  }
-
-  /* Each section starts on a new page */
-  #log > .block {
-    page-break-after: always;
-    margin: 0;
-  }
+body .print-image {
+  display: flex;
+  width: 100%;
+  height: auto;
 }
 
 .subinfo {
@@ -145,26 +83,22 @@ main {
 
 h1,
 .headerText,
-p,.description-container{
+.descriptionText,
+.altText{
 outline: none;
 min-height: 0.9rem;
+}
+.descriptionText{
+  font-family: Arial, Helvetica, sans-serif;
 }
 
 h1:focus,
 .headerText:focus,
-.description-container:focus{
+.descriptionText:focus,
+.altText:focus{
 background-color: var(--color-grey-lightest);
 }
 
-
-.description-container{
-  width: 100%;
-  display: flex;
-  align-items: start;
-  justify-content: start;
-  flex-direction: column;
-  gap:0.125rem;
-}
 
 .logList {
   display: flex;

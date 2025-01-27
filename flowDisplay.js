@@ -155,7 +155,7 @@ function renderLog() {
     const descriptionTextarea = document.createElement("textarea");
     descriptionTextarea.placeholder = "Enter description";
     descriptionTextarea.value = entry.description || ""; // Populate with existing value
-    descriptionTextarea.className = "editable";
+    descriptionTextarea.className = "editable descriptionText";
     descriptionTextarea.style.resize = "none"; // Prevent manual resizing
 
     // Auto-grow textarea on input
@@ -170,8 +170,6 @@ function renderLog() {
       saveClickLog();
     });
     logEntryDiv.appendChild(descriptionTextarea);
-
-
 
     //---------------Add new section------------//
 
@@ -199,6 +197,7 @@ function renderLog() {
         description: "Enter description",
         dataUrl: "",
         alt: "",
+        originalImage: "",
         id: nextId,
         isArchived: false,
         class: "custom",
@@ -215,7 +214,6 @@ function renderLog() {
       }, 250);
     });
     actionsContainer.appendChild(addEntryButton);
-
 
     //----------------Archive---------------------//
     // Remove button
@@ -237,11 +235,7 @@ function renderLog() {
 
     actionsContainer.appendChild(removeButton);
 
-
     //--------------Image--------------------//
-    // Append elements
-    logEntryDiv.appendChild(titleElement);
-    logEntryDiv.appendChild(descriptionContainer);
 
     if (entry.dataUrl && entry.dataUrl !== "") {
       // Create main container
@@ -280,6 +274,7 @@ function renderLog() {
       // Load the dataUrl image
       const displayImage = new Image();
       displayImage.src = entry.dataUrl;
+      displayImage.alt = entry.alt;
       displayImage.onload = () => {
         // Set canvas to original size
         canvasElement.width = displayImage.width;
@@ -436,43 +431,18 @@ function renderLog() {
         };
       });
 
-
-
-
       //--------------------image alt text----------------//
 
-      const altTextElement = document.createElement("p");
-      if (entry.alt.trim() === "") {
-        altTextElement.textContent = "Image alt text";
-        altTextElement.classList.add("hide-on-print", "placeHolderText");
-      } else {
-        altTextElement.textContent = entry.alt;
-        altTextElement.classList.remove("hide-on-print", "placeHolderText");
-      }
-      altTextElement.contentEditable = "true";
-
-      altTextElement.onblur = function () {
-        if (altTextElement.textContent === "") {
-          altTextElement.textContent = "Image alt text";
-          altTextElement.classList.add("hide-on-print", "placeHolderText");
-          entry.alt = "";
-        } else {
-          entry.alt = altTextElement.textContent;
-        }
-
+      const altTextInput = document.createElement("input");
+      altTextInput.type = "text";
+      altTextInput.placeholder = "Image alt text";
+      altTextInput.value = entry.alt || ""; // Existing value or empty
+      altTextInput.className = "editable altText";
+      altTextInput.addEventListener("blur", () => {
+        entry.alt = altTextInput.value.trim();
         saveClickLog();
-        console.log(entry.alt);
-      };
-      altTextElement.addEventListener("focus", function () {
-        if (altTextElement.textContent === "Image alt text") {
-          altTextElement.classList.remove("hide-on-print", "placeHolderText");
-          altTextElement.textContent = "";
-        } else if (altTextElement.textContent === "") {
-          altTextElement.textContent = "Image alt text";
-          altTextElement.classList.add("hide-on-print", "placeHolderText");
-        }
       });
-      logEntryDiv.appendChild(altTextElement);
+      logEntryDiv.appendChild(altTextInput);
     }
 
     blockContainer.appendChild(logEntryDiv);
@@ -675,12 +645,6 @@ function hideButtonsIfLogIsEmpty() {
   });
 }
 
-document.getElementById("printPDF").addEventListener("click", function () {
-  saveClickLog();
-  renderLog();
-  window.print();
-});
-
 document
   .getElementById("saveImages")
   .addEventListener("click", async function () {
@@ -717,36 +681,45 @@ function downloadImage(flowTitle, entry, entryIndex = 0) {
   }
 }
 
+
 document.getElementById("toClipBoard").addEventListener("click", async () => {
   try {
-    // Gather h1, h3, p, img, and canvas in document order
-    const elements = document.querySelectorAll("h1, h3, p, img, canvas");
+    // Retrieve data from Chrome storage
+    const { flowTitle, clickLog } = await new Promise((resolve, reject) => {
+      chrome.storage.local.get(["flowTitle", "clickLog"], (result) => {
+        if (chrome.runtime.lastError) {
+          reject(chrome.runtime.lastError);
+        } else {
+          resolve(result);
+        }
+      });
+    });
+
+    // Build the HTML content from storage
     let htmlContent = "";
 
-    elements.forEach((element) => {
-      // Build htmlContent by tag name
-      if (element.tagName === "H1") {
-        htmlContent += `<h1>${element.textContent}</h1>`;
-      } else if (element.tagName === "H3") {
-        htmlContent += `<h3>${element.textContent}</h3>`;
-      } else if (
-        element.tagName === "P" &&
-        element.textContent.trim() !== "Enter description"
-      ) {
-        htmlContent += `<p>${element.textContent}</p>`;
-      } else if (element.tagName === "IMG") {
-        // Use the existing image source
-        htmlContent += `<img src="${element.src}" alt="${
-          element.alt || ""
-        }" />`;
-        htmlContent += `<p>&nbsp;&nbsp;&nbsp;</p>`;
-      } else if (element.tagName === "CANVAS") {
-        // Convert canvas to data URL before adding
-        const dataUrl = element.toDataURL("image/png");
-        htmlContent += `<img src="${dataUrl}" alt="${element.alt}" />`;
-        htmlContent += `<p>&nbsp;&nbsp;&nbsp;</p>`;
-      }
-    });
+    // Add the flow title (h1)
+    if (flowTitle) {
+      htmlContent += `<h1>${flowTitle}</h1>`;
+    }
+
+    // Add the click log entries
+    if (Array.isArray(clickLog)) {
+      clickLog.forEach((entry) => {
+        if (entry.elementText) {
+          htmlContent += `<h3>${entry.elementText}</h3>`;
+        }
+        if (entry.description) {
+          htmlContent += `<p>${entry.description}</p>`;
+        }
+        if (entry.dataUrl) {
+          htmlContent += `<img src="${entry.dataUrl}" alt="${
+            entry.alt || ""
+          }" />`;
+          htmlContent += `<p>&nbsp;&nbsp;&nbsp;</p>`;
+        }
+      });
+    }
 
     // Create a ClipboardItem with the HTML content
     const blob = new Blob([htmlContent], { type: "text/html" });
