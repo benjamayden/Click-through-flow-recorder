@@ -782,3 +782,28 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     loadClickLog();
   }
 });
+
+document.getElementById("clearLog").addEventListener("click", function () {
+    const confirmDelete = confirm(
+      "Are you sure you want to delete the log? This action is irreversible."
+    );
+    if (confirmDelete) {
+      // Clear the log and flowTitle
+      chrome.storage.local.set({ clickLog: [], flowTitle: "" }, function () {
+        displayLog([]); // Clear the displayed log
+        showToastMessage("Log and flow title cleared.");
+        chrome.runtime.sendMessage({ action: 'updatePanelFromFlow' });
+      chrome.tabs.getCurrent(tab => {
+        if (tab) {
+          chrome.tabs.remove(tab.id);
+          showToastMessage("Current tab closed.");
+        } else {
+          console.error("Failed to close the current tab.");
+        }
+      });
+      });
+    } else {
+      // Action was cancelled, no need to do anything
+      showToastMessage("Log deletion cancelled.");
+    }
+  });

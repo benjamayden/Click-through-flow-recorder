@@ -262,6 +262,7 @@ background-color: var(--color-grey-lightest);
 /* Archived section */
 #archived {
   margin-top: 2rem;
+  margin-bottom: 2rem;
 }
 
 .hidden {
