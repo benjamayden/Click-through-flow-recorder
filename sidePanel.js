@@ -1,370 +1,505 @@
 //sidePanel.js
+let isRecording = false;
+let clickLog = [];
+let archivedLog = [];
+
+chrome.storage.onChanged.addListener((changes, area) => {
+  if (area === "local" && changes.isRecording) {
+    isRecording = changes.isRecording.newValue;
+    updateRecordingState(isRecording);
+    if (isRecording) {
+      showToastMessage("Recording started!");
+    } else {
+      showToastMessage("Recording paused!");
+    }
+  }
+});
+
+// Centralized function to update storage and UI
+function updateRecordingState(isRecording) {
+  chrome.storage.local.set({ isRecording }, function () {
+    if (isRecording) {
+      updateRecordingButtons({ recording: true }); // Show "Pause", hide "Record"
+    } else {
+      updateRecordingButtons({ recording: false }); // Show "Record", hide "Pause"
+    }
+  });
+}
+
+// Start recording function (with URL check)
+async function startRecording() {
+  const isAllowed = await checkUrl();
+  if (!isAllowed) {
+    showToastMessage(`url not allowed: `, "Configure in options", () => {
+      chrome.runtime.sendMessage({ action: "openOptions" });
+    });
+    return false; // Abort if URL is not allowed
+  }
+
+  if (!isRecording) {
+    const [currentTab] = await chrome.tabs.query({
+      active: true,
+      currentWindow: true,
+    });
+    chrome.storage.local.set({
+      previousTabId: currentTab.id, // Save the tab as the starting point
+    });
+    updateRecordingState(true);
+  }
+
+  return true; // Recording is allowed
+}
 
 async function checkUrl() {
-    // Get the current active tab
-    const [currentTab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  // Get the current active tab
+  const [currentTab] = await chrome.tabs.query({
+    active: true,
+    currentWindow: true,
+  });
 
-    // Define allowed URL patterns using regular expressions
-    let allowed = [
-        /^http:\/\/iaptus\.internal\//,  // Matches http://iaptus.internal/*
-        /^https:\/\/demo\.iaptus\.co\.uk\//  // Matches https://demo.iaptus.co.uk/*
-    ];
+  // Function to convert URL to a regex
+  function urlToRegex(url) {
+    const escapedUrl = url.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); // Escape special characters
+    return new RegExp(`^${escapedUrl}`);
+  }
 
-    const currentUrl = currentTab?.url;
+  // Get the current tab's URL
+  const currentUrl = currentTab?.url;
 
-    let allowRecording = false;
-    // If the URL doesn't match allowed patterns, show a toast message and exit
-    if (allowed.length !== 0) {
-        if (!currentUrl || !allowed.some(pattern => pattern.test(currentUrl))) {
-            return allowRecording;
-        }
+  // Fetch allowed URLs from storage
+  const data = await chrome.storage.local.get("allowedURLs");
+  const allowedURLs = data.allowedURLs || [];
+
+  // Convert allowed URLs into regex patterns
+  const allowedPatterns = allowedURLs.map(urlToRegex);
+
+  // Initialise recording permission
+  let allowRecording = false;
+
+  // Check if the current URL matches any of the allowed patterns
+  if (allowedPatterns.length !== 0) {
+    if (
+      !currentUrl ||
+      !allowedPatterns.some((pattern) => pattern.test(currentUrl))
+    ) {
+      // If no match, return false
+      return allowRecording;
     }
-    allowRecording = true;
-    return allowRecording;
+  }
+
+  // If the URL matches, set allowRecording to true
+  allowRecording = true;
+  return allowRecording;
 }
 
-// Function to show toast messages
-function showToastMessage(message) {
-    let toastContainer = document.getElementById('toast-container');
-    if (!toastContainer) {
-        toastContainer = document.createElement('div');
-        toastContainer.id = 'toast-container';
-        toastContainer.className = 'toast-container';
-        document.body.appendChild(toastContainer);
-    }
+function showToastMessage(message, clickableElement = null, onClick = null) {
+  let toastContainer = document.getElementById("toast-container");
+  if (!toastContainer) {
+    toastContainer = document.createElement("div");
+    toastContainer.id = "toast-container";
+    toastContainer.className = "toast-container";
+    document.body.appendChild(toastContainer);
+  }
 
-    // Create a new toast
-    const toast = document.createElement('div');
-    toast.className = 'toast';
-    toast.textContent = message;
-    toastContainer.appendChild(toast);
+  // Create a new toast
+  const toast = document.createElement("div");
+  toast.className = "toast";
+  toast.innerHTML = message; // Use innerHTML to allow adding HTML elements
+  toastContainer.appendChild(toast);
 
-    // Show the toast after a brief delay
+  // Add clickable element if provided
+  if (clickableElement && onClick) {
+    const clickable = document.createElement("span");
+    clickable.className = "toast-clickable";
+    clickable.textContent = clickableElement;
+    // Attach the click event
+    clickable.addEventListener("click", onClick);
+
+    // Append the clickable element to the toast
+    toast.appendChild(clickable);
+  }
+
+  // Show the toast after a brief delay
+  setTimeout(() => {
+    toastContainer.classList.add("show");
+    toast.classList.add("show");
+  }, 100);
+
+  // Remove the toast after 5 seconds (3 seconds + extra 2 seconds)
+  setTimeout(() => {
+    toastContainer.classList.remove("show");
+    toast.classList.remove("show");
+
+    // Remove the toast element from the DOM
     setTimeout(() => {
-        toastContainer.classList.add('show');
-        toast.classList.add('show');
-    }, 100);
-
-    // Remove the toast after 5 seconds (3 seconds + extra 2 seconds)
-    setTimeout(() => {
-        toastContainer.classList.remove('show');
-        toast.classList.remove('show');
-
-        // Remove the toast element from the DOM
+      toast.remove();
+      // If no more toasts remain, remove the container
+      if (toastContainer.children.length === 0) {
         setTimeout(() => {
-            toast.remove();
-            // If no more toasts remain, remove the container
-            if (toastContainer.children.length === 0) {
-                setTimeout(() => {
-                    toastContainer.remove();
-                }, 900);
-            }
-        }, 500); // Wait for the fade-out animation to finish
-    }, 5000); // Total time for the toast (3 seconds + 2 seconds delay)
+          toastContainer.remove();
+        }, 900);
+      }
+    }, 500); // Wait for the fade-out animation to finish
+  }, 5000); // Total time for the toast (3 seconds + 2 seconds delay)
 }
-
-
 
 // Notify the background script when the panel opens
-chrome.runtime.sendMessage({ action: 'openPanel' });
+chrome.runtime.sendMessage({ action: "openPanel" });
 
 const port = chrome.runtime.connect({ name: "sidePanel" });
 
 
+
 function getShortenedText(text) {
-    const words = text.split(/\s+/);
-    if (words.length > 3) {
-        return words.slice(0, 3).join(' ') + '...'; // Get the first four words and add "..."
-    }
-    return text; // Return the original text if 4 or fewer words
+  const words = text.split(/\s+/);
+  if (words.length > 3) {
+    return words.slice(0, 3).join(" ") + "..."; // Get the first four words and add "..."
+  }
+  return text; // Return the original text if 4 or fewer words
 }
 
 // Function to remove duplicates from the log based on the id
 function removeDuplicates(log) {
-    const seen = new Set();
-    return log.filter(entry => {
-        if (seen.has(entry.id)) {
-            return false; // Duplicate found, skip this entry
-        }
-        seen.add(entry.id);
-        return true; // Keep the first instance of this entry
-    });
+  const seen = new Set();
+  return log.filter((entry) => {
+    if (seen.has(entry.id)) {
+      return false; // Duplicate found, skip this entry
+    }
+    seen.add(entry.id);
+    return true; // Keep the first instance of this entry
+  });
 }
 
-
+let dragStartIndex;
+let clickLogCopy = []; // To store a local copy of clickLog for dynamic updates
 
 function displayLog(clickLog) {
-    const logDiv = document.getElementById('log');
-    logDiv.innerHTML = ''; // Clear previous log
+  const logDiv = document.getElementById("log");
+  logDiv.innerHTML = ""; // Clear previous log
 
-    // Check if there are any non-archived entries
-    const nonArchivedLogs = clickLog.filter(entry => !entry.isArchived);
+  // Validate and filter logs
+  const validLogs = clickLog.filter(
+    (entry) => entry && typeof entry.isArchived !== "undefined"
+  );
+  const nonArchivedLogs = validLogs.filter((entry) => !entry.isArchived);
 
-    if (clickLog.length === 0) {
-        logDiv.textContent = 'No logs recorded.';
-        document.getElementById('clearLog').style.display = 'none';
-        document.getElementById('footer').style.display = 'none';
-        return;
-    } else if (nonArchivedLogs.length === 0) {
-        logDiv.textContent = 'Archived logs only';
-        return;
+  if (clickLog.length === 0) {
+    logDiv.textContent = "No logs recorded.";
+    document.getElementById("clearLog").style.display = "none";
+    document.getElementById("flow-buttons").style.display = "none";
+    return;
+  } else if (nonArchivedLogs.length === 0) {
+    logDiv.textContent = "Archived logs only";
+    return;
+  }
+
+  document.getElementById("clearLog").style.display = "flex";
+  document.getElementById("flow-buttons").style.display = "flex";
+
+  const uniqueIds = new Set();
+  let dragStartIndex;
+  let clickLogCopy = [...clickLog]; // Maintain a local copy for real-time updates
+
+  // Render each log entry
+  clickLog.forEach((entry, index) => {
+    if (uniqueIds.has(entry.id) || entry.isArchived) return;
+    uniqueIds.add(entry.id); // Track unique IDs
+
+    const listItem = document.createElement("li");
+    listItem.setAttribute("draggable", "true");
+    listItem.setAttribute("data-index", index); // Set the current index
+    listItem.classList.add("draggable-item");
+
+    // Add drag event listeners
+    listItem.addEventListener("dragstart", (event) => {
+      dragStartIndex = index;
+      listItem.classList.add("dragging"); // Add visual feedback
+      event.dataTransfer.effectAllowed = "move";
+    });
+
+    listItem.addEventListener("dragover", (event) => {
+      event.preventDefault(); // Allow dropping
+      const draggingElement = document.querySelector(".dragging");
+      const overElement = event.target.closest("li");
+
+      if (!overElement || overElement === draggingElement) return;
+
+      const overIndex = parseInt(overElement.getAttribute("data-index"), 10);
+
+      if (overIndex > dragStartIndex) {
+        overElement.after(draggingElement); // Move visually down
+      } else {
+        overElement.before(draggingElement); // Move visually up
+      }
+
+      // Update clickLogCopy in real-time
+      if (dragStartIndex !== null && overIndex !== null) {
+        const [movedItem] = clickLogCopy.splice(dragStartIndex, 1);
+        clickLogCopy.splice(overIndex, 0, movedItem);
+        dragStartIndex = overIndex; // Update start index for subsequent moves
+      }
+    });
+
+    listItem.addEventListener("drop", (event) => {
+      event.preventDefault();
+      listItem.classList.remove("dragging");
+
+      // Save the updated order to storage
+      chrome.storage.local.set({ clickLog: clickLogCopy }, () => {
+        displayLog(clickLogCopy); // Re-render the list
+      });
+    });
+
+    listItem.addEventListener("dragend", () => {
+      listItem.classList.remove("dragging");
+      chrome.runtime.sendMessage({ action: 'updateFlowFromPanel' });
+    });
+
+    // UI Components
+    const dragIcon = document.createElement("div");
+    dragIcon.className = "icon-container";
+
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.setAttribute("width", "10");
+    svg.setAttribute("height", "16");
+    svg.setAttribute("viewBox", "0 0 10 16");
+    svg.setAttribute("fill", "none");
+    svg.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+
+    const dotPositions = [
+      { cx: 2, cy: 2 },
+      { cx: 2, cy: 8 },
+      { cx: 2, cy: 14 },
+      { cx: 8, cy: 2 },
+      { cx: 8, cy: 8 },
+      { cx: 8, cy: 14 },
+    ];
+
+    dotPositions.forEach((pos) => {
+      const circle = document.createElementNS(
+        "http://www.w3.org/2000/svg",
+        "circle"
+      );
+      circle.setAttribute("cx", pos.cx);
+      circle.setAttribute("cy", pos.cy);
+      circle.setAttribute("r", "2");
+      circle.setAttribute("fill", "var(--color-grey-dark)");
+      svg.appendChild(circle);
+    });
+
+    dragIcon.appendChild(svg);
+
+    const imageContainer = document.createElement("div");
+    imageContainer.className = "image-container";
+
+    if (entry.dataUrl) {
+      const imgElement = document.createElement("img");
+      imgElement.src = entry.dataUrl;
+      imageContainer.appendChild(imgElement);
     }
-    document.getElementById('clearLog').style.display = 'flex';
-    document.getElementById('footer').style.display = 'flex';
-    // Create a Set to keep track of unique IDs
-    const uniqueIds = new Set();
-    // Create a list to display log entries
-    const list = document.createElement('ul');
 
-    clickLog.forEach(entry => {
-        if (uniqueIds.has(entry.id)) {
-            return; // Skip this entry if the ID has already been processed
-        }
-        if (entry.isArchived) {
-            return;
-        }
-        uniqueIds.add(entry.id); // Add the ID to the set
+    const detailContainer = document.createElement("div");
+    detailContainer.className = "container";
 
-        const listItem = document.createElement('li');
+    const actionContainer = document.createElement("div");
 
-        const detailContainer = document.createElement('div');
-        detailContainer.className = 'container';
+    const elementName = document.createElement("div");
+    elementName.classList.add("elementName");
+    elementName.textContent = entry.elementText;
 
-        const actionContainer = document.createElement('div');
+    const details = document.createElement("div");
+    details.classList.add("elementDetails");
 
-        listItem.appendChild(detailContainer);
-        listItem.appendChild(actionContainer);
+    const id = document.createElement("span");
+    id.classList.add("elementId");
+    id.textContent = `id: ${entry.id}`;
 
-        // Create and append the element name
-        const elementName = document.createElement('div');
-        elementName.classList.add('elementName');
-        elementName.textContent = getShortenedText(entry.elementText);
+    const removeButton = document.createElement("button");
+    removeButton.className = "destructive-btn remove-shot";
+    removeButton.textContent = "X";
 
-        // Create and append the details div
-        const details = document.createElement('div');
-        details.classList.add('elementDetails');
-
-        // Create and append the ID
-        const id = document.createElement('span');
-        id.classList.add('elementId');
-        id.textContent = `id: ${entry.id}`;
-
-        const removeButton = document.createElement('button');
-        removeButton.className = 'destructive-btn'
-        removeButton.innerText = "X"
-
-        removeButton.addEventListener('click', function () {
-            const updatedLog = clickLog.filter(logEntry => logEntry.id !== entry.id)
-
-            chrome.storage.local.set({ clickLog: updatedLog }, function () {
-                displayLog(updatedLog)
-
-            })
-        })
-
-        // Append the id and link to the details div
-        details.appendChild(id);
-
-        // Append the name and details to the list item
-        detailContainer.appendChild(elementName);
-        detailContainer.appendChild(details);
-        actionContainer.appendChild(removeButton);
-
-
-        // Append the list item to the list
-        list.appendChild(listItem);
+    removeButton.addEventListener("click", () => {
+      const updatedLog = clickLogCopy.map(
+        (logEntry) => logEntry.id === entry.id ? { ...logEntry, isArchived: true } : logEntry
+      );
+      chrome.storage.local.set({ clickLog: updatedLog }, () => {
+        displayLog(updatedLog); // Re-render after removal
+        chrome.runtime.sendMessage({ action: 'updateFlowFromPanel' });
+      });
     });
 
-    logDiv.appendChild(list);
+    details.appendChild(id);
+    detailContainer.appendChild(elementName);
+    detailContainer.appendChild(details);
+    actionContainer.appendChild(removeButton);
+
+    listItem.appendChild(dragIcon);
+    listItem.appendChild(imageContainer);
+    listItem.appendChild(detailContainer);
+    listItem.appendChild(actionContainer);
+
+    logDiv.appendChild(listItem);
+  });
+
+  // Auto-scroll to the bottom if items were added
+  if (logDiv.childElementCount > 0) {
+    logDiv.lastElementChild.scrollIntoView({ behavior: "smooth" });
+  }
 }
 
-
-// Function to remove duplicates from the log
 function removeDuplicates(log) {
-    const seen = new Set();
-    return log.filter(entry => {
-        const uniqueKey = `${entry.elementText}-${entry.url}-${entry.timestamp}`;
-        if (seen.has(uniqueKey)) {
-            return false; // Duplicate found, skip this entry
-        }
-        seen.add(uniqueKey);
-        return true; // Add new entry
-    });
-}
-
-// Centralized function to update storage and UI
-function updateRecordingState(isRecording) {
-    chrome.storage.local.set({ isRecording }, function () {
-        if (isRecording) {
-            updateRecordingButtons({ recording: true }); // Show "Pause", hide "Record"
-            showToastMessage('Recording started!');
-        } else {
-            updateRecordingButtons({ recording: false }); // Show "Record", hide "Pause"
-            showToastMessage('Recording paused!');
-        }
-    });
+  const seen = new Set();
+  return log.filter((entry) => {
+    const uniqueKey = `${entry.elementText}-${entry.url}-${entry.timestamp}`;
+    if (seen.has(uniqueKey)) {
+      return false; // Duplicate found, skip this entry
+    }
+    seen.add(uniqueKey);
+    return true; // Add new entry
+  });
 }
 
 // Add event listener for "Pause Recording"
-document.getElementById('pauseRecording').addEventListener('click', () => {
-    updateRecordingState(false); // Pause recording
+document.getElementById("pauseRecording").addEventListener("click", () => {
+  updateRecordingState(false); // Pause recording
 });
 
 // Add event listener for "Start Recording"
-document.getElementById('startRecording').addEventListener('click', () => {
-    startRecording();
+document.getElementById("startRecording").addEventListener("click", () => {
+  startRecording();
 });
 
-// Listen for 'toggle_recording' message from background
+
+// Consolidated onMessage handler
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-    if (message.action === 'keyboard_record') {
-                startRecording();
-    }else if(message.action === 'keyboard_pause'){
-        updateRecordingState(false); // Pause recording
-    }
+  if (!message || !message.action) {
+    console.error("Invalid message received:", message);
+    return;
+  }
+
+  switch (message.action) {
+    case "keyboard_record":
+      startRecording();
+      break;
+
+    case "keyboard_pause":
+      updateRecordingState(false);
+      break;
+
+    case "refreshLog":
+      chrome.storage.local.get(["clickLog"], (result) => {
+        const updatedLog = result.clickLog || [];
+        displayLog(updatedLog);
+      });
+      break;
+
+    case "updatePanelFromFlow":
+      displayLog([]);
+      chrome.storage.local.get(["clickLog"], (result) => {
+        displayLog(result.clickLog || []);
+      });
+      break;
+
+    case "hideFlowButton":
+      document.getElementById("openFlow").style.display = "none";
+      break;
+
+    case "showFlowButton":
+      document.getElementById("openFlow").style.display = "flex";
+      break;
+
+    default:
+      console.warn("Unhandled message action:", message.action);
+  }
+
+  // Optional: Send a response if needed
+  if (sendResponse) {
+    sendResponse({ status: "ok" });
+  }
 });
 
-// Start recording function (with URL check)
-async function startRecording() {
-    const isAllowed = await checkUrl();
-    if (!isAllowed) {
-        showToastMessage('Url not allowed: Only use Internal or Demo');
-        return false; // Abort if URL is not allowed
-    }
-
-    // Get current recording state and active tab info
-    chrome.storage.local.get(['isRecording'], async (result) => {
-        const isRecording = result.isRecording || false;
-        if (!isRecording) {
-            const [currentTab] = await chrome.tabs.query({ active: true, currentWindow: true });
-            chrome.storage.local.set({
-                previousTabId: currentTab.id // Save the tab as the starting point
-            });
-            updateRecordingState(true);
-        }
-    });
-
-    return true; // Recording is allowed
-}
-
-
-// Utility function to update the visibility of "View Flow" and "Back" buttons
-function updateFlowButtons({ showFlow = true }) {
-    const openFlowButton = document.getElementById('openFlow'); // "View Flow" button
-    const backButton = document.getElementById('backButton');   // "Back" button
-
-    // Show or hide the "View Flow" button based on `showFlow` flag
-    if (openFlowButton) openFlowButton.style.display = showFlow ? 'flex' : 'none';
-
-    // Show or hide the "Back" button based on `showFlow` flag
-    if (backButton) backButton.style.display = showFlow ? 'none' : 'flex';
-}
 
 // Utility function to update the visibility and state of "Record" and "Pause" buttons
 function updateRecordingButtons({ recording = true }) {
-    const recordButton = document.getElementById('startRecording'); // "Start Recording" button
-    const pauseButton = document.getElementById('pauseRecording');  // "Pause Recording" button
-    const instructions = document.getElementById('instructions');   // Instructions for shortcut
+  const recordButton = document.getElementById("startRecording"); // "Start Recording" button
+  const pauseButton = document.getElementById("pauseRecording"); // "Pause Recording" button
+  const instructions = document.getElementById("instructions"); // Instructions for shortcut
 
-    // Set the correct keyboard shortcut based on the OS
-    let text = "Ctrl";
-    chrome.runtime.getPlatformInfo(function (info) {
-        if (info.os === "mac") {
-            text = "Command";
-        }
-    });
-    const shortCutButtons = Array.from(document.getElementsByClassName('shortcutButtons'));
-    shortCutButtons.forEach((shortCut) => {
-        shortCut.innerText = text;
-    });
-    
-    // Update the instructions with the keyboard shortcut
-    if (instructions) {
-        instructions.style.display = recording ? 'block' : 'none';
+  // Set the correct keyboard shortcut based on the OS
+  let text = "Ctrl";
+  chrome.runtime.getPlatformInfo(function (info) {
+    if (info.os === "mac") {
+      text = "Command";
     }
+  });
+  const shortCutButtons = Array.from(
+    document.getElementsByClassName("shortcutButtons")
+  );
+  shortCutButtons.forEach((shortCut) => {
+    shortCut.innerText = text;
+  });
 
-    // Show or hide the "Record" and "Pause" buttons based on the `recording` flag
-    if (recordButton) recordButton.style.display = recording ? 'none' : 'flex';
-    if (pauseButton) pauseButton.style.display = recording ? 'flex' : 'none';
+  // Update the instructions with the keyboard shortcut
+  if (instructions) {
+    instructions.style.display = recording ? "block" : "none";
+  }
+
+  // Show or hide the "Record" and "Pause" buttons based on the `recording` flag
+  if (recordButton) recordButton.style.display = recording ? "none" : "flex";
+  if (pauseButton) pauseButton.style.display = recording ? "flex" : "none";
 }
 
-
-document.getElementById('openFlow')?.addEventListener('click', async function () {
+document
+  .getElementById("openFlow")
+  ?.addEventListener("click", async function () {
     // Get the currently active tab in the current window
-    const [currentTab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    const [currentTab] = await chrome.tabs.query({
+      active: true,
+      currentWindow: true,
+    });
 
     if (currentTab) {
-        const isAllowed = await checkUrl();
-        let previousTabId = null;
+      const isAllowed = await checkUrl();
+      let previousTabId = null;
 
-        if (isAllowed) {
-            previousTabId = currentTab.id;
-        } else {
-            const storedData = await new Promise((resolve) => {
-                chrome.storage.local.get(['previousTabId'], resolve);
-            });
-            previousTabId = storedData.previousTabId || null;
-        }
-
+      if (isAllowed) {
+        previousTabId = currentTab.id;
+      } else {
+        const storedData = await new Promise((resolve) => {
+          chrome.storage.local.get(["previousTabId"], resolve);
+        });
+        previousTabId = storedData.previousTabId || null;
+      }
+      if (isRecording) {
         chrome.storage.local.set({ previousTabId, isRecording: false });
-
-        // Use chrome.runtime.sendMessage with callback to ensure the response
-        chrome.runtime.sendMessage({ action: 'openFlowDisplay', previousTabId }, (response) => {
-            console.log(response.status);
-            updateFlowButtons({ showFlow: false });
-            updateRecordingButtons({ recording: false });
-        });
+        updateRecordingButtons({ recording: false });
+      }
+      chrome.runtime.sendMessage({ action: "openFlowDisplay", previousTabId });
     }
-});
+  });
 
-document.getElementById('backButton')?.addEventListener('click', async function () {
-    chrome.runtime.sendMessage({ action: 'goBack' }, (response) => {
-        console.log(response.status);
-        updateFlowButtons({ showFlow: true });
+
+document.getElementById("clearLog").addEventListener("click", function () {
+  const confirmDelete = confirm(
+    "Are you sure you want to delete the log? This action is irreversible."
+  );
+  if (confirmDelete) {
+    // Clear the log and flowTitle
+    chrome.storage.local.set({ clickLog: [], flowTitle: "" }, function () {
+      displayLog([]); // Clear the displayed log
+      showToastMessage("Log and flow title cleared.");
+      chrome.runtime.sendMessage({ action: 'updateFlowFromPanel' });
     });
+  } else {
+    // Action was cancelled, no need to do anything
+    showToastMessage("Log deletion cancelled.");
+  }
 });
-
-
-
-document.getElementById('clearLog').addEventListener('click', function () {
-    const confirmDelete = confirm("Are you sure you want to delete the log? This action is irreversible.");
-    if (confirmDelete) {
-        // Clear the log and flowTitle
-        chrome.storage.local.set({ clickLog: [], flowTitle: '' }, function () {
-            displayLog([]); // Clear the displayed log
-            console.log("Log and flow title cleared.");
-        });
-    } else {
-        // Action was cancelled, no need to do anything
-        console.log("Log deletion cancelled.");
-    }
-})
-
 
 // Load and display the click log when the side panel opens
-chrome.storage.local.get(['clickLog'], function (result) {
-    displayLog(result.clickLog || []); // Ensure it's an array
-});
-
-// Listen for messages from content.js to refresh the log display
-chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-    if (request.action === 'refreshLog') {
-        // Retrieve the updated log from storage and display it
-        chrome.storage.local.get(['clickLog'], function (result) {
-            const updatedLog = result.clickLog || [];
-            displayLog(updatedLog); // Update the display with the latest log
-        });
-    }
+chrome.storage.local.get(["clickLog"], function (result) {
+  displayLog(result.clickLog || []); // Ensure it's an array
 });
 
 
-// Listen for messages from content script to update log dynamically
-chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-    if (request.action === 'updatePanelFromFlow') {
-        displayLog([]);
-        chrome.storage.local.get(['clickLog'], function (result) {
-            displayLog(result.clickLog || []); // Ensure it's an array
-        });
 
-    }
-})

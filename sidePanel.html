@@ -1,311 +1,42 @@
 <!DOCTYPE html>
 <html>
+  <head>
+    <title>Button Click Logger</title>
+    <link rel="stylesheet" href="index.css" />
+    <link rel="stylesheet" href="sidePanel.css" />
+  </head>
 
-<head>
-  <title>Button Click Logger</title>
-  <style>
-
-  /* Add to your CSS file */
-  .toast-container{
-    position: fixed;
-    bottom: 64px;
-    left: 50%;
-    transform: translateX(-50%);
-    opacity: 0;
-    visibility: hidden;
-    transition: opacity 0.5s, visibility 0s 0.5s;
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-    z-index: 9999;
-  }
-
-  .toast {
-    background-color: #333;
-    color: #fff;
-    padding: 10px 20px;
-    border-radius: 5px;
-    opacity: 0;
-    visibility: hidden;
-    transition: opacity 0.5s, visibility 0s 0.5s;
-    
-}
-
-.toast.show, .toast-container.show {
-    opacity: 1;
-    visibility: visible;
-    transition: opacity 0.5s;
-}
-
-    html,
-    body {
-      height: 100%;
-      margin: 0;
-      padding: 0;
-    }
-
-    body {
-      display: flex;
-      justify-content: center;
-      align-items: stretch;
-      font-family: Arial, sans-serif;
-      background-color: #f4f4f4;
-    }
-
-    main {
-      max-width: 720px;
-      width: 100%;
-      padding: 1rem;
-      background-color: white;
-      border: 1px solid #ddd;
-      border-radius: 0.5rem;
-      box-sizing: border-box;
-      display: flex;
-      flex-direction: column;
-      height: 100%;
-      /* Take up the full height of the viewport */
-    }
-
-    .header {
-      position: sticky;
-      top: 0;
-      display: flex;
-      flex-direction: column;
-      gap: 0.5rem;
-      background-color: white;
-      padding-top: 0.75rem;
-      padding-bottom: 0.75rem;
-      z-index: 100;
-      border-bottom: 1px solid #ddd;
-    }
-
-    .content {
-      flex-grow: 1;
-      /* Ensures the content takes up remaining space */
-      display: flex;
-      flex-direction: column;
-      height: 100%;
-      overflow-y: auto;
-      gap: 1rem;
-      /* Enable scrolling if content overflows */
-    }
-
-    .container{
-      display: flex;
-      width: 100%;
-      flex-direction: column;
-    }
-
-    .logContainer {
-      flex-grow: 1;
-      overflow-y: auto;
-      display: flex;
-      flex-direction: column;
-      padding: 5px;
-      margin-top: 10px;
-      border: 1px solid #ccc;
-      border-radius: 0.5rem;
-      gap: 0.25rem;
-    }
-
-    /* General button styling */
-    button {
-      width: 100%;
-      height: 32px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding-left: 1rem;
-      padding-right: 1rem;
-      cursor: pointer;
-      font-size: 16px;
-      border: none;
-      border-radius: 0.5rem;
-      box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
-      transition: background-color 0.3s ease, box-shadow 0.3s ease, transform 0.1s ease;
-    }
-
-    /* Primary button (main actions) */
-    .primary-btn {
-      background-color: #4CAF50;
-      color: white;
-    }
-
-    .primary-btn:hover {
-      background-color: #245726;
-      box-shadow: 0px 6px 8px rgba(0, 0, 0, 0.15);
-    }
-
-    .primary-btn:active {
-      transform: scale(0.98);
-      background-color: #3e8e41;
-    }
-
-    /* Secondary button (supporting actions) */
-    .secondary-btn {
-      border: 1px solid #45a049;
-      background-color: white;
-      color: #3e8e41;
-    }
-
-    .secondary-btn:hover {
-      border: 1px solid #3e8e41;
-      background-color: #245726;
-      color: #fff;
-      box-shadow: 0px 6px 8px rgba(0, 0, 0, 0.15);
-    }
-
-    .secondary-btn:active {
-      transform: scale(0.98);
-      background-color: #245726;
-    }
-
-    /* Destructive button (for deleting, removing, etc.) */
-    .destructive-btn {
-      border: 1px solid #f44336;
-      color: #ba2d2b;
-      background-color: white;
-      width: fit-content;
-      padding-left: 0.5rem;
-      padding-right: 0.5rem;
-      padding-top: 0.25rem;
-      padding-bottom: 0.25rem;
-    }
-
-    .destructive-btn:hover {
-      background-color: #ba2d2b;
-      color: white;
-      box-shadow: 0px 6px 8px rgba(0, 0, 0, 0.15);
-    }
-
-    .destructive-btn:active {
-      transform: scale(0.98);
-      background-color: #d32f2f;
-      color: white;
-    }
-
-    .footer {
-      position: sticky;
-      bottom: 0;
-      display: flex;
-      flex-direction: column;
-      gap: 0.125rem;
-      background-color: white;
-      padding-top: 0.75rem;
-      padding-bottom: 0.75rem;
-      z-index: 100;
-      border-top: 1px solid #ddd;
-    }
-
-    ul {
-      list-style: none;
-      padding: 0;
-      margin: 0;
-      display: flex;
-      flex-direction: column-reverse;
-      gap: 0.25rem;
-      flex-grow: 1;
-    }
-
-    li {
-      display: flex;
-      flex-direction: row;
-      background-color: white;
-      border: 1px solid #ddd;
-      border-radius: 0.5rem;
-      padding: 16px;
-    }
-
-    .elementName {
-      font-weight: bold;
-      font-size: 1em;
-      margin-bottom: 0.125rem;
-      color: #333;
-    }
-
-    .elementDetails {
-      display: flex;
-      gap: 0.25rem;
-      font-size: 0.9em;
-      color: #666;
-    }
-
-    .elementDetails span {
-      margin-right: 8px;
-    }
-
-    .elementLink {
-      color: #007bff;
-      text-decoration: none;
-    }
-
-    .elementLink:hover {
-      text-decoration: underline;
-    }
-
-    .pause {
-      display: none;
-      border: 2px solid rgb(255, 0, 0);
-    }
-
-    .back {
-      display: none;
-    }
-
-    .instructions{
-      margin:0;
-    }
-
-    #instructions{
-      display: none;
-    }
-    .instructions-container{
-      display: flex;
-      flex-direction: column;
-      gap: 0.5rem;
-    }
-  </style>
-
-</head>
-
-<body>
-  <main>
-    <div class="header">
-      <button id="pauseRecording" class="secondary-btn pause">Pause</button>
-      <button id="startRecording" class="primary-btn">Record</button>
-      <div class="instructions-container">
-        <p id="record-instructions" class="instructions">
-          Toggle record: <strong><span class="shortcutButtons">Ctrl</span>+Shift+S</strong> 
-          </p>
-          <p id="instructions" class="instructions">
-          Take screenshot: <strong><span class="shortcutButtons">Ctrl</span>+Shift+E</strong> 
-          </p>
-      </div>
-
-    </div>
-
-    <div class="content">
-      <div class="logContainer">
-        <button id="clearLog" class="destructive-btn">Clear log</button>
-        <div id="log">
-          <!-- Log section -->
+  <body>
+    <main>
+      <div class="header">
+        <button id="pauseRecording" class="secondary-btn pause">Stop</button>
+        <button id="startRecording" class="primary-btn">Capture</button>
+        <div id="flow-buttons">
+          <button id="openFlow" class="secondary-btn">View flow editor</button>
         </div>
 
+        <div class="instructions-container">
+          <p id="record-instructions" class="instructions">
+            Toggle record:
+            <strong><span class="shortcutButtons">Ctrl</span>+Shift+S</strong>
+          </p>
+          <p id="instructions" class="instructions">
+            Take screenshot:
+            <strong><span class="shortcutButtons">Ctrl</span>+Shift+E</strong>
+          </p>
+        </div>
       </div>
 
+      <div class="content logContainer">
+        <ul id="log">
+          <!-- Log section -->
+        </ul>
+      </div>
+      <div id="footer" class="footer">
+        <button id="clearLog" class="destructive-btn">Clear log</button>
+      </div>
+    </main>
 
-    </div>
-
-
-    <div id="footer" class="footer">
-      <!-- uncomment if you want to copy the raw data -->
-      <!-- <button id="copyLog" class="secondary-btn">Copy Log (CSV)</button> -->
-      <button id="openFlow" class="secondary-btn">View flow</button>
-      <button id="backButton" class="secondary-btn back">Back</button>
-    </div>
-  </main>
-
-  <script src="sidePanel.js"></script>
-</body>
-
+    <script src="sidePanel.js"></script>
+  </body>
 </html>
