@@ -498,3 +498,9 @@ document.addEventListener("click", (event) => {
     dropdownMenu.style.display = "none";
   }
 });
+
+// Hide dropdown menu when the mouse leaves the document
+document.addEventListener("mouseleave", () => {
+  const dropdownMenu = document.getElementById("dropdownMenu");
+  dropdownMenu.style.display = "none"; // Hide the dropdown menu
+});

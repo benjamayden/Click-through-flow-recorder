@@ -163,23 +163,26 @@ function handleGetHighlightedText(sendResponse) {
 
   // Determine the text content based on available properties
   if (highlightedElement.getAttribute("aria-label")) {
-    text = highlightedElement.getAttribute("aria-label");
+    text = highlightedElement.getAttribute("aria-label").split('\n')[0].trim(); // Get first line
   } else if (highlightedElement.textContent.trim() !== "") {
-    text = highlightedElement.textContent.trim();
+    text = highlightedElement.textContent.trim().split('\n')[0]; // Get first line
   } else if (
     highlightedElement.firstElementChild &&
     highlightedElement.firstElementChild.textContent.trim() !== ""
   ) {
-    text = highlightedElement.firstElementChild.textContent.trim();
+    text = highlightedElement.firstElementChild.textContent.trim().split('\n')[0]; // Get first line
   } else if (
     highlightedElement.parentElement &&
     highlightedElement.parentElement.textContent.trim() !== ""
   ) {
-    text = highlightedElement.parentElement.textContent.trim();
+    text = highlightedElement.parentElement.textContent.trim().split('\n')[0]; // Get first line
   } else {
     // Prompt user if no text can be extracted
     text = prompt("Please enter the text for this element:") || "";
   }
+
+  // Ensure only the first sentence is captured
+  text = text.split('. ')[0]; // Get the first sentence
 
   // Send the extracted or entered text
   sendResponse({ elementText: text });

@@ -153,12 +153,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   } else if (message.action === "updateFlowFromPanel") {
     chrome.storage.local.get("flowDisplayTabId", function (result) {
       if (result.flowDisplayTabId) {
-        chrome.tabs.reload(result.flowDisplayTabId, function () {
-          if (chrome.runtime.lastError) {
-            console.error("Failed to reload tab, creating new tab.");
-            createFlowTab();
-          }
-        });
+        chrome.tabs.reload(result.flowDisplayTabId);
       }
     });
   } else if (message.action === "captureScreen") {
