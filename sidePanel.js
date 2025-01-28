@@ -143,12 +143,7 @@ function showToastMessage(message, clickableElement = null, onClick = null) {
   }, 5000); // Total time for the toast (3 seconds + 2 seconds delay)
 }
 
-// Notify the background script when the panel opens
-chrome.runtime.sendMessage({ action: "openPanel" });
-
 const port = chrome.runtime.connect({ name: "sidePanel" });
-
-
 
 function getShortenedText(text) {
   const words = text.split(/\s+/);
@@ -185,16 +180,11 @@ function displayLog(clickLog) {
 
   if (clickLog.length === 0) {
     logDiv.textContent = "No logs recorded.";
-    document.getElementById("clearLog").style.display = "none";
-    document.getElementById("flow-buttons").style.display = "none";
     return;
   } else if (nonArchivedLogs.length === 0) {
     logDiv.textContent = "Archived logs only";
     return;
   }
-
-  document.getElementById("clearLog").style.display = "flex";
-  document.getElementById("flow-buttons").style.display = "flex";
 
   const uniqueIds = new Set();
   let dragStartIndex;
@@ -400,14 +390,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       });
       break;
 
-    case "hideFlowButton":
-      document.getElementById("openFlow").style.display = "none";
-      break;
-
-    case "showFlowButton":
-      document.getElementById("openFlow").style.display = "flex";
-      break;
-
     default:
       console.warn("Unhandled message action:", message.action);
   }
@@ -502,4 +484,17 @@ chrome.storage.local.get(["clickLog"], function (result) {
 });
 
 
+document.getElementById('option-btn').addEventListener('click',()=>{
+  const dropdownMenu = document.getElementById("dropdownMenu");
+  dropdownMenu.style.display = dropdownMenu.style.display === "block" ? "none" : "block";
+})
 
+// Close dropdown when clicking outside
+document.addEventListener("click", (event) => {
+  const dropdown = document.querySelector(".dropdown");
+  const dropdownMenu = document.getElementById("dropdownMenu");
+
+  if (!dropdown.contains(event.target)) {
+    dropdownMenu.style.display = "none";
+  }
+});

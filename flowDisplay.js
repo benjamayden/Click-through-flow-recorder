@@ -681,6 +681,59 @@ function downloadImage(flowTitle, entry, entryIndex = 0) {
 }
 
 
+// document.getElementById("toClipBoard").addEventListener("click", async () => {
+//   try {
+//     // Retrieve data from Chrome storage
+//     const { flowTitle, clickLog } = await new Promise((resolve, reject) => {
+//       chrome.storage.local.get(["flowTitle", "clickLog"], (result) => {
+//         if (chrome.runtime.lastError) {
+//           reject(chrome.runtime.lastError);
+//         } else {
+//           resolve(result);
+//         }
+//       });
+//     });
+
+//     // Build the HTML content from storage
+//     let htmlContent = "";
+
+//     // Add the flow title (h1)
+//     if (flowTitle) {
+//       htmlContent += `<h1>${flowTitle}</h1>`;
+//     }
+
+//     // Add the click log entries
+//     if (Array.isArray(clickLog)) {
+//       clickLog.forEach((entry) => {
+//         if (entry.elementText) {
+//           htmlContent += `<h3>${entry.elementText}</h3>`;
+//         }
+//         if (entry.description) {
+//           htmlContent += `<p>${entry.description}</p>`;
+//         }
+//         if (entry.dataUrl) {
+//           htmlContent += `<img src="${entry.dataUrl}" alt="${
+//             entry.alt || ""
+//           }" />`;
+//           htmlContent += `<p>&nbsp;&nbsp;&nbsp;</p>`;
+//         }
+//       });
+//     }
+
+//     // Create a ClipboardItem with the HTML content
+//     const blob = new Blob([htmlContent], { type: "text/html" });
+//     const clipboardItem = new ClipboardItem({ "text/html": blob });
+//     await navigator.clipboard.write([clipboardItem]);
+
+//     showToastMessage("Content copied to clipboard!");
+//   } catch (error) {
+//     console.error("Error copying to clipboard:", error);
+//     alert("Failed to copy content to clipboard.");
+//   }
+// });
+
+
+
 document.getElementById("toClipBoard").addEventListener("click", async () => {
   try {
     // Retrieve data from Chrome storage
@@ -696,15 +749,20 @@ document.getElementById("toClipBoard").addEventListener("click", async () => {
 
     // Build the HTML content from storage
     let htmlContent = "";
-
-    // Add the flow title (h1)
     if (flowTitle) {
       htmlContent += `<h1>${flowTitle}</h1>`;
     }
 
-    // Add the click log entries
+    // Prepare clipboard data
+    const clipboardItems = [];
+
+    // Add HTML content
+    const htmlBlob = new Blob([htmlContent], { type: "text/html" });
+    clipboardItems.push(new ClipboardItem({ "text/html": htmlBlob }));
+
+    // Process click log entries
     if (Array.isArray(clickLog)) {
-      clickLog.forEach((entry) => {
+      for (const entry of clickLog) {
         if (entry.elementText) {
           htmlContent += `<h3>${entry.elementText}</h3>`;
         }
@@ -712,18 +770,22 @@ document.getElementById("toClipBoard").addEventListener("click", async () => {
           htmlContent += `<p>${entry.description}</p>`;
         }
         if (entry.dataUrl) {
-          htmlContent += `<img src="${entry.dataUrl}" alt="${
-            entry.alt || ""
-          }" />`;
+          // Convert data URL to blob
+          const response = await fetch(entry.dataUrl);
+          const blob = await response.blob();
+          clipboardItems.push(new ClipboardItem({ [blob.type]: blob }));
+          
+          htmlContent += `<img src="${entry.dataUrl}" alt="${entry.alt || ""}" />`;
           htmlContent += `<p>&nbsp;&nbsp;&nbsp;</p>`;
         }
-      });
+      }
     }
 
-    // Create a ClipboardItem with the HTML content
-    const blob = new Blob([htmlContent], { type: "text/html" });
-    const clipboardItem = new ClipboardItem({ "text/html": blob });
-    await navigator.clipboard.write([clipboardItem]);
+    // Update the HTML clipboard item with the full content
+    clipboardItems[0] = new ClipboardItem({ "text/html": new Blob([htmlContent], { type: "text/html" }) });
+
+    // Write to clipboard
+    await navigator.clipboard.write(clipboardItems);
 
     showToastMessage("Content copied to clipboard!");
   } catch (error) {
@@ -731,6 +793,8 @@ document.getElementById("toClipBoard").addEventListener("click", async () => {
     alert("Failed to copy content to clipboard.");
   }
 });
+
+
 
 chrome.storage.local.get(["clickLog"], function (result) {
   const logDiv = document.getElementById("log");

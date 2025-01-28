@@ -1,7 +1,8 @@
 
 .highlight-stroke {
-    outline: 3px dotted #9c1734 !important;
-    outline-offset: 4px;
+    outline: 2px solid #9c1734 !important;
+    outline-offset: 2px;
+    border-radius: 8px;
     z-index: 9999;
 }
 

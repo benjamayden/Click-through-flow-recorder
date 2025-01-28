@@ -13,6 +13,35 @@
         <h1 id="flowTitle" class="editable" contentEditable="true">Click Log</h1>
         <div class="row hide-on-print">
           <span id="isEditingText" class="editing hide-on-print"></span>
+
+        </div>
+      </div>
+      <div id="log" class="logList dropTarget"></div>
+      <!-- Log section -->
+      <!-- Archived entries section -->
+      <div id="archived" class="container hide-on-print">
+        <div id="archivedEntries" class="logList"></div>
+        
+      </div>
+      <div id="footer" class="footer hide-on-print">
+        <div class="action container">
+          <button class="secondary-btn" id="saveImages">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+              <path
+                d="M448 80c8.8 0 16 7.2 16 16l0 319.8-5-6.5-136-176c-4.5-5.9-11.6-9.3-19-9.3s-14.4 3.4-19 9.3L202 340.7l-30.5-42.7C167 291.7 159.8 288 152 288s-15 3.7-19.5 10.1l-80 112L48 416.3l0-.3L48 96c0-8.8 7.2-16 16-16l384 0zM64 32C28.7 32 0 60.7 0 96L0 416c0 35.3 28.7 64 64 64l384 0c35.3 0 64-28.7 64-64l0-320c0-35.3-28.7-64-64-64L64 32zm80 192a48 48 0 1 0 0-96 48 48 0 1 0 0 96z"
+              />
+            </svg>
+            Export PNGs
+          </button>
+          <button class="secondary-btn" id="toClipBoard">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512">
+              <path
+                d="M280 64l40 0c35.3 0 64 28.7 64 64l0 320c0 35.3-28.7 64-64 64L64 512c-35.3 0-64-28.7-64-64L0 128C0 92.7 28.7 64 64 64l40 0 9.6 0C121 27.5 153.3 0 192 0s71 27.5 78.4 64l9.6 0zM64 112c-8.8 0-16 7.2-16 16l0 320c0 8.8 7.2 16 16 16l256 0c8.8 0 16-7.2 16-16l0-320c0-8.8-7.2-16-16-16l-16 0 0 24c0 13.3-10.7 24-24 24l-88 0-88 0c-13.3 0-24-10.7-24-24l0-24-16 0zm128-8a24 24 0 1 0 0-48 24 24 0 1 0 0 48z"
+              />
+            </svg>
+            Copy
+          </button>
+          <button class="secondary-btn" id="getLinks">Get URLS</button>
           <button class="secondary-btn" id="reorder">
             <span id="reorderSpan">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512">
@@ -31,34 +60,9 @@
               Finished
             </span>
           </button>
-        </div>
-      </div>
-      <div id="log" class="logList dropTarget"></div>
-      <!-- Log section -->
-      <!-- Archived entries section -->
-      <div id="archived" class="container hide-on-print">
-        <div id="archivedEntries" class="logList"></div>
-        <button id='clearLog' class="destructive-btn">Clear Log</button>
-      </div>
-      <div id="footer" class="footer hide-on-print">
-        <div class="action container">
-          <button class="secondary-btn" id="saveImages">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-              <path
-                d="M448 80c8.8 0 16 7.2 16 16l0 319.8-5-6.5-136-176c-4.5-5.9-11.6-9.3-19-9.3s-14.4 3.4-19 9.3L202 340.7l-30.5-42.7C167 291.7 159.8 288 152 288s-15 3.7-19.5 10.1l-80 112L48 416.3l0-.3L48 96c0-8.8 7.2-16 16-16l384 0zM64 32C28.7 32 0 60.7 0 96L0 416c0 35.3 28.7 64 64 64l384 0c35.3 0 64-28.7 64-64l0-320c0-35.3-28.7-64-64-64L64 32zm80 192a48 48 0 1 0 0-96 48 48 0 1 0 0 96z"
-              />
-            </svg>
-            Export PNGs
+          <button id='clearLog' class="destructive-btn">
+            Clear flow
           </button>
-          <button class="secondary-btn" id="toClipBoard">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512">
-              <path
-                d="M280 64l40 0c35.3 0 64 28.7 64 64l0 320c0 35.3-28.7 64-64 64L64 512c-35.3 0-64-28.7-64-64L0 128C0 92.7 28.7 64 64 64l40 0 9.6 0C121 27.5 153.3 0 192 0s71 27.5 78.4 64l9.6 0zM64 112c-8.8 0-16 7.2-16 16l0 320c0 8.8 7.2 16 16 16l256 0c8.8 0 16-7.2 16-16l0-320c0-8.8-7.2-16-16-16l-16 0 0 24c0 13.3-10.7 24-24 24l-88 0-88 0c-13.3 0-24-10.7-24-24l0-24-16 0zm128-8a24 24 0 1 0 0-48 24 24 0 1 0 0 48z"
-              />
-            </svg>
-            Copy to clipboard
-          </button>
-          <button class="secondary-btn" id="getLinks">Copy links</button>
         </div>
       </div>
     </main>
