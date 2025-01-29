@@ -509,123 +509,6 @@ function renderArchivedLog() {
   });
 }
 
-// Drag and Drop functions
-let draggedItem = null;
-
-function dragStart(e) {
-  draggedItem = this;
-  // Add the hideOnDrag class to all elements to be hidden
-  document
-    .querySelectorAll(".image-container, .descriptionText, .action, .altText")
-    .forEach((el) => {
-      el.classList.add("hideOnDrag");
-      el.classList.add("animate");
-    });
-
-  document.querySelectorAll(".addEntryContainer").forEach((el) => {
-    el.style.pointerEvents = "none"; // Disable interaction
-  });
-
-  setTimeout(() => {
-    this.classList.add("draggable");
-  }, 0);
-}
-
-function dragOver(e) {
-  e.preventDefault();
-
-  // Ensure `draggedItem` is globally defined
-  if (!draggedItem) return;
-
-  // Get bounding box of the current element
-  const bounding = this.getBoundingClientRect();
-
-  // Calculate the midpoint of the current element
-  const midpoint = bounding.y + bounding.height / 2;
-
-  // Parent container for the log entries
-  const parent = this.parentNode;
-
-  // Dragged below the midpoint: place after current element
-  if (e.clientY > midpoint) {
-    if (this.nextSibling !== draggedItem) {
-      parent.insertBefore(draggedItem, this.nextSibling);
-    }
-  }
-  // Dragged above the midpoint: place before current element
-  else {
-    if (this !== draggedItem) {
-      parent.insertBefore(draggedItem, this);
-    }
-  }
-}
-
-function drop(e) {
-  e.preventDefault();
-
-  const parent = this.parentNode;
-  const siblings = Array.from(parent.children);
-  const draggedIndex = siblings.indexOf(draggedItem);
-  const targetIndex = siblings.indexOf(this);
-
-  if (draggedIndex < targetIndex) {
-    parent.insertBefore(draggedItem, this.nextSibling);
-    moveEntry(draggedIndex, targetIndex);
-  } else {
-    parent.insertBefore(draggedItem, this);
-    moveEntry(draggedIndex, targetIndex);
-  }
-  const reorderedIds = Array.from(
-    parent.querySelectorAll(".container.block")
-  ).map((block) => parseInt(block.dataset.id));
-  clickLog = reorderedIds.map((id) =>
-    clickLog.find((entry) => entry.id === id)
-  );
-  draggedItem.classList.remove("draggable");
-  saveClickLog();
-}
-
-function endDrag() {
-  // Restore visibility of elements
-  document
-    .querySelectorAll(".image-container, .descriptionText, .action, .altText")
-    .forEach((el) => {
-      el.classList.remove("hideOnDrag");
-      el.classList.remove("animate");
-    });
-  document.querySelectorAll(".addEntryContainer").forEach((el) => {
-    el.style.pointerEvents = "auto"; // Disable interaction
-  });
-}
-
-function moveEntry(fromIndex, toIndex) {
-  const entry = clickLog.splice(fromIndex, 1)[0];
-  clickLog.splice(toIndex, 0, entry);
-}
-
-document.getElementById("reorder").addEventListener("click", function () {
-  reorder = !reorder;
-  const reorderSpan = document.getElementById("reorderSpan");
-  const finishSpan = document.getElementById("finishedSpan");
-  renderLog();
-  if (reorder) {
-    dragStart();
-    finishSpan.style.display = "flex";
-    reorderSpan.style.display = "none";
-  } else {
-    endDrag();
-    finishSpan.style.display = "none";
-    reorderSpan.style.display = "flex";
-  }
-});
-
-// Set button text and functionality for returning to the previous tab
-document.getElementById("openFlow")?.addEventListener("click", function () {
-  // Send message to go back to the previous tab
-  chrome.runtime.sendMessage({ action: "goBack" });
-});
-
-// Function to check if log is empty and hide/show buttons accordingly
 function hideButtonsIfLogIsEmpty() {
   chrome.storage.local.get(["clickLog"], function (result) {
     const clickLog = result.clickLog || [];
@@ -644,98 +527,20 @@ function hideButtonsIfLogIsEmpty() {
   });
 }
 
-document
-  .getElementById("saveImages")
-  .addEventListener("click", async function () {
-    const logEntries = document.querySelectorAll(".log-entry"); // Select all log entries
-    const flowTitle = document.getElementById("flowTitle")
-      ? document.getElementById("flowTitle").textContent.trim()
-      : "Flow";
-
-    for (let entryIndex = 0; entryIndex < logEntries.length; entryIndex++) {
-      const entry = logEntries[entryIndex];
-      downloadImage(flowTitle, entry, entryIndex);
-    }
-  });
-
-function downloadImage(flowTitle, entry, entryIndex = 0) {
-  // Skip log entries with the class 'custom'
-  if (entry.classList.contains("custom")) {
-    return;
-  }
-
-  // Capture the image data from the canvas
-  const canvas = entry.querySelector("canvas");
-  if (canvas) {
-    const imageData = canvas.toDataURL("image/png");
-
-    // Create a filename for the saved image
-    const filename = `${flowTitle}_${entryIndex + 1}.png`;
-
-    // Create a link element to trigger the image download
-    const link = document.createElement("a");
-    link.href = imageData;
-    link.download = filename;
-    link.click();
-  }
-}
-
-
-// document.getElementById("toClipBoard").addEventListener("click", async () => {
-//   try {
-//     // Retrieve data from Chrome storage
-//     const { flowTitle, clickLog } = await new Promise((resolve, reject) => {
-//       chrome.storage.local.get(["flowTitle", "clickLog"], (result) => {
-//         if (chrome.runtime.lastError) {
-//           reject(chrome.runtime.lastError);
-//         } else {
-//           resolve(result);
-//         }
-//       });
-//     });
-
-//     // Build the HTML content from storage
-//     let htmlContent = "";
-
-//     // Add the flow title (h1)
-//     if (flowTitle) {
-//       htmlContent += `<h1>${flowTitle}</h1>`;
-//     }
-
-//     // Add the click log entries
-//     if (Array.isArray(clickLog)) {
-//       clickLog.forEach((entry) => {
-//         if (entry.elementText) {
-//           htmlContent += `<h3>${entry.elementText}</h3>`;
-//         }
-//         if (entry.description) {
-//           htmlContent += `<p>${entry.description}</p>`;
-//         }
-//         if (entry.dataUrl) {
-//           htmlContent += `<img src="${entry.dataUrl}" alt="${
-//             entry.alt || ""
-//           }" />`;
-//           htmlContent += `<p>&nbsp;&nbsp;&nbsp;</p>`;
-//         }
-//       });
-//     }
-
-//     // Create a ClipboardItem with the HTML content
-//     const blob = new Blob([htmlContent], { type: "text/html" });
-//     const clipboardItem = new ClipboardItem({ "text/html": blob });
-//     await navigator.clipboard.write([clipboardItem]);
-
-//     showToastMessage("Content copied to clipboard!");
-//   } catch (error) {
-//     console.error("Error copying to clipboard:", error);
-//     alert("Failed to copy content to clipboard.");
-//   }
-// });
-
-
 
 document.getElementById("toClipBoard").addEventListener("click", async () => {
   try {
+    const copyIcon = document.getElementById("copy-icon-default"); // Corrected ID
+    const copyIconComplete = document.getElementById("copy-icon-complete");
+  
+    // Show the "complete" icon temporarily
+    copyIconComplete.style.display = 'block';
+  
+    // Hide the "complete" icon and revert to the original one after 2 seconds
+    setTimeout(() => {
+      copyIconComplete.style.display = 'none';
+    }, 2000); // 2000ms = 2 seconds
+
     // Retrieve data from Chrome storage
     const { flowTitle, clickLog } = await new Promise((resolve, reject) => {
       chrome.storage.local.get(["flowTitle", "clickLog"], (result) => {
@@ -749,20 +554,15 @@ document.getElementById("toClipBoard").addEventListener("click", async () => {
 
     // Build the HTML content from storage
     let htmlContent = "";
+  
+    // Add the flow title (h1)
     if (flowTitle) {
       htmlContent += `<h1>${flowTitle}</h1>`;
     }
 
-    // Prepare clipboard data
-    const clipboardItems = [];
-
-    // Add HTML content
-    const htmlBlob = new Blob([htmlContent], { type: "text/html" });
-    clipboardItems.push(new ClipboardItem({ "text/html": htmlBlob }));
-
-    // Process click log entries
+    // Add the click log entries
     if (Array.isArray(clickLog)) {
-      for (const entry of clickLog) {
+      clickLog.forEach((entry) => {
         if (entry.elementText) {
           htmlContent += `<h3>${entry.elementText}</h3>`;
         }
@@ -770,27 +570,95 @@ document.getElementById("toClipBoard").addEventListener("click", async () => {
           htmlContent += `<p>${entry.description}</p>`;
         }
         if (entry.dataUrl) {
-          // Convert data URL to blob
-          const response = await fetch(entry.dataUrl);
-          const blob = await response.blob();
-          clipboardItems.push(new ClipboardItem({ [blob.type]: blob }));
-          
-          htmlContent += `<img src="${entry.dataUrl}" alt="${entry.alt || ""}" />`;
+          htmlContent += `<img src="${entry.dataUrl}" alt="${
+            entry.alt || ""
+          }" />`;
           htmlContent += `<p>&nbsp;&nbsp;&nbsp;</p>`;
         }
-      }
+      });
     }
 
-    // Update the HTML clipboard item with the full content
-    clipboardItems[0] = new ClipboardItem({ "text/html": new Blob([htmlContent], { type: "text/html" }) });
+    // Create a ClipboardItem with the HTML content
+    const blob = new Blob([htmlContent], { type: "text/html" });
+    const clipboardItem = new ClipboardItem({ "text/html": blob });
+    await navigator.clipboard.write([clipboardItem]);
 
-    // Write to clipboard
-    await navigator.clipboard.write(clipboardItems);
-
-    showToastMessage("Content copied to clipboard!");
+    showToastMessage("All content copied to clipboard!");
   } catch (error) {
     console.error("Error copying to clipboard:", error);
     alert("Failed to copy content to clipboard.");
+  }
+});
+
+
+document.getElementById("toClipBoard-figma").addEventListener("click", async () => {
+  try {
+    // Retrieve data from Chrome storage
+    const copyIcon = document.getElementById("copy-icon-default"); // Corrected ID
+    const copyIconComplete = document.getElementById("copy-icon-complete");
+  
+    // Show the "complete" icon temporarily
+    copyIconComplete.style.display = 'block';
+  
+    // Hide the "complete" icon and revert to the original one after 2 seconds
+    setTimeout(() => {
+      copyIconComplete.style.display = 'none';
+    }, 2000); // 2000ms = 2 seconds
+
+    const { clickLog } = await new Promise((resolve, reject) => {
+      chrome.storage.local.get(["clickLog"], (result) => {
+        if (chrome.runtime.lastError) {
+          reject(chrome.runtime.lastError);
+        } else {
+          resolve(result);
+        }
+      });
+    });
+
+    // Process click log entries for images
+    if (Array.isArray(clickLog)) {
+      for (const entry of clickLog) {
+        if (entry.dataUrl) {
+          // Create a canvas and draw the image from the dataUrl
+          const canvas = document.createElement("canvas");
+          const ctx = canvas.getContext("2d");
+
+          const image = new Image();
+          image.src = entry.dataUrl;
+
+          image.onload = () => {
+            // Set the canvas size to match the image dimensions
+            canvas.width = image.width;
+            canvas.height = image.height;
+
+            // Draw the image on the canvas
+            ctx.drawImage(image, 0, 0);
+
+            // Convert the canvas to a PNG Blob
+            canvas.toBlob(async (blob) => {
+              if (blob) {
+                // Write the PNG image to the clipboard
+                await navigator.clipboard.write([
+                  new ClipboardItem({ "image/png": blob })
+                ]);
+                showToastMessage("Images copied to clipboard!");
+              } else {
+                console.error("Failed to generate PNG from canvas");
+                alert("Failed to copy PNG to clipboard.");
+              }
+            }, "image/png");
+          };
+
+          image.onerror = () => {
+            console.error("Failed to load image from dataUrl");
+            alert("Failed to load image.");
+          };
+        }
+      }
+    }
+  } catch (error) {
+    console.error("Error copying PNG to clipboard:", error);
+    alert("Failed to copy PNG to clipboard.");
   }
 });
 
@@ -848,16 +716,16 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 });
 
 document.getElementById("clearLog").addEventListener("click", function () {
-    const confirmDelete = confirm(
-      "Are you sure you want to delete the log? This action is irreversible."
-    );
-    if (confirmDelete) {
-      // Clear the log and flowTitle
-      chrome.storage.local.set({ clickLog: [], flowTitle: "" }, function () {
-        displayLog([]); // Clear the displayed log
-        showToastMessage("Log and flow title cleared.");
-        chrome.runtime.sendMessage({ action: 'updatePanelFromFlow' });
-      chrome.tabs.getCurrent(tab => {
+  const confirmDelete = confirm(
+    "Are you sure you want to delete the log? This action is irreversible."
+  );
+  if (confirmDelete) {
+    // Clear the log and flowTitle
+    chrome.storage.local.set({ clickLog: [], flowTitle: "" }, function () {
+      displayLog([]); // Clear the displayed log
+      showToastMessage("Log and flow title cleared.");
+      chrome.runtime.sendMessage({ action: "updatePanelFromFlow" });
+      chrome.tabs.getCurrent((tab) => {
         if (tab) {
           chrome.tabs.remove(tab.id);
           showToastMessage("Current tab closed.");
@@ -865,9 +733,31 @@ document.getElementById("clearLog").addEventListener("click", function () {
           console.error("Failed to close the current tab.");
         }
       });
-      });
-    } else {
-      // Action was cancelled, no need to do anything
-      showToastMessage("Log deletion cancelled.");
-    }
-  });
+    });
+  } else {
+    // Action was cancelled, no need to do anything
+    showToastMessage("Log deletion cancelled.");
+  }
+});
+
+document.getElementById("option-btn").addEventListener("click", () => {
+  const dropdownMenu = document.getElementById("dropdownMenu");
+  dropdownMenu.style.display =
+    dropdownMenu.style.display === "block" ? "none" : "block";
+});
+// Close dropdown when clicking outside
+document.addEventListener("click", (event) => {
+  const dropdown = document.querySelector(".dropdown");
+  const dropdownMenu = document.getElementById("dropdownMenu");
+
+  if (!dropdown.contains(event.target)) {
+    dropdownMenu.style.display = "none";
+  }
+});
+
+// Hide dropdown menu when the mouse leaves the document
+document.addEventListener("mouseleave", () => {
+  const dropdownMenu = document.getElementById("dropdownMenu");
+  dropdownMenu.style.display = "none"; // Hide the dropdown menu
+});
+

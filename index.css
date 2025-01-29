@@ -11,12 +11,12 @@
   --color-destructive-hover: #cc444b;
 
   /* Success Colors */
-  --color-success-main: #30c57f;
+  --color-success-main: #208053;
   --color-success-hover: #186340;
 
   /* Neutral Colors */
   --color-black: #120425;
-  --color-white: #fdf9ff;
+  --color-white: #fefcff;
   --color-grey-lightest: #e7e4e9;
   --color-grey-light: #e4d4ed;
   --color-grey-mid: #73637c;
@@ -218,10 +218,12 @@ p {
   padding-right: 0.75rem;
   border-radius: 0;
   gap:0.5rem;
+  width: 100%;
 }
 .dropdown-menu-item svg {
   height: 1rem;
   width: 1rem;
+  fill: none;
 }
 
 .dropdown-menu-item:hover {
@@ -238,7 +240,11 @@ p {
   height: 2rem;
   padding: 0;
   font-size: 24px;
-  stroke: var(--color-primary-main);
+  border: none;
+}
+
+.ellipsis-btn:hover {
+  border: none;
 }
 
 .dropdown-menu {

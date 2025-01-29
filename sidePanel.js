@@ -242,7 +242,7 @@ function displayLog(clickLog) {
 
     listItem.addEventListener("dragend", () => {
       listItem.classList.remove("dragging");
-      chrome.runtime.sendMessage({ action: 'updateFlowFromPanel' });
+      chrome.runtime.sendMessage({ action: "updateFlowFromPanel" });
     });
 
     // UI Components
@@ -309,12 +309,12 @@ function displayLog(clickLog) {
     removeButton.textContent = "X";
 
     removeButton.addEventListener("click", () => {
-      const updatedLog = clickLogCopy.map(
-        (logEntry) => logEntry.id === entry.id ? { ...logEntry, isArchived: true } : logEntry
+      const updatedLog = clickLogCopy.map((logEntry) =>
+        logEntry.id === entry.id ? { ...logEntry, isArchived: true } : logEntry
       );
       chrome.storage.local.set({ clickLog: updatedLog }, () => {
         displayLog(updatedLog); // Re-render after removal
-        chrome.runtime.sendMessage({ action: 'updateFlowFromPanel' });
+        chrome.runtime.sendMessage({ action: "updateFlowFromPanel" });
       });
     });
 
@@ -359,7 +359,6 @@ document.getElementById("startRecording").addEventListener("click", () => {
   startRecording();
 });
 
-
 // Consolidated onMessage handler
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (!message || !message.action) {
@@ -399,7 +398,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     sendResponse({ status: "ok" });
   }
 });
-
 
 // Utility function to update the visibility and state of "Record" and "Pause" buttons
 function updateRecordingButtons({ recording = true }) {
@@ -460,7 +458,6 @@ document
     }
   });
 
-
 document.getElementById("clearLog").addEventListener("click", function () {
   const confirmDelete = confirm(
     "Are you sure you want to delete the log? This action is irreversible."
@@ -470,7 +467,7 @@ document.getElementById("clearLog").addEventListener("click", function () {
     chrome.storage.local.set({ clickLog: [], flowTitle: "" }, function () {
       displayLog([]); // Clear the displayed log
       showToastMessage("Log and flow title cleared.");
-      chrome.runtime.sendMessage({ action: 'updateFlowFromPanel' });
+      chrome.runtime.sendMessage({ action: "updateFlowFromPanel" });
     });
   } else {
     // Action was cancelled, no need to do anything
@@ -483,11 +480,11 @@ chrome.storage.local.get(["clickLog"], function (result) {
   displayLog(result.clickLog || []); // Ensure it's an array
 });
 
-
-document.getElementById('option-btn').addEventListener('click',()=>{
+document.getElementById("option-btn").addEventListener("click", () => {
   const dropdownMenu = document.getElementById("dropdownMenu");
-  dropdownMenu.style.display = dropdownMenu.style.display === "block" ? "none" : "block";
-})
+  dropdownMenu.style.display =
+    dropdownMenu.style.display === "block" ? "none" : "block";
+});
 
 // Close dropdown when clicking outside
 document.addEventListener("click", (event) => {
@@ -504,3 +501,6 @@ document.addEventListener("mouseleave", () => {
   const dropdownMenu = document.getElementById("dropdownMenu");
   dropdownMenu.style.display = "none"; // Hide the dropdown menu
 });
+
+
+

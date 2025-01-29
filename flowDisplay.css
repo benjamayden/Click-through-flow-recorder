@@ -12,11 +12,12 @@ body {
 main {
   max-width: 720px;
   width: 100%;
-  padding: 1rem;
+  padding: 2rem;
   box-sizing: border-box;
   background-color: var(--color-white);
   border: 1px solid var(--color-border-light);
   border-radius: 0.25rem;
+  min-height: 100vh;
 }
 
 .header {
@@ -103,6 +104,7 @@ background-color: var(--color-grey-lightest);
   flex-direction: column;
   padding-top: 1rem;
   padding-bottom: 1rem;
+  gap:2rem;
 }
 
 .archive-entry {
@@ -300,14 +302,6 @@ background: none;
   height: 132px !important;
 }
 
-button svg {
-  height: 1rem;
-  width: 1rem;
-  color: inherit;
-  /* Inherit the text color of the button */
-  fill: currentColor;
-  display: block;
-}
 
 .action,
 .addEntry {
@@ -422,4 +416,15 @@ input:checked + .slider .edit-icon {
 input:not(:checked) + .slider .view-icon {
   opacity: 1;
   transform: translate(-2rem, -0.45rem);
+}
+
+.copy-icon-complete{
+  display: none;
+  color: var(--color-success-main);
+}
+
+.dropdown-menu {min-width: 250px;}
+.button-label{
+  width: 100%;
+  justify-content: left;
 }
