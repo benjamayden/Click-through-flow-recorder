@@ -179,6 +179,12 @@ background-color: var(--color-grey-lightest);
   display: none;
 }
 
+.entry-action{
+  display: flex;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+}
 .placeholder {
   background-color: var(--color-white);
   border: dashed 2px var(--color-border-light);
@@ -215,14 +221,18 @@ background-color: var(--color-grey-lightest);
 
 .crop-button-container {
   display: flex;
-  position: absolute; 
-  left: 1rem;
-  top: -2rem;
-  transition: top 0.3s ease-in-out;
+  flex-direction: column;
+  position: absolute;
+  align-items: end;
+  gap:0.25rem;
+  flex-grow: 1;
+  right: -5rem;
+  top: 0.75rem;
+  transition: right 0.3s ease-in-out;
 }
 
 .image-container:hover .crop-button-container {
-  top: 1rem;
+  right: 0.75rem;
 }
 
 .container {
@@ -416,8 +426,7 @@ input:not(:checked) + .slider .view-icon {
   transform: translate(-2rem, -0.45rem);
 }
 
-.copy-icon-complete{
-  display: none;
+.complete{
   color: var(--color-success-main);
 }
 

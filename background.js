@@ -153,7 +153,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   } else if (message.action === "updateFlowFromPanel") {
     chrome.storage.local.get("flowDisplayTabId", function (result) {
       if (result.flowDisplayTabId) {
-        chrome.tabs.reload(result.flowDisplayTabId);
+        chrome.tabs.get(result.flowDisplayTabId, function(tab) {
+          if (tab) {
+            chrome.tabs.reload(result.flowDisplayTabId);
+          }
+        });
       }
     });
   } else if (message.action === "captureScreen") {
@@ -237,25 +241,6 @@ chrome.commands.onCommand.addListener(async (command) => {
   }
 });
 
-
-
-// async function openOrFocusOptionsTab() {
-//   const optionsUrl = chrome.runtime.getURL("options.html");
-
-//   // Query all currently open tabs
-//   const tabs = await chrome.tabs.query({});
-
-//   // Check if the options tab is already open
-//   const existingTab = tabs.find((tab) => tab.url === optionsUrl);
-
-//   if (existingTab) {
-//     // If the options tab exists, focus on it
-//     await chrome.tabs.update(existingTab.id, { active: true });
-//   } else {
-//     // If not, create a new tab for the options page
-//     await chrome.tabs.create({ url: optionsUrl });
-//   }
-// }
 
   chrome.contextMenus.create({
     id: "take-screenshot",
