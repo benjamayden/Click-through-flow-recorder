@@ -70,7 +70,10 @@ li.dragging {
   cursor: grabbing;
 }
 
-
+.actions{
+  display: flex;
+  gap:0.5rem;
+}
 
 .footer {
   position: sticky;
@@ -94,6 +97,11 @@ ul {
   flex-grow: 1;
 }
 
+.link{
+  display: flex;
+  gap: 0.125;
+  align-items: center;
+}
 
 li {
   display: flex;

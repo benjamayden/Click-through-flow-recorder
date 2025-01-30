@@ -126,6 +126,27 @@ function handleCaptureComplete(request) {
   toRemove.forEach((element) => element.classList.remove("highlight-stroke"));
 }
 
+// // Listen for changes in local storage
+// chrome.storage.onChanged.addListener((changes, area) => {
+//   if (area === "local" && changes.hasOwnProperty("isRecording")) {
+//     const newValue = changes.isRecording.newValue;
+
+//     // If isRecording changes to false, stop recording and remove 'highlight-stroke' class from all elements
+//     if (newValue === false) {
+//       toggleRecording(newValue);
+
+//       // Select all elements with the 'highlight-stroke' class
+//       const highlightedElements =
+//         document.querySelectorAll(".highlight-stroke");
+
+//       // Remove the class from each element
+//       highlightedElements.forEach((element) => {
+//         element.classList.remove("highlight-stroke");
+//       });
+//     }
+//   }
+// });
+
 // Listen for changes in local storage
 chrome.storage.onChanged.addListener((changes, area) => {
   if (area === "local" && changes.hasOwnProperty("isRecording")) {
@@ -136,16 +157,23 @@ chrome.storage.onChanged.addListener((changes, area) => {
       toggleRecording(newValue);
 
       // Select all elements with the 'highlight-stroke' class
-      const highlightedElements =
-        document.querySelectorAll(".highlight-stroke");
+      const highlightedElements = document.querySelectorAll(".highlight-stroke");
 
-      // Remove the class from each element
-      highlightedElements.forEach((element) => {
-        element.classList.remove("highlight-stroke");
-      });
+      // If highlighted elements exist, remove the class from each element
+      if (highlightedElements.length > 0) {
+        highlightedElements.forEach((element) => {
+          // Force reflow to make sure the styles are updated
+          element.offsetHeight;  // Trigger a reflow (this forces the browser to recalculate styles)
+          element.classList.remove("highlight-stroke");
+        });
+      } else {
+        console.log("No elements found with 'highlight-stroke' class.");
+      }
     }
   }
 });
+
+
 
 function handleGetHighlightedText(sendResponse) {
   // Get the first element with the class "highlight-stroke"
@@ -163,23 +191,26 @@ function handleGetHighlightedText(sendResponse) {
 
   // Determine the text content based on available properties
   if (highlightedElement.getAttribute("aria-label")) {
-    text = highlightedElement.getAttribute("aria-label");
+    text = highlightedElement.getAttribute("aria-label").split('\n')[0].trim(); // Get first line
   } else if (highlightedElement.textContent.trim() !== "") {
-    text = highlightedElement.textContent.trim();
+    text = highlightedElement.textContent.trim().split('\n')[0]; // Get first line
   } else if (
     highlightedElement.firstElementChild &&
     highlightedElement.firstElementChild.textContent.trim() !== ""
   ) {
-    text = highlightedElement.firstElementChild.textContent.trim();
+    text = highlightedElement.firstElementChild.textContent.trim().split('\n')[0]; // Get first line
   } else if (
     highlightedElement.parentElement &&
     highlightedElement.parentElement.textContent.trim() !== ""
   ) {
-    text = highlightedElement.parentElement.textContent.trim();
+    text = highlightedElement.parentElement.textContent.trim().split('\n')[0]; // Get first line
   } else {
     // Prompt user if no text can be extracted
     text = prompt("Please enter the text for this element:") || "";
   }
+
+  // Ensure only the first sentence is captured
+  text = text.split('. ')[0]; // Get the first sentence
 
   // Send the extracted or entered text
   sendResponse({ elementText: text });

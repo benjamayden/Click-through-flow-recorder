@@ -76,11 +76,23 @@ async function checkUrl() {
   return allowRecording;
 }
 // Listen for the panel closing
-chrome.runtime.onConnect.addListener((port) => {
+chrome.runtime.onConnect.addListener( async (port) => {
   if (port.name === "sidePanel") {
+    let isAllowed = await checkUrl();
+    if (isAllowed) {
+      // Get the active tab to refresh when needed
+      chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+        if (tabs[0]) {
+          currentTabId = tabs[0].id;
+          chrome.tabs.reload(currentTabId);
+        }
+      });
+    }
+
     port.onDisconnect.addListener(() => {
       console.log("Side panel was closed");
       if (isRecording) {
+      
         // Stop recording by updating storage
         chrome.storage.local.set({ isRecording: false }, () => {
           chrome.runtime.sendMessage({ action: "keyboard_pause" });
@@ -98,8 +110,6 @@ chrome.runtime.onConnect.addListener((port) => {
 
 // Listen for tab activation (switching tabs)
 chrome.tabs.onActivated.addListener((activeInfo) => {
-  const newTabId = activeInfo.tabId;
-
   // If we have a variable or a storage value that says we are recording:
   if (isRecording) {
     // Stop recording
@@ -108,14 +118,6 @@ chrome.tabs.onActivated.addListener((activeInfo) => {
       console.log("Recording stopped due to tab change.");
     });
   }
-
-  // Compare newTabId to what’s stored as flowDisplayTabId
-  chrome.storage.local.get("flowDisplayTabId", ({ flowDisplayTabId }) => {
-    if (flowDisplayTabId && newTabId === flowDisplayTabId) {
-      chrome.runtime.sendMessage({ action: "changeToBack" });
-      console.log("Navigated back to the flow display tab");
-    }
-  });
 });
 
 // Listen for tab updates (navigating or reloading)
@@ -139,63 +141,58 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
   }
 });
 
-// Listen for the panel opening and log message
-chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
-  if (message.action === "openPanel") {
-    let isAllowed = await checkUrl();
-    if (isAllowed) {
-      // Get the active tab to refresh when needed
-      chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-        if (tabs[0]) {
-          currentTabId = tabs[0].id;
-          chrome.tabs.reload(currentTabId);
-        }
-      });
-    }
-  }
-});
 
+// Listen for incoming messages
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.action === "openFlowDisplay") {
-    // Ensure handleFlowTab doesn't block the response
+    // Handle flow display logic
     handleFlowTab(message.previousTabId);
     sendResponse({ status: "Flow Display opened" });
-  } 
-
-  else if (message.action === "openOptions") {
+  } else if (message.action === "openOptions") {
     openOrFocusOptionsTab();
   } else if (message.action === "updateFlowFromPanel") {
-    chrome.storage.local.get(["flowDisplayTabId"], function (result) {
+    chrome.storage.local.get("flowDisplayTabId", function (result) {
       if (result.flowDisplayTabId) {
-        try {
-          chrome.tabs.reload(result.flowDisplayTabId);
-        } catch (err) {
-          console.log(err);
-        }
+        chrome.tabs.get(result.flowDisplayTabId, function(tab) {
+          if (tab) {
+            chrome.tabs.reload(result.flowDisplayTabId);
+          }
+        });
       }
     });
+  } else if (message.action === "captureScreen") {
+    chrome.tabs.captureVisibleTab(
+      null,
+      { format: "png", quality: 100 },
+      function (dataUrl) {
+        chrome.tabs.sendMessage(sender.tab.id, {
+          action: "captureComplete",
+          dataUrl: dataUrl,
+          newLogEntry: message.newLogEntry,
+        });
+      }
+    );
   }
 });
 
 // Function to handle the flow display tab logic
 function handleFlowTab(previousTabId) {
-  // Retrieve the ID of the flow display tab from local storage
   chrome.storage.local.get("flowDisplayTabId", function (data) {
     const existingTabId = data.flowDisplayTabId;
+    const expectedUrl = chrome.runtime.getURL("flowDisplay.html");
 
     if (existingTabId) {
-      // Check if the flow display tab is still valid
       chrome.tabs.get(existingTabId, function (tab) {
-        if (chrome.runtime.lastError || !tab) {
-          // If the tab is no longer valid, create a new flow display tab
+        if (chrome.runtime.lastError || !tab || tab.url !== expectedUrl) {
+          // Create new tab if invalid or URL doesn't match
           createFlowTab(previousTabId);
         } else {
-          // Activate the existing flow display tab
+          // Focus existing tab
           chrome.tabs.update(existingTabId, { active: true });
         }
       });
     } else {
-      // If no flow display tab exists, create a new one
+      // No tab exists, create a new one
       createFlowTab(previousTabId);
     }
   });
@@ -203,17 +200,31 @@ function handleFlowTab(previousTabId) {
 
 // Function to create a new flow display tab
 function createFlowTab(previousTabId) {
-  // Open a new tab with the URL for the flow display page
-  chrome.tabs.create(
-    { url: chrome.runtime.getURL("flowDisplay.html") },
-    function (newTab) {
-      // Save the new tab's ID as the flow display tab ID and store the previous tab ID
-      chrome.storage.local.set({
-        flowDisplayTabId: newTab.id,
-        previousTabId,
-      });
+  const flowDisplayUrl = chrome.runtime.getURL("flowDisplay.html");
+  chrome.tabs.create({ url: flowDisplayUrl, active: true }, function (newTab) {
+    chrome.storage.local.set({ flowDisplayTabId: newTab.id, previousTabId });
+  });
+}
+
+// Clean up storage when the flow display tab is closed
+chrome.tabs.onRemoved.addListener(function (tabId) {
+  chrome.storage.local.get("flowDisplayTabId", function (data) {
+    if (data.flowDisplayTabId === tabId) {
+      chrome.storage.local.remove("flowDisplayTabId");
     }
-  );
+  });
+});
+
+// Function to open or focus the options page
+function openOrFocusOptionsTab() {
+  const optionsPage = chrome.runtime.getURL("options.html");
+  chrome.tabs.query({ url: optionsPage }, function (tabs) {
+    if (tabs.length > 0) {
+      chrome.tabs.update(tabs[0].id, { active: true });
+    } else {
+      chrome.tabs.create({ url: optionsPage, active: true });
+    }
+  });
 }
 
 chrome.commands.onCommand.addListener(async (command) => {
@@ -230,40 +241,6 @@ chrome.commands.onCommand.addListener(async (command) => {
   }
 });
 
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if (message.action === "captureScreen") {
-    chrome.tabs.captureVisibleTab(
-      null,
-      { format: "png", quality: 100 },
-      function (dataUrl) {
-        // Send the captured image back to the content script
-        chrome.tabs.sendMessage(sender.tab.id, {
-          action: "captureComplete",
-          dataUrl: dataUrl,
-          newLogEntry: message.newLogEntry,
-        });
-      }
-    );
-  }
-});
-
-async function openOrFocusOptionsTab() {
-  const optionsUrl = chrome.runtime.getURL("options.html");
-
-  // Query all currently open tabs
-  const tabs = await chrome.tabs.query({});
-
-  // Check if the options tab is already open
-  const existingTab = tabs.find((tab) => tab.url === optionsUrl);
-
-  if (existingTab) {
-    // If the options tab exists, focus on it
-    await chrome.tabs.update(existingTab.id, { active: true });
-  } else {
-    // If not, create a new tab for the options page
-    await chrome.tabs.create({ url: optionsUrl });
-  }
-}
 
   chrome.contextMenus.create({
     id: "take-screenshot",
@@ -305,9 +282,6 @@ chrome.contextMenus.onClicked.addListener(async function (info, tab) {
 chrome.contextMenus.onClicked.addListener(function (info, tab) {
 if (info.menuItemId === "record-flow") {
     if (!isRecording) {
-      // 1. Open side panel (correctly)
-
-      // Open the side panel in the current window
       try{
       chrome.sidePanel.open({ windowId: tab.windowId });
       }catch(err){console.log(err)}
@@ -371,13 +345,4 @@ async function takeScreenShoot(isAllowed) {
   }
 }
 
-chrome.tabs.onActivated.addListener(function(activeInfo) {
-  chrome.storage.local.get("flowDisplayTabId", function(result) {
-    if (result.flowDisplayTabId === activeInfo.tabId) {
-      chrome.runtime.sendMessage({ action: "hideFlowButton" });
-    } else {
-      chrome.runtime.sendMessage({ action: "showFlowButton" });
-    }
-  });
-});
 

@@ -215,29 +215,10 @@ function renderLog() {
     });
     actionsContainer.appendChild(addEntryButton);
 
-    //----------------Archive---------------------//
-    // Remove button
-    const removeButton = document.createElement("button");
-    removeButton.className = "destructive-btn";
-    removeButton.textContent = "Remove";
-    removeButton.onclick = function () {
-      // Add the animation class
-      blockContainer.classList.add("remove");
-
-      // Wait for the animation to complete before archiving and re-rendering
-      setTimeout(() => {
-        entry.isArchived = true; // Mark entry as archived
-        saveClickLog(); // Save the updated click log
-        renderLog(); // Re-render active logs
-        renderArchivedLog(); // Re-render archived logs
-      }, 300); // Match the duration of the animation (0.3s)
-    };
-
-    actionsContainer.appendChild(removeButton);
-
     //--------------Image--------------------//
 
     if (entry.dataUrl && entry.dataUrl !== "") {
+      //----------------Entry Actions---------------------//
       // Create main container
       const imageContainer = document.createElement("div");
       imageContainer.className = "image-container";
@@ -249,14 +230,49 @@ function renderLog() {
       const cropArea = document.createElement("div");
       cropArea.className = "crop-area";
 
+      //----------------Crop---------------------//
       // Create crop button
       const cropButtonContainer = document.createElement("div");
       cropButtonContainer.className = "crop-button-container";
       const cropButton = document.createElement("button");
       cropButton.id = "crop-action";
-      cropButton.className = "secondary-btn";
-      cropButton.innerText = "Crop";
+      cropButton.className = "secondary-btn entry-action";
+      cropButton.setAttribute("aria-label", "Crop Image");
+
+      cropButton.appendChild(createCropIcon());
+
+      //cropButton.appendChild(document.createTextNode("Crop"));
       cropButtonContainer.appendChild(cropButton);
+
+      //----------------Copy---------------------//
+      const copyButton = document.createElement("button");
+      copyButton.id = "copy-action";
+      copyButton.className = "secondary-btn entry-action";
+      copyButton.setAttribute("aria-label", "Copy Image");
+      copyButton.appendChild(createClipboardPlusIcon());
+      //copyButton.appendChild(document.createTextNode("Copy"));
+      cropButtonContainer.appendChild(copyButton);
+
+      //----------------Archive---------------------//
+      // Remove button
+      const removeButton = document.createElement("button");
+      removeButton.className = "destructive-btn entry-action";
+      copyButton.setAttribute("aria-label", "archive section");
+      removeButton.onclick = function () {
+        // Add the animation class
+        blockContainer.classList.add("remove");
+
+        // Wait for the animation to complete before archiving and re-rendering
+        setTimeout(() => {
+          entry.isArchived = true; // Mark entry as archived
+          saveClickLog(); // Save the updated click log
+          renderLog(); // Re-render active logs
+          renderArchivedLog(); // Re-render archived logs
+        }, 300); // Match the duration of the animation (0.3s)
+      };
+      removeButton.appendChild(createArchiveBoxIcon());
+      //removeButton.appendChild(document.createTextNode("Archive"));
+      cropButtonContainer.appendChild(removeButton);
 
       // Add everything to the DOM
       imageContainer.appendChild(cropButtonContainer);
@@ -295,6 +311,19 @@ function renderLog() {
         ctx.drawImage(displayImage, 0, 0);
       };
 
+      copyButton.addEventListener("click", () => {
+        const copyIconComplete = document.getElementById("copy-action").firstChild;
+
+        // Show the "complete" icon temporarily
+        copyIconComplete.classList.add("complete");
+
+        // Hide the "complete" icon and revert to the original one after 2 seconds
+        setTimeout(() => {
+          copyIconComplete.classList.remove("complete");
+        }, 2000); // 2000ms = 2 seconds
+        const imageDataUrl = entry.dataUrl;
+        copyImageToClipboard(imageDataUrl);
+      });
       // Crop button click: re-load original image before cropping
       cropButton.addEventListener("click", () => {
         // Hide crop button
@@ -509,123 +538,6 @@ function renderArchivedLog() {
   });
 }
 
-// Drag and Drop functions
-let draggedItem = null;
-
-function dragStart(e) {
-  draggedItem = this;
-  // Add the hideOnDrag class to all elements to be hidden
-  document
-    .querySelectorAll(".image-container, .descriptionText, .action, .altText")
-    .forEach((el) => {
-      el.classList.add("hideOnDrag");
-      el.classList.add("animate");
-    });
-
-  document.querySelectorAll(".addEntryContainer").forEach((el) => {
-    el.style.pointerEvents = "none"; // Disable interaction
-  });
-
-  setTimeout(() => {
-    this.classList.add("draggable");
-  }, 0);
-}
-
-function dragOver(e) {
-  e.preventDefault();
-
-  // Ensure `draggedItem` is globally defined
-  if (!draggedItem) return;
-
-  // Get bounding box of the current element
-  const bounding = this.getBoundingClientRect();
-
-  // Calculate the midpoint of the current element
-  const midpoint = bounding.y + bounding.height / 2;
-
-  // Parent container for the log entries
-  const parent = this.parentNode;
-
-  // Dragged below the midpoint: place after current element
-  if (e.clientY > midpoint) {
-    if (this.nextSibling !== draggedItem) {
-      parent.insertBefore(draggedItem, this.nextSibling);
-    }
-  }
-  // Dragged above the midpoint: place before current element
-  else {
-    if (this !== draggedItem) {
-      parent.insertBefore(draggedItem, this);
-    }
-  }
-}
-
-function drop(e) {
-  e.preventDefault();
-
-  const parent = this.parentNode;
-  const siblings = Array.from(parent.children);
-  const draggedIndex = siblings.indexOf(draggedItem);
-  const targetIndex = siblings.indexOf(this);
-
-  if (draggedIndex < targetIndex) {
-    parent.insertBefore(draggedItem, this.nextSibling);
-    moveEntry(draggedIndex, targetIndex);
-  } else {
-    parent.insertBefore(draggedItem, this);
-    moveEntry(draggedIndex, targetIndex);
-  }
-  const reorderedIds = Array.from(
-    parent.querySelectorAll(".container.block")
-  ).map((block) => parseInt(block.dataset.id));
-  clickLog = reorderedIds.map((id) =>
-    clickLog.find((entry) => entry.id === id)
-  );
-  draggedItem.classList.remove("draggable");
-  saveClickLog();
-}
-
-function endDrag() {
-  // Restore visibility of elements
-  document
-    .querySelectorAll(".image-container, .descriptionText, .action, .altText")
-    .forEach((el) => {
-      el.classList.remove("hideOnDrag");
-      el.classList.remove("animate");
-    });
-  document.querySelectorAll(".addEntryContainer").forEach((el) => {
-    el.style.pointerEvents = "auto"; // Disable interaction
-  });
-}
-
-function moveEntry(fromIndex, toIndex) {
-  const entry = clickLog.splice(fromIndex, 1)[0];
-  clickLog.splice(toIndex, 0, entry);
-}
-
-document.getElementById("reorder").addEventListener("click", function () {
-  reorder = !reorder;
-  const reorderSpan = document.getElementById("reorderSpan");
-  const finishSpan = document.getElementById("finishedSpan");
-  renderLog();
-  if (reorder) {
-    dragStart();
-    finishSpan.style.display = "flex";
-    reorderSpan.style.display = "none";
-  } else {
-    endDrag();
-    finishSpan.style.display = "none";
-    reorderSpan.style.display = "flex";
-  }
-});
-
-// Set button text and functionality for returning to the previous tab
-document.getElementById("openFlow")?.addEventListener("click", function () {
-  // Send message to go back to the previous tab
-  chrome.runtime.sendMessage({ action: "goBack" });
-});
-
-// Function to check if log is empty and hide/show buttons accordingly
 function hideButtonsIfLogIsEmpty() {
   chrome.storage.local.get(["clickLog"], function (result) {
     const clickLog = result.clickLog || [];
@@ -644,45 +556,18 @@ function hideButtonsIfLogIsEmpty() {
   });
 }
 
-document
-  .getElementById("saveImages")
-  .addEventListener("click", async function () {
-    const logEntries = document.querySelectorAll(".log-entry"); // Select all log entries
-    const flowTitle = document.getElementById("flowTitle")
-      ? document.getElementById("flowTitle").textContent.trim()
-      : "Flow";
-
-    for (let entryIndex = 0; entryIndex < logEntries.length; entryIndex++) {
-      const entry = logEntries[entryIndex];
-      downloadImage(flowTitle, entry, entryIndex);
-    }
-  });
-
-function downloadImage(flowTitle, entry, entryIndex = 0) {
-  // Skip log entries with the class 'custom'
-  if (entry.classList.contains("custom")) {
-    return;
-  }
-
-  // Capture the image data from the canvas
-  const canvas = entry.querySelector("canvas");
-  if (canvas) {
-    const imageData = canvas.toDataURL("image/png");
-
-    // Create a filename for the saved image
-    const filename = `${flowTitle}_${entryIndex + 1}.png`;
-
-    // Create a link element to trigger the image download
-    const link = document.createElement("a");
-    link.href = imageData;
-    link.download = filename;
-    link.click();
-  }
-}
-
-
 document.getElementById("toClipBoard").addEventListener("click", async () => {
   try {
+    const copyIconComplete = document.getElementById("copy-icon");
+
+    // Show the "complete" icon temporarily
+    copyIconComplete.classList.add("complete");
+
+    // Hide the "complete" icon and revert to the original one after 2 seconds
+    setTimeout(() => {
+      copyIconComplete.classList.remove("complete");
+    }, 2000); // 2000ms = 2 seconds
+
     // Retrieve data from Chrome storage
     const { flowTitle, clickLog } = await new Promise((resolve, reject) => {
       chrome.storage.local.get(["flowTitle", "clickLog"], (result) => {
@@ -725,12 +610,57 @@ document.getElementById("toClipBoard").addEventListener("click", async () => {
     const clipboardItem = new ClipboardItem({ "text/html": blob });
     await navigator.clipboard.write([clipboardItem]);
 
-    showToastMessage("Content copied to clipboard!");
+    showToastMessage("All content copied to clipboard!");
   } catch (error) {
     console.error("Error copying to clipboard:", error);
     alert("Failed to copy content to clipboard.");
   }
 });
+
+async function copyImageToClipboard(imageDataUrl) {
+  try {
+    if (!imageDataUrl) {
+      showToastMessage("No image found to copy.");
+      return;
+    }
+
+    const image = new Image();
+    image.src = imageDataUrl;
+
+    image.onload = async () => {
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+
+      // Set canvas size to match image dimensions
+      canvas.width = image.width;
+      canvas.height = image.height;
+
+      // Draw image onto canvas
+      ctx.drawImage(image, 0, 0);
+
+      // Convert canvas to a PNG Blob
+      canvas.toBlob(async (blob) => {
+        if (blob) {
+          await navigator.clipboard.write([
+            new ClipboardItem({ "image/png": blob }),
+          ]);
+          showToastMessage("Image copied to clipboard!");
+        } else {
+          console.error("Failed to generate PNG from canvas");
+          alert("Failed to copy image.");
+        }
+      }, "image/png");
+    };
+
+    image.onerror = () => {
+      console.error("Failed to load image.");
+      alert("Failed to load image.");
+    };
+  } catch (error) {
+    console.error("Error copying image to clipboard:", error);
+    alert("Failed to copy image.");
+  }
+}
 
 chrome.storage.local.get(["clickLog"], function (result) {
   const logDiv = document.getElementById("log");
@@ -784,16 +714,16 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 });
 
 document.getElementById("clearLog").addEventListener("click", function () {
-    const confirmDelete = confirm(
-      "Are you sure you want to delete the log? This action is irreversible."
-    );
-    if (confirmDelete) {
-      // Clear the log and flowTitle
-      chrome.storage.local.set({ clickLog: [], flowTitle: "" }, function () {
-        displayLog([]); // Clear the displayed log
-        showToastMessage("Log and flow title cleared.");
-        chrome.runtime.sendMessage({ action: 'updatePanelFromFlow' });
-      chrome.tabs.getCurrent(tab => {
+  const confirmDelete = confirm(
+    "Are you sure you want to delete the log? This action is irreversible."
+  );
+  if (confirmDelete) {
+    // Clear the log and flowTitle
+    chrome.storage.local.set({ clickLog: [], flowTitle: "" }, function () {
+      displayLog([]); // Clear the displayed log
+      showToastMessage("Log and flow title cleared.");
+      chrome.runtime.sendMessage({ action: "updatePanelFromFlow" });
+      chrome.tabs.getCurrent((tab) => {
         if (tab) {
           chrome.tabs.remove(tab.id);
           showToastMessage("Current tab closed.");
@@ -801,9 +731,130 @@ document.getElementById("clearLog").addEventListener("click", function () {
           console.error("Failed to close the current tab.");
         }
       });
-      });
-    } else {
-      // Action was cancelled, no need to do anything
-      showToastMessage("Log deletion cancelled.");
-    }
+    });
+  } else {
+    // Action was cancelled, no need to do anything
+    showToastMessage("Log deletion cancelled.");
+  }
+});
+
+document.getElementById("option-btn").addEventListener("click", () => {
+  const dropdownMenu = document.getElementById("dropdownMenu");
+  dropdownMenu.style.display =
+    dropdownMenu.style.display === "block" ? "none" : "block";
+});
+// Close dropdown when clicking outside
+document.addEventListener("click", (event) => {
+  const dropdown = document.querySelector(".dropdown");
+  const dropdownMenu = document.getElementById("dropdownMenu");
+
+  if (!dropdown.contains(event.target)) {
+    dropdownMenu.style.display = "none";
+  }
+});
+
+// Hide dropdown menu when the mouse leaves the document
+document.addEventListener("mouseleave", () => {
+  const dropdownMenu = document.getElementById("dropdownMenu");
+  dropdownMenu.style.display = "none"; // Hide the dropdown menu
+});
+
+document.getElementById("download-png").addEventListener("click", () => {
+  batchDownloadImages();
+});
+
+function batchDownloadImages() {
+  const flowTitle =
+    document.getElementById("flowTitle").textContent.trim() || "Flow";
+  const canvases = document.querySelectorAll("canvas.imgElement");
+
+  if (canvases.length === 0) {
+    showToastMessage("No images found to download.");
+    return;
+  }
+
+  canvases.forEach((canvas, index) => {
+    canvas.toBlob((blob) => {
+      if (blob) {
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = `${flowTitle}-${index + 1}.png`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(link.href);
+      } else {
+        console.error(`Failed to generate PNG for canvas ${index + 1}`);
+      }
+    }, "image/png");
   });
+
+  showToastMessage("Images downloaded successfully!");
+}
+
+function createCropIcon() {
+  const svgNS = "http://www.w3.org/2000/svg";
+  const svg = document.createElementNS(svgNS, "svg");
+  svg.id = 'entry-copy-icon';
+  svg.setAttribute("width", "24");
+  svg.setAttribute("height", "24");
+  svg.setAttribute("viewBox", "0 0 24 24");
+  svg.setAttribute("fill", "none");
+
+  const path = document.createElementNS(svgNS, "path");
+  path.setAttribute(
+    "d",
+    "M10 6H14.8C15.9201 6 16.4802 6 16.908 6.21799C17.2843 6.40973 17.5903 6.71569 17.782 7.09202C18 7.51984 18 8.07989 18 9.2V14M2 6H6M18 18V22M22 18L9.2 18C8.07989 18 7.51984 18 7.09202 17.782C6.71569 17.5903 6.40973 17.2843 6.21799 16.908C6 16.4802 6 15.9201 6 14.8V2"
+  );
+  path.setAttribute("stroke", "currentColor");
+  path.setAttribute("stroke-width", "2");
+  path.setAttribute("stroke-linecap", "round");
+  path.setAttribute("stroke-linejoin", "round");
+
+  svg.appendChild(path);
+  return svg;
+}
+
+function createArchiveBoxIcon() {
+  const svgNS = "http://www.w3.org/2000/svg";
+  const svg = document.createElementNS(svgNS, "svg");
+  svg.setAttribute("width", "24");
+  svg.setAttribute("height", "24");
+  svg.setAttribute("viewBox", "0 0 24 24");
+  svg.setAttribute("fill", "none");
+
+  const path = document.createElementNS(svgNS, "path");
+  path.setAttribute(
+    "d",
+    "M20.5 8V16.2C20.5 17.8802 20.5 18.7202 20.173 19.362C19.8854 19.9265 19.4265 20.3854 18.862 20.673C18.2202 21 17.3802 21 15.7 21H8.3C6.61984 21 5.77976 21 5.13803 20.673C4.57354 20.3854 4.1146 19.9265 3.82698 19.362C3.5 18.7202 3.5 17.8802 3.5 16.2V8M3.6 3H20.4C20.9601 3 21.2401 3 21.454 3.10899C21.6422 3.20487 21.7951 3.35785 21.891 3.54601C22 3.75992 22 4.03995 22 4.6V6.4C22 6.96005 22 7.24008 21.891 7.45399C21.7951 7.64215 21.6422 7.79513 21.454 7.89101C21.2401 8 20.9601 8 20.4 8H3.6C3.03995 8 2.75992 8 2.54601 7.89101C2.35785 7.79513 2.20487 7.64215 2.10899 7.45399C2 7.24008 2 6.96005 2 6.4V4.6C2 4.03995 2 3.75992 2.10899 3.54601C2.20487 3.35785 2.35785 3.20487 2.54601 3.10899C2.75992 3 3.03995 3 3.6 3ZM9.6 11.5H14.4C14.9601 11.5 15.2401 11.5 15.454 11.609C15.6422 11.7049 15.7951 11.8578 15.891 12.046C16 12.2599 16 12.5399 16 13.1V13.9C16 14.4601 16 14.7401 15.891 14.954C15.7951 15.1422 15.6422 15.2951 15.454 15.391C15.2401 15.5 14.9601 15.5 14.4 15.5H9.6C9.03995 15.5 8.75992 15.5 8.54601 15.391C8.35785 15.2951 8.20487 15.1422 8.10899 14.954C8 14.7401 8 14.4601 8 13.9V13.1C8 12.5399 8 12.2599 8.10899 12.046C8.20487 11.8578 8.35785 11.7049 8.54601 11.609C8.75992 11.5 9.03995 11.5 9.6 11.5Z"
+  );
+  path.setAttribute("stroke", "currentColor");
+  path.setAttribute("stroke-width", "2");
+  path.setAttribute("stroke-linecap", "round");
+  path.setAttribute("stroke-linejoin", "round");
+
+  svg.appendChild(path);
+  return svg;
+}
+
+function createClipboardPlusIcon() {
+  const svgNS = "http://www.w3.org/2000/svg";
+  const svg = document.createElementNS(svgNS, "svg");
+  svg.setAttribute("width", "24");
+  svg.setAttribute("height", "24");
+  svg.setAttribute("viewBox", "0 0 24 24");
+  svg.setAttribute("fill", "none");
+
+  const path = document.createElementNS(svgNS, "path");
+  path.setAttribute(
+    "d",
+    "M16 4C16.93 4 17.395 4 17.7765 4.10222C18.8117 4.37962 19.6204 5.18827 19.8978 6.22354C20 6.60504 20 7.07003 20 8V17.2C20 18.8802 20 19.7202 19.673 20.362C19.3854 20.9265 18.9265 21.3854 18.362 21.673C17.7202 22 16.8802 22 15.2 22H8.8C7.11984 22 6.27976 22 5.63803 21.673C5.07354 21.3854 4.6146 20.9265 4.32698 20.362C4 19.7202 4 18.8802 4 17.2V8C4 7.07003 4 6.60504 4.10222 6.22354C4.37962 5.18827 5.18827 4.37962 6.22354 4.10222C6.60504 4 7.07003 4 8 4M12 17V11M9 14H15M9.6 6H14.4C14.9601 6 15.2401 6 15.454 5.89101C15.6422 5.79513 15.7951 5.64215 15.891 5.45399C16 5.24008 16 4.96005 16 4.4V3.6C16 3.03995 16 2.75992 15.891 2.54601C15.7951 2.35785 15.6422 2.20487 15.454 2.10899C15.2401 2 14.9601 2 14.4 2H9.6C9.03995 2 8.75992 2 8.54601 2.10899C8.35785 2.20487 8.20487 2.35785 8.10899 2.54601C8 2.75992 8 3.03995 8 3.6V4.4C8 4.96005 8 5.24008 8.10899 5.45399C8.20487 5.64215 8.35785 5.79513 8.54601 5.89101C8.75992 6 9.03995 6 9.6 6Z"
+  );
+  path.setAttribute("stroke", "currentColor");
+  path.setAttribute("stroke-width", "2");
+  path.setAttribute("stroke-linecap", "round");
+  path.setAttribute("stroke-linejoin", "round");
+
+  svg.appendChild(path);
+  return svg;
+}

@@ -143,12 +143,7 @@ function showToastMessage(message, clickableElement = null, onClick = null) {
   }, 5000); // Total time for the toast (3 seconds + 2 seconds delay)
 }
 
-// Notify the background script when the panel opens
-chrome.runtime.sendMessage({ action: "openPanel" });
-
 const port = chrome.runtime.connect({ name: "sidePanel" });
-
-
 
 function getShortenedText(text) {
   const words = text.split(/\s+/);
@@ -185,16 +180,11 @@ function displayLog(clickLog) {
 
   if (clickLog.length === 0) {
     logDiv.textContent = "No logs recorded.";
-    document.getElementById("clearLog").style.display = "none";
-    document.getElementById("flow-buttons").style.display = "none";
     return;
   } else if (nonArchivedLogs.length === 0) {
     logDiv.textContent = "Archived logs only";
     return;
   }
-
-  document.getElementById("clearLog").style.display = "flex";
-  document.getElementById("flow-buttons").style.display = "flex";
 
   const uniqueIds = new Set();
   let dragStartIndex;
@@ -252,7 +242,7 @@ function displayLog(clickLog) {
 
     listItem.addEventListener("dragend", () => {
       listItem.classList.remove("dragging");
-      chrome.runtime.sendMessage({ action: 'updateFlowFromPanel' });
+      chrome.runtime.sendMessage({ action: "updateFlowFromPanel" });
     });
 
     // UI Components
@@ -319,12 +309,12 @@ function displayLog(clickLog) {
     removeButton.textContent = "X";
 
     removeButton.addEventListener("click", () => {
-      const updatedLog = clickLogCopy.map(
-        (logEntry) => logEntry.id === entry.id ? { ...logEntry, isArchived: true } : logEntry
+      const updatedLog = clickLogCopy.map((logEntry) =>
+        logEntry.id === entry.id ? { ...logEntry, isArchived: true } : logEntry
       );
       chrome.storage.local.set({ clickLog: updatedLog }, () => {
         displayLog(updatedLog); // Re-render after removal
-        chrome.runtime.sendMessage({ action: 'updateFlowFromPanel' });
+        chrome.runtime.sendMessage({ action: "updateFlowFromPanel" });
       });
     });
 
@@ -369,7 +359,6 @@ document.getElementById("startRecording").addEventListener("click", () => {
   startRecording();
 });
 
-
 // Consolidated onMessage handler
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (!message || !message.action) {
@@ -400,14 +389,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       });
       break;
 
-    case "hideFlowButton":
-      document.getElementById("openFlow").style.display = "none";
-      break;
-
-    case "showFlowButton":
-      document.getElementById("openFlow").style.display = "flex";
-      break;
-
     default:
       console.warn("Unhandled message action:", message.action);
   }
@@ -417,7 +398,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     sendResponse({ status: "ok" });
   }
 });
-
 
 // Utility function to update the visibility and state of "Record" and "Pause" buttons
 function updateRecordingButtons({ recording = true }) {
@@ -478,7 +458,6 @@ document
     }
   });
 
-
 document.getElementById("clearLog").addEventListener("click", function () {
   const confirmDelete = confirm(
     "Are you sure you want to delete the log? This action is irreversible."
@@ -488,7 +467,7 @@ document.getElementById("clearLog").addEventListener("click", function () {
     chrome.storage.local.set({ clickLog: [], flowTitle: "" }, function () {
       displayLog([]); // Clear the displayed log
       showToastMessage("Log and flow title cleared.");
-      chrome.runtime.sendMessage({ action: 'updateFlowFromPanel' });
+      chrome.runtime.sendMessage({ action: "updateFlowFromPanel" });
     });
   } else {
     // Action was cancelled, no need to do anything
@@ -499,6 +478,28 @@ document.getElementById("clearLog").addEventListener("click", function () {
 // Load and display the click log when the side panel opens
 chrome.storage.local.get(["clickLog"], function (result) {
   displayLog(result.clickLog || []); // Ensure it's an array
+});
+
+document.getElementById("option-btn").addEventListener("click", () => {
+  const dropdownMenu = document.getElementById("dropdownMenu");
+  dropdownMenu.style.display =
+    dropdownMenu.style.display === "block" ? "none" : "block";
+});
+
+// Close dropdown when clicking outside
+document.addEventListener("click", (event) => {
+  const dropdown = document.querySelector(".dropdown");
+  const dropdownMenu = document.getElementById("dropdownMenu");
+
+  if (!dropdown.contains(event.target)) {
+    dropdownMenu.style.display = "none";
+  }
+});
+
+// Hide dropdown menu when the mouse leaves the document
+document.addEventListener("mouseleave", () => {
+  const dropdownMenu = document.getElementById("dropdownMenu");
+  dropdownMenu.style.display = "none"; // Hide the dropdown menu
 });
 
 
