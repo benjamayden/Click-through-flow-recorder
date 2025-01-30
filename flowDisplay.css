@@ -1,0 +1,437 @@
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  justify-content: center;
+  align-items: start;
+  height: 100vh;
+  background-color: var(--color-white);
+}
+
+main {
+  max-width: 720px;
+  width: 100%;
+  padding: 2rem;
+  box-sizing: border-box;
+  background-color: var(--color-white);
+  min-height: 100vh;
+}
+
+.header {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.125rem;
+  background-color: var(--color-white);
+  padding-top: 0.75rem;
+  padding-bottom: 0.75rem;
+}
+
+.footer {
+  position: sticky;
+  bottom: 0rem;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  background-color: var(--color-white);
+  padding-top: 1rem;
+  padding-bottom: 3.5rem;
+  z-index: 100;
+  border-top: 1px solid var(--color-border-light);
+}
+
+
+
+body .print-image {
+  display: flex;
+  width: 100%;
+  height: auto;
+}
+
+.subinfo {
+  font-size: 12px;
+  color: var(--color-border-dark);
+  margin: 0;
+}
+
+.archive-entry h3 {
+  display: flex;
+  width: 100%;
+  /* or a fixed width like 300px if you want a specific limit */
+  white-space: nowrap;
+  /* Prevent text from wrapping */
+  overflow: hidden;
+  /* Hide overflow content */
+  text-overflow: ellipsis;
+  /* Display '...' when content overflows */
+  font-size: 1.125rem;
+  padding: 0.25rem;
+  border: 1px solid transparent;
+  border-radius: 0.25rem;
+  cursor: default;
+  font-weight: 400;
+  margin: 0;
+  color: var(--color-grey-mid);
+}
+
+h1,
+.headerText,
+.descriptionText,
+.altText{
+outline: none;
+min-height: 0.9rem;
+}
+.descriptionText{
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 16px;
+}
+
+h1:focus,
+.headerText:focus,
+.descriptionText:focus,
+.altText:focus{
+background-color: var(--color-grey-lightest);
+}
+
+
+.logList {
+  display: flex;
+  flex-direction: column;
+  padding-top: 1rem;
+  padding-bottom: 1rem;
+  gap:2rem;
+}
+
+.archive-entry {
+  display: flex;
+  padding: 0.25rem;
+  border-radius: 0.5rem;
+  color: var(--color-grey-dark);
+  background-color: var(--color-border-light);
+}
+
+
+.log-entry,
+.archive-entry {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.25rem;
+  box-sizing: border-box;
+  transition: all 0.3s ease;
+  overflow: hidden;
+}
+
+.archive-entry {
+  margin-bottom: 0.5rem;
+  background-color: var(--color-white);
+  color: var(--color-border-dark);
+  border: 1px solid var(--color-border-dark);
+}
+
+@keyframes shrink {
+  from {
+    max-height: 2000px;
+    opacity: 1;
+  }
+
+  to {
+    max-height: 0;
+    opacity: 0;
+  }
+}
+
+.editing {
+  display: flex;
+  align-items: center;
+  justify-items: center;
+  color: var(--color-primary-main);
+  opacity: 1;
+}
+
+.editing.remove {
+  animation: shrink 0.3s ease-out forwards;
+  transform-origin: top;
+}
+
+.block {
+  gap: 0;
+  overflow: hidden;
+  max-height: 2000px;
+  transition: max-height 0.3s ease-out, opacity 0.3s ease-out;
+  opacity: 1;
+  position: relative;
+}
+
+/* Triggering the shrink animation when an element is being removed */
+.block.remove {
+  animation: shrink 0.3s ease-out forwards;
+  transform-origin: top;
+  /* Shrink from the top */
+}
+
+.hideOnDrag {
+  height: 0 !important;
+  visibility: hidden !important;
+  transition: height 0.3s ease, visibility 0.3s ease;
+  display: none;
+}
+
+.entry-action{
+  display: flex;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+}
+.placeholder {
+  background-color: var(--color-white);
+  border: dashed 2px var(--color-border-light);
+  width: 100%;
+  transition: height 0.3s ease;
+}
+
+.log-entry img,
+.log-entry p,
+.log-entry button {
+  transition: height 0.3s ease, visibility 0.3s ease;
+}
+
+
+.image-container{
+  width: 100%;
+  height: auto;
+  margin-top: 5px;
+  border-radius: 0.125rem;
+  position: relative;
+  display:flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.crop-area {
+  position: absolute;
+  border: 2px dashed var(--color-primary-dark);
+  background-color: var(--color-primary-main);
+  opacity: 0.45;
+  pointer-events: none;
+  display: none;
+}
+
+.crop-button-container {
+  display: flex;
+  flex-direction: column;
+  position: absolute;
+  align-items: end;
+  gap:0.25rem;
+  flex-grow: 1;
+  right: -5rem;
+  top: 0.75rem;
+  transition: right 0.3s ease-in-out;
+}
+
+.image-container:hover .crop-button-container {
+  right: 0.75rem;
+}
+
+.container {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.content {
+  font-size: 16px;
+}
+
+.subInfo {
+  flex-direction: row;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.group {
+  gap: 0.125rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.help {
+  flex-direction: row;
+  align-items: center;
+}
+
+/* Draggable styling */
+.container.draggable {
+  cursor: grab;
+  opacity: 0.5;
+  transform: translateX(32px);
+  width: 96%;
+}
+
+/* Archived section */
+#archived {
+  margin-top: 2rem;
+  margin-bottom: 2rem;
+}
+
+.hidden {
+  display: none;
+}
+
+/* Edit mode styling */
+.editable {
+width: 100%;
+border: none;
+background: none;
+}
+
+.addEntryContainer {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 0.5rem;
+  border: 0;
+  opacity: 0;
+  transition: height 0.5s ease, opacity 0.5s ease;
+  overflow: hidden;
+  position: relative;
+}
+
+.addEntryContainer.canAdd:hover {
+  height: 3rem;
+  opacity: 1;
+}
+
+.growNewEntry {
+  height: 132px !important;
+}
+
+
+.action,
+.addEntry {
+  position: absolute;
+  display: flex;
+  flex-direction: row;
+  gap: 0.5rem;
+  height: 2rem;
+  width: fit-content;
+}
+
+span {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+/* The switch - the outer container */
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 6rem;
+  height: 2rem;
+}
+
+/* Hide the default HTML checkbox */
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+/* The slider */
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: var(--color-border-light);
+  transition: 0.4s;
+}
+
+/* The circle inside the slider */
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 1.5rem;
+  width: 1.5rem;
+  left: 4px;
+  bottom: 4px;
+  background-color: var(--color-white);
+  transition: 0.4s;
+  z-index: 2;
+}
+
+/* When the checkbox is checked, move the slider */
+input:checked + .slider {
+  background-color: var(--color-primary-main);
+}
+
+/* Move the circle when checked */
+input:checked + .slider:before {
+  transform: translateX(4rem);
+}
+
+/* Rounded slider */
+.slider.round {
+  border-radius: 1rem;
+}
+
+.slider.round:before {
+  border-radius: 50%;
+}
+
+.toggle-label {
+  position: absolute;
+  font-size: 0.8rem;
+  top: 50%;
+  left: 38px;
+  transform: translateY(-50%);
+  z-index: 1;
+  transition: 0.4s;
+}
+
+.toggle-label.right {
+  left: 16px;
+  color: var(--color-white);
+}
+
+.view-icon,
+.edit-icon {
+  position: absolute;
+  font-size: 0.8rem;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 3;
+  opacity: 0;
+  width: 0.95rem;
+  height: 0.95rem;
+  transition: 0.4s;
+}
+
+input:checked + .slider .edit-icon {
+  opacity: 1;
+  transform: translate(2rem, -0.5rem);
+}
+
+input:not(:checked) + .slider .view-icon {
+  opacity: 1;
+  transform: translate(-2rem, -0.45rem);
+}
+
+.complete{
+  color: var(--color-success-main);
+}
+
+.dropdown-menu {min-width: 250px;}
+.button-label{
+  width: 100%;
+  justify-content: left;
+}
