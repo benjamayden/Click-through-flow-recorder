@@ -126,26 +126,6 @@ function handleCaptureComplete(request) {
   toRemove.forEach((element) => element.classList.remove("highlight-stroke"));
 }
 
-// // Listen for changes in local storage
-// chrome.storage.onChanged.addListener((changes, area) => {
-//   if (area === "local" && changes.hasOwnProperty("isRecording")) {
-//     const newValue = changes.isRecording.newValue;
-
-//     // If isRecording changes to false, stop recording and remove 'highlight-stroke' class from all elements
-//     if (newValue === false) {
-//       toggleRecording(newValue);
-
-//       // Select all elements with the 'highlight-stroke' class
-//       const highlightedElements =
-//         document.querySelectorAll(".highlight-stroke");
-
-//       // Remove the class from each element
-//       highlightedElements.forEach((element) => {
-//         element.classList.remove("highlight-stroke");
-//       });
-//     }
-//   }
-// });
 
 // Listen for changes in local storage
 chrome.storage.onChanged.addListener((changes, area) => {
