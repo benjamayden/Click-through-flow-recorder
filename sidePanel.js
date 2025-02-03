@@ -406,10 +406,10 @@ function updateRecordingButtons({ recording = true }) {
   const instructions = document.getElementById("instructions"); // Instructions for shortcut
 
   // Set the correct keyboard shortcut based on the OS
-  let text = "Ctrl";
+  let text = "Command";
   chrome.runtime.getPlatformInfo(function (info) {
-    if (info.os === "mac") {
-      text = "Command";
+    if (info.os === "win") {
+      text = "Ctrl";
     }
   });
   const shortCutButtons = Array.from(

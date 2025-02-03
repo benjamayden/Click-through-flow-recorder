@@ -13,8 +13,8 @@
   "commands": {
     "take_screenshot": {
       "suggested_key": {
-        "default": "Ctrl+Shift+E",
-        "mac": "Command+Shift+E"
+        "default": "Ctrl+Shift+K",
+        "mac": "Command+Shift+K"
       },
       "description": "Take a screenshot of the current tab"
     },
