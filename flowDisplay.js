@@ -60,7 +60,7 @@ function showToastMessage(message, clickableElement = null, onClick = null) {
 
 document.getElementById("flowTitle").addEventListener("blur", function () {
   const flowTitle = this.textContent.trim();
-  chrome.storage.local.set({ flowTitle }, function () {});
+  chrome.storage.local.set({ flowTitle }, function () { });
 });
 
 // Load click log from storage
@@ -89,7 +89,7 @@ function loadClickLog() {
 
 // Save click log to storage
 function saveClickLog() {
-  chrome.storage.local.set({ clickLog, archivedLog }, function () {});
+  chrome.storage.local.set({ clickLog, archivedLog }, function () { });
   chrome.runtime.sendMessage({ action: "updatePanelFromFlow" });
 
   const isEditingText = document.getElementById("isEditingText");
@@ -324,139 +324,213 @@ function renderLog() {
         const imageDataUrl = entry.dataUrl;
         copyImageToClipboard(imageDataUrl);
       });
-      // Crop button click: re-load original image before cropping
+
       cropButton.addEventListener("click", () => {
-        // Hide crop button
+
+
+        // Hide the normal crop/clipboard/archive actions
         cropButtonContainer.style.display = "none";
         imageContainer.style.cursor = "crosshair";
+
+        // Create a new container for the tick (apply) and cross (cancel) buttons
+        const confirmContainer = document.createElement("div");
+        confirmContainer.className = "confirm-button-container";
+
+        const tickButton = document.createElement("button");
+        tickButton.className = "secondary-btn entry-action";
+        tickButton.setAttribute("aria-label", "Apply Crop");
+        tickButton.appendChild(createTickIcon());
+
+        const crossButton = document.createElement("button");
+        crossButton.className = "destructive-btn entry-action";
+        crossButton.setAttribute("aria-label", "Cancel Crop");
+        crossButton.appendChild(createCrossIcon());
+
+        confirmContainer.appendChild(tickButton);
+        confirmContainer.appendChild(crossButton);
+        // Insert the confirm buttons above (or before) the canvas
+        imageContainer.insertBefore(confirmContainer, canvasElement);
+
+
+
+        
+        // Load the original image for cropping
         const originalImage = new Image();
-        originalImage.src = entry.originalImage; // Wipe dataUrl and load original
-
+        originalImage.src = entry.originalImage; // make sure this is set appropriately
         originalImage.onload = () => {
-          // Clear canvas before drawing
-          ctx.clearRect(0, 0, canvasElement.width, canvasElement.height);
 
-          // Set canvas to original size
+          // Clear canvas and set canvas dimensions to the original image dimensions
+          ctx.clearRect(0, 0, canvasElement.width, canvasElement.height);
           canvasElement.width = originalImage.width;
           canvasElement.height = originalImage.height;
-
-          // Fit the displayed canvas to container
+          // Adjust display style (e.g., to fit the container)
           const containerRect = imageContainer.getBoundingClientRect();
           const ratio = Math.min(
             containerRect.width / originalImage.width,
             containerRect.height / originalImage.height
           );
-          const displayWidth = originalImage.width * ratio;
-          const displayHeight = originalImage.height * ratio;
-          canvasElement.style.width = `100%`;
-          canvasElement.style.height = `auto`;
-
+          canvasElement.style.width = `${originalImage.width * ratio}px`;
+          canvasElement.style.height = `${originalImage.height * ratio}px`;
           // Draw the full original image
           ctx.drawImage(originalImage, 0, 0);
+        };
 
-          // Reset crop coords
+        // Variables to hold crop coordinates
+        let isDragging = false;
+        let cropStart = { x: 0, y: 0 };
+        let cropEnd = { x: 0, y: 0 };
+
+        // mousedown: start drawing the crop overlay
+        const onMouseDown = (e) => {
+          isDragging = true;
+          const rect = canvasElement.getBoundingClientRect();
+          cropStart.x = (e.clientX - rect.left) * (originalImage.width / rect.width);
+          cropStart.y = (e.clientY - rect.top) * (originalImage.height / rect.height);
+          // Position the crop area overlay
+          cropArea.style.left = `${e.clientX - rect.left}px`;
+          cropArea.style.top = `${e.clientY - rect.top}px`;
+          cropArea.style.width = "0px";
+          cropArea.style.height = "0px";
+          cropArea.style.display = "block";
+        };
+
+        // mousemove: update crop overlay dimensions while dragging
+        const onMouseMove = (e) => {
+          if (!isDragging) return;
+          const rect = canvasElement.getBoundingClientRect();
+          cropEnd.x = (e.clientX - rect.left) * (originalImage.width / rect.width);
+          cropEnd.y = (e.clientY - rect.top) * (originalImage.height / rect.height);
+
+          const left = Math.min(cropStart.x, cropEnd.x) / (originalImage.width / rect.width);
+          const top = Math.min(cropStart.y, cropEnd.y) / (originalImage.height / rect.height);
+          const width = Math.abs(cropEnd.x - cropStart.x) / (originalImage.width / rect.width);
+          const height = Math.abs(cropEnd.y - cropStart.y) / (originalImage.height / rect.height);
+
+          cropArea.style.left = `${left}px`;
+          cropArea.style.top = `${top}px`;
+          cropArea.style.width = `${width - 2}px`;
+          cropArea.style.height = `${height - 2}px`;
+        };
+
+        // mouseup: simply end dragging (stop resizing the overlay)
+        const onMouseUp = () => {
+          if (!isDragging) return;
           isDragging = false;
-          cropStart = { x: 0, y: 0 };
-          cropEnd = { x: 0, y: 0 };
+          // (Keep cropArea visible so user can see the selection until they click tick/cross)
+        };
 
-          // mousedown: start the crop box
-          canvasElement.addEventListener("mousedown", (e) => {
-            isDragging = true;
-            const rect = canvasElement.getBoundingClientRect();
-            cropStart.x =
-              (e.clientX - rect.left) * (originalImage.width / rect.width);
-            cropStart.y =
-              (e.clientY - rect.top) * (originalImage.height / rect.height);
+        // Attach the mouse events
+        canvasElement.addEventListener("mousedown", onMouseDown);
+        canvasElement.addEventListener("mousemove", onMouseMove);
+        canvasElement.addEventListener("mouseup", onMouseUp);
 
-            // Position the crop area overlay
-            cropArea.style.left = `${e.clientX - rect.left}px`;
-            cropArea.style.top = `${e.clientY - rect.top}px`;
-            cropArea.style.width = "0px";
-            cropArea.style.height = "0px";
-            cropArea.style.display = "block";
-          });
+        // Tick button: apply the crop
+        tickButton.addEventListener("click", () => {
+          cropArea.style.display = "none";
+          // Remove mouse event listeners so that cropping is no longer active
+          canvasElement.removeEventListener("mousedown", onMouseDown);
+          canvasElement.removeEventListener("mousemove", onMouseMove);
+          canvasElement.removeEventListener("mouseup", onMouseUp);
 
-          // mousemove: resize the crop box
-          canvasElement.addEventListener("mousemove", (e) => {
-            if (!isDragging) return;
-            const rect = canvasElement.getBoundingClientRect();
-            cropEnd.x =
-              (e.clientX - rect.left) * (originalImage.width / rect.width);
-            cropEnd.y =
-              (e.clientY - rect.top) * (originalImage.height / rect.height);
+          // Compute crop dimensions
+          const cropX = Math.min(cropStart.x, cropEnd.x);
+          const cropY = Math.min(cropStart.y, cropEnd.y);
+          const cropWidth = Math.abs(cropEnd.x - cropStart.x);
+          const cropHeight = Math.abs(cropEnd.y - cropStart.y);
 
-            const left =
-              Math.min(cropStart.x, cropEnd.x) /
-              (originalImage.width / rect.width);
-            const top =
-              Math.min(cropStart.y, cropEnd.y) /
-              (originalImage.height / rect.height);
-            const width =
-              Math.abs(cropEnd.x - cropStart.x) /
-              (originalImage.width / rect.width);
-            const height =
-              Math.abs(cropEnd.y - cropStart.y) /
-              (originalImage.height / rect.height);
-
-            // Update crop area overlay in the DOM
-            cropArea.style.left = `${left}px`;
-            cropArea.style.top = `${top}px`;
-            cropArea.style.width = `${width - 2}px`;
-            cropArea.style.height = `${height - 2}px`;
-          });
-
-          // mouseup: finalise crop
-          canvasElement.addEventListener("mouseup", () => {
-            if (!isDragging) return;
-            isDragging = false;
-            cropArea.style.display = "none";
-
-            const cropWidth = Math.abs(cropEnd.x - cropStart.x);
-            const cropHeight = Math.abs(cropEnd.y - cropStart.y);
-            const cropX = Math.min(cropStart.x, cropEnd.x);
-            const cropY = Math.min(cropStart.y, cropEnd.y);
-
-            // Create a new canvas for the cropped region
-            const croppedCanvas = document.createElement("canvas");
-            const croppedCtx = croppedCanvas.getContext("2d");
-            croppedCanvas.width = cropWidth;
-            croppedCanvas.height = cropHeight;
-
-            // Draw the cropped area
-            croppedCtx.drawImage(
-              originalImage,
-              cropX,
-              cropY,
-              cropWidth,
-              cropHeight,
-              0,
-              0,
-              cropWidth,
-              cropHeight
-            );
-
-            // Convert to data URL
-            const croppedDataUrl = croppedCanvas.toDataURL();
-            entry.dataUrl = croppedDataUrl;
-
-            // Display newly cropped image in our main canvas
+          // If nothing was cropped, revert to the original image
+          if (cropWidth === 0 || cropHeight === 0) {
             ctx.clearRect(0, 0, canvasElement.width, canvasElement.height);
-            canvasElement.width = croppedCanvas.width;
-            canvasElement.height = croppedCanvas.height;
-            canvasElement.style.width = `${croppedCanvas.width}px`;
-            canvasElement.style.height = `${croppedCanvas.height}px`;
-            ctx.drawImage(croppedCanvas, 0, 0);
+            canvasElement.width = originalImage.width;
+            canvasElement.height = originalImage.height;
+            const containerRect = imageContainer.getBoundingClientRect();
+            const ratio = Math.min(
+              containerRect.width / originalImage.width,
+              containerRect.height / originalImage.height
+            );
+            canvasElement.style.width = `${originalImage.width * ratio}px`;
+            canvasElement.style.height = `${originalImage.height * ratio}px`;
+            ctx.drawImage(originalImage, 0, 0);
 
-            // Save and re-render
+            // Clean up the confirm UI and restore the normal buttons
+            confirmContainer.remove();
+            cropButtonContainer.style.display = "flex";
             imageContainer.style.cursor = "auto";
-            saveClickLog();
-            renderLog();
-          });
-        };
+            return;
+          }
 
-        originalImage.onerror = () => {
-          console.error("Failed to load the original image.");
-        };
+          // Create a temporary canvas for the cropped image
+          const croppedCanvas = document.createElement("canvas");
+          const croppedCtx = croppedCanvas.getContext("2d");
+          croppedCanvas.width = cropWidth;
+          croppedCanvas.height = cropHeight;
+          croppedCtx.drawImage(
+            originalImage,
+            cropX,
+            cropY,
+            cropWidth,
+            cropHeight,
+            0,
+            0,
+            cropWidth,
+            cropHeight
+          );
+          const croppedDataUrl = croppedCanvas.toDataURL();
+          // Update the entry with the new cropped image
+          entry.dataUrl = croppedDataUrl;
+
+          // Update the main canvas to display the cropped image
+          ctx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+          canvasElement.width = cropWidth;
+          canvasElement.height = cropHeight;
+          canvasElement.style.width = `${cropWidth}px`;
+          canvasElement.style.height = `${cropHeight}px`;
+          ctx.drawImage(croppedCanvas, 0, 0);
+
+          // Clean up the confirm UI and restore the normal buttons
+          confirmContainer.remove();
+          cropButtonContainer.style.display = "flex";
+          imageContainer.style.cursor = "auto";
+
+          saveClickLog();
+          renderLog();
+        });
+
+
+        // Cross button: cancel cropping and revert to original image
+        crossButton.addEventListener("click", () => {
+          cropArea.style.display = "none";
+          // Remove mouse event listeners
+          canvasElement.removeEventListener("mousedown", onMouseDown);
+          canvasElement.removeEventListener("mousemove", onMouseMove);
+          canvasElement.removeEventListener("mouseup", onMouseUp);
+          // Set canvas to original size
+          canvasElement.width = displayImage.width;
+          canvasElement.height = displayImage.height;
+
+          // Fit the displayed canvas to the container
+          const containerRect = imageContainer.getBoundingClientRect();
+          const ratio = Math.min(
+            containerRect.width / displayImage.width,
+            containerRect.height / displayImage.height,
+            1 // Don't enlarge small images
+          );
+          const displayWidth = displayImage.width * ratio;
+          const displayHeight = displayImage.height * ratio;
+          canvasElement.style.width = `${displayWidth}px`;
+          canvasElement.style.height = `${displayHeight}px`;
+
+          // Draw the image at full resolution onto the canvas
+          ctx.drawImage(displayImage, 0, 0);
+
+          // Clean up the confirm UI and restore the normal buttons
+          confirmContainer.remove();
+          cropButtonContainer.style.display = "flex";
+          imageContainer.style.cursor = "auto";
+
+
+
+        });
       });
 
       //--------------------image alt text----------------//
@@ -597,9 +671,8 @@ document.getElementById("toClipBoard").addEventListener("click", async () => {
           htmlContent += `<p>${entry.description}</p>`;
         }
         if (entry.dataUrl) {
-          htmlContent += `<img src="${entry.dataUrl}" alt="${
-            entry.alt || ""
-          }" />`;
+          htmlContent += `<img src="${entry.dataUrl}" alt="${entry.alt || ""
+            }" />`;
           htmlContent += `<p>&nbsp;&nbsp;&nbsp;</p>`;
         }
       });
@@ -854,6 +927,46 @@ function createClipboardPlusIcon() {
   path.setAttribute("stroke-width", "2");
   path.setAttribute("stroke-linecap", "round");
   path.setAttribute("stroke-linejoin", "round");
+
+  svg.appendChild(path);
+  return svg;
+}
+
+function createTickIcon() {
+  const svgNS = "http://www.w3.org/2000/svg";
+  const svg = document.createElementNS(svgNS, "svg");
+  svg.id = 'tick-icon';
+  svg.setAttribute("width", "24");
+  svg.setAttribute("height", "24");
+  svg.setAttribute("viewBox", "0 0 24 24");
+  svg.setAttribute("fill", "none");
+
+  const path = document.createElementNS(svgNS, "path");
+  path.setAttribute(
+    "d",
+    "M20.661 7.33012C21.1534 6.75223 21.1035 5.86733 20.5495 5.35364C19.9955 4.83996 19.1472 4.89201 18.6548 5.46991L10.0746 15.539L6.30885 11.4597C5.79471 10.9027 4.94508 10.886 4.41117 11.4223C3.87725 11.9587 3.86122 12.8449 4.37536 13.4019L9.14729 18.5711C9.40673 18.8521 9.76684 19.0075 10.1408 18.9997C10.5148 18.9919 10.8686 18.8217 11.1171 18.5301L20.661 7.33012Z"
+  );
+  path.setAttribute("fill", "currentColor");
+
+  svg.appendChild(path);
+  return svg;
+}
+
+function createCrossIcon() {
+  const svgNS = "http://www.w3.org/2000/svg";
+  const svg = document.createElementNS(svgNS, "svg");
+  svg.id = 'cross-icon';
+  svg.setAttribute("width", "24");
+  svg.setAttribute("height", "24");
+  svg.setAttribute("viewBox", "0 0 24 24");
+  svg.setAttribute("fill", "none");
+
+  const path = document.createElementNS(svgNS, "path");
+  path.setAttribute(
+    "d",
+    "M16.9392 18.9394C17.5249 19.5252 18.4747 19.5252 19.0605 18.9394C19.6463 18.3536 19.6463 17.4038 19.0605 16.8181L14.2424 12L19.2027 7.03978C19.7885 6.45399 19.7885 5.50424 19.2027 4.91846C18.6169 4.33267 17.6671 4.33267 17.0813 4.91846L12.1211 9.87869L7.03966 4.79723C6.45388 4.21145 5.50413 4.21145 4.91834 4.79723C4.33256 5.38302 4.33256 6.33277 4.91834 6.91855L9.9998 12L5.06053 16.9393C4.47475 17.5251 4.47475 18.4748 5.06053 19.0606C5.64632 19.6464 6.59607 19.6464 7.18185 19.0606L12.1211 14.1213L16.9392 18.9394Z"
+  );
+  path.setAttribute("fill", "currentColor");
 
   svg.appendChild(path);
   return svg;
