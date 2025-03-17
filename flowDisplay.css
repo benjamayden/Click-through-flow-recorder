@@ -435,3 +435,9 @@ input:not(:checked) + .slider .view-icon {
   width: 100%;
   justify-content: left;
 }
+
+.confirm-button-container{
+  display: flex;
+  gap:0.5rem;
+  position: absolute;
+}
